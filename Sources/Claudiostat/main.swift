@@ -1,5 +1,6 @@
 import AppKit
 import ServiceManagement
+import SwiftUI
 import os
 
 let log = Logger(subsystem: "com.zolfer.claudiostat", category: "app")
@@ -155,6 +156,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         action("Launch at login", #selector(toggleLogin), on: SMAppService.mainApp.status == .enabled,
                enabled: Bundle.main.bundlePath.hasPrefix("/Applications/"))
         menu.addItem(.separator())
+        action("About Claudiostat", #selector(showAbout))
         let quit = NSMenuItem(title: "Quit", action: #selector(NSApplication.terminate), keyEquivalent: "q")
         quit.target = NSApp
         menu.addItem(quit)
@@ -181,6 +183,47 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             log.error("launch at login: \(error.localizedDescription, privacy: .public)")
         }
         if service.status == .requiresApproval { SMAppService.openSystemSettingsLoginItems() }
+    }
+
+    lazy var about: NSWindow = {
+        let window = NSWindow(contentViewController: NSHostingController(rootView: AboutView()))
+        window.styleMask = [.titled, .closable]
+        window.title = "About Claudiostat"
+        window.titleVisibility = .hidden
+        window.isReleasedWhenClosed = false
+        // The hosting controller only sizes the window once shown, too late for center().
+        window.setContentSize(window.contentView!.fittingSize)
+        window.center()
+        return window
+    }()
+
+    @objc func showAbout() {
+        NSApp.activate()
+        about.makeKeyAndOrderFront(nil)
+    }
+}
+
+struct AboutView: View {
+    let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "-"
+
+    var body: some View {
+        HStack(spacing: 24) {
+            Image(nsImage: NSApp.applicationIconImage)
+                .resizable()
+                .frame(width: 96, height: 96)
+            VStack(spacing: 8) {
+                Text("Claudiostat").font(.title2.bold())
+                HStack(spacing: 4) {
+                    Text("By")
+                    Link("Zolfer Figueiredo", destination: URL(string: "https://zolfer.com/")!)
+                }
+                Text("Version \(version)")
+                Link("Website", destination: URL(string: "https://claudiostat.zolfer.com/")!)
+            }
+        }
+        .padding(.horizontal, 32)
+        .padding(.vertical, 16)
+        .fixedSize()
     }
 }
 
