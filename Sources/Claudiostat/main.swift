@@ -2,7 +2,7 @@ import AppKit
 import ServiceManagement
 import os
 
-let log = Logger(subsystem: "com.zolferfigueiredo.claudiostat", category: "app")
+let log = Logger(subsystem: "com.zolfer.claudiostat", category: "app")
 
 final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
