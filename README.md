@@ -24,7 +24,7 @@ Click it for reset countdowns and settings: refresh interval, icon and numbers, 
 
 ## Requirements
 
-- macOS 15 or later, Apple Silicon
+- macOS 15 or later, Apple Silicon or Intel
 - [Claude Code](https://code.claude.com) installed and signed in with a Claude plan
 
 ## How it works
