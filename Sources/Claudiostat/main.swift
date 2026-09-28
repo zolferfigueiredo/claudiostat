@@ -199,6 +199,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         action("Launch at login", #selector(toggleLogin), on: SMAppService.mainApp.status == .enabled,
                enabled: Bundle.main.bundlePath.hasPrefix("/Applications/"))
         menu.addItem(.separator())
+        action("Claude Status", #selector(openStatus))
         action("About Claudiostat", #selector(showAbout))
         let quit = NSMenuItem(title: "Quit", action: #selector(NSApplication.terminate), keyEquivalent: "q")
         quit.target = NSApp
@@ -219,6 +220,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         log.notice("\(key, privacy: .public) = \(self.defaults.bool(forKey: key), privacy: .public)")
         if key == "onlyWhileClaude" { reschedule() }
         render()
+    }
+
+    @objc func openStatus() {
+        NSWorkspace.shared.open(URL(string: "https://status.claude.com/")!)
     }
 
     @objc func toggleLogin() {
