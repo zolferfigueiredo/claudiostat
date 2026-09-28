@@ -48,6 +48,8 @@ While "Only refresh while Claude is open" is on and the Claude desktop app is cl
 
 It runs the tests, builds the app and writes `dist/Claudiostat.dmg`. It needs Xcode 26 (Swift 6.2 or later). Every intermediate goes to a folder in `/tmp` that is deleted when the script ends.
 
+To try a change, run `./run.sh`. It builds a debug copy in `/tmp/claudiostat-run`, quits any running Claudiostat and opens the new one.
+
 ## Disclaimer
 
 Unofficial. Not affiliated with or endorsed by Anthropic. It relies on an experimental Claude Code API that may change or stop working at any time.
