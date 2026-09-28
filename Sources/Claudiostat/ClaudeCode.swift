@@ -12,8 +12,10 @@ func fetchUsage() async -> UsageResult {
     // Empty setting sources: no hooks, plugins or MCP servers run. Nothing is saved as a session.
     process.arguments = ["-p", "--input-format", "stream-json", "--output-format", "stream-json", "--verbose",
                          "--no-session-persistence", "--strict-mcp-config", "--setting-sources", ""]
+    // Not CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC: it also blocks the usage fetch itself.
     process.environment = ["HOME": home, "USER": NSUserName(), "LANG": "en_US.UTF-8",
-                           "PATH": "/usr/bin:/bin:/usr/sbin:/sbin", "CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC": "1"]
+                           "PATH": "/usr/bin:/bin:/usr/sbin:/sbin",
+                           "DISABLE_TELEMETRY": "1", "DISABLE_ERROR_REPORTING": "1", "DISABLE_AUTOUPDATER": "1"]
     process.currentDirectoryURL = FileManager.default.temporaryDirectory
     let input = Pipe(), output = Pipe()
     process.standardInput = input
