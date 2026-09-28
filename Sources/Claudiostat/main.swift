@@ -24,8 +24,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     var paused: Bool { defaults.bool(forKey: "onlyWhileClaude") && !claudeRunning }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
-        defaults.register(defaults: ["interval": 150, "showFable": true, "showBudget": false, "onlyWhileClaude": true,
+        defaults.register(defaults: ["interval": 180, "showFable": true, "showBudget": false, "onlyWhileClaude": true,
                                      "menuBar": "both", "icon": "star", "speedColors": "day"])
+        // 150 seconds is no longer an option.
+        if defaults.integer(forKey: "interval") == 150 { defaults.removeObject(forKey: "interval") }
         samples = (try? JSONDecoder().decode([Sample].self, from: defaults.data(forKey: "history") ?? Data())) ?? []
         let menu = NSMenu()
         menu.delegate = self
@@ -185,12 +187,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
         action("Refresh now", #selector(tick), key: "r", enabled: !paused && !busy)
 
-        submenu("Refresh every", [("interval", [(150, "150 seconds"), (300, "5 minutes"), (600, "10 minutes")])])
+        submenu("Refresh every", [("interval", [(60, "1 minute"), (180, "3 minutes"), (300, "5 minutes"), (600, "10 minutes")])])
+        action("Claude Status", #selector(openStatus))
         menu.addItem(.separator())
 
-        submenu("Menu bar", [("menuBar", [("both", "Icon and numbers"), ("icon", "Icon only"), ("numbers", "Numbers only")]),
-                             ("icon", [("star", "Plain star"), ("app", "App icon")])])
-        submenu("Speed colors", [("speedColors", [("day", "W per day"), ("hour", "W per hour"), ("off", "Off")])])
+        submenu("Display", [("menuBar", [("both", "Icon and numbers"), ("icon", "Icon only"), ("numbers", "Numbers only")]),
+                            ("icon", [("star", "Plain star"), ("app", "App icon")])])
+        submenu("Pace warning mode", [("speedColors", [("day", "W per day"), ("hour", "W per hour"), ("off", "Off")])])
         for (title, key) in [("Show Fable in menu bar", "showFable"), ("Show daily budget in menu bar", "showBudget"),
                              ("Only refresh while Claude is open", "onlyWhileClaude")] {
             action(title, #selector(toggleSetting), on: defaults.bool(forKey: key)).representedObject = key
@@ -199,7 +202,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         action("Launch at login", #selector(toggleLogin), on: SMAppService.mainApp.status == .enabled,
                enabled: Bundle.main.bundlePath.hasPrefix("/Applications/"))
         menu.addItem(.separator())
-        action("Claude Status", #selector(openStatus))
         action("About Claudiostat", #selector(showAbout))
         let quit = NSMenuItem(title: "Quit", action: #selector(NSApplication.terminate), keyEquivalent: "q")
         quit.target = NSApp

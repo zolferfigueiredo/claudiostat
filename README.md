@@ -20,7 +20,7 @@ S and W change color when you're using them too fast. The needed pace is what's 
 
 A warning triangle replaces the icon when Claude itself flags a limit: locked out, or its severity is anything but normal.
 
-Click it for reset countdowns and settings: refresh interval, icon and numbers, icon only or numbers only, a plain star or the app icon, speed colors (W per day, W per hour or off), show or hide F and L, only refresh while the Claude app is open, and launch at login.
+Click it for reset countdowns and settings: refresh interval, icon and numbers, icon only or numbers only, a plain star or the app icon, pace warning mode (W per day, W per hour or off), show or hide F and L, only refresh while the Claude app is open, and launch at login.
 
 ## Requirements
 
