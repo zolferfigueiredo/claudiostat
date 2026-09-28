@@ -1,4 +1,4 @@
-// App icon: a five-ray star in a creamy Claude orange on a darker tone of the same orange.
+// App icon: a slightly tilted five-ray star in white cream on a Claude orange gradient.
 // build.sh runs this: swift Icon/make-icon.swift <output.iconset>
 import AppKit
 
@@ -9,21 +9,26 @@ func draw(pixels: Int) -> Data {
     NSGraphicsContext.current = NSGraphicsContext(bitmapImageRep: rep)
     let s = CGFloat(pixels) / 1024
 
-    // macOS icon grid: an 824-unit rounded square centred in 1024.
-    NSColor(srgbRed: 184 / 255, green: 101 / 255, blue: 74 / 255, alpha: 1).setFill()
-    NSBezierPath(roundedRect: NSRect(x: 100 * s, y: 100 * s, width: 824 * s, height: 824 * s),
-                 xRadius: 185 * s, yRadius: 185 * s).fill()
+    // macOS icon grid: an 824-unit rounded square centred in 1024, lighter at the top left.
+    let background = NSBezierPath(roundedRect: NSRect(x: 100 * s, y: 100 * s, width: 824 * s, height: 824 * s),
+                                  xRadius: 185 * s, yRadius: 185 * s)
+    NSGradient(starting: NSColor(srgbRed: 212 / 255, green: 124 / 255, blue: 90 / 255, alpha: 1),
+               ending: NSColor(srgbRed: 150 / 255, green: 76 / 255, blue: 54 / 255, alpha: 1))!
+        .draw(in: background, angle: -60)
 
-    // Each ray is the hull of a hub circle and a smaller tip circle. The centre sits a little low
-    // because a five-ray star with one ray up reaches higher than it reaches down.
-    NSColor(srgbRed: 238 / 255, green: 178 / 255, blue: 150 / 255, alpha: 1).setFill()
-    let hub = NSPoint(x: 512 * s, y: 486 * s), hubRadius = 64 * s, tipRadius = 38 * s, length = 285 * s
+    // Each ray is the hull of a hub circle and a small tip circle, so it tapers to a near point.
+    NSColor(srgbRed: 250 / 255, green: 243 / 255, blue: 232 / 255, alpha: 1).setFill()
+    let hubRadius = 44 * s, tipRadius = 9 * s, length = 235 * s
+    let tilt = -14 * CGFloat.pi / 180
+    let angles = (0..<5).map { CGFloat.pi / 2 + tilt + CGFloat($0) * 2 * .pi / 5 }
+    // Centre the star's bounding box, not its hub: five rays reach further on one side than the other.
+    let xs = angles.map { cos($0) * length }, ys = angles.map { sin($0) * length }
+    let hub = NSPoint(x: 512 * s - (xs.max()! + xs.min()!) / 2, y: 512 * s - (ys.max()! + ys.min()!) / 2)
     let spread = asin((hubRadius - tipRadius) / length)
     func point(_ centre: NSPoint, _ radius: CGFloat, _ angle: CGFloat) -> NSPoint {
         NSPoint(x: centre.x + cos(angle) * radius, y: centre.y + sin(angle) * radius)
     }
-    for ray in 0..<5 {
-        let angle = CGFloat.pi / 2 + CGFloat(ray) * 2 * .pi / 5
+    for angle in angles {
         let tip = point(hub, length, angle)
         let side = NSBezierPath()
         side.move(to: point(hub, hubRadius, angle + .pi / 2 + spread))
