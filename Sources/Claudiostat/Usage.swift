@@ -158,6 +158,39 @@ nonisolated func barText(_ usage: Usage?, paces: (session: Pace, week: Pace) = (
     return bar
 }
 
+/// The app icon's tilted five-ray star, one color. A template in the menu bar's own color unless tinted.
+nonisolated func star(_ tint: NSColor?) -> NSImage {
+    let image = NSImage(size: NSSize(width: 16, height: 16), flipped: false) { rect in
+        // Same construction as Icon/make-icon.swift: each ray is the hull of a hub circle and a tip circle.
+        let hub: CGFloat = 66, tip: CGFloat = 14, length: CGFloat = 245, tilt = -14 * CGFloat.pi / 180
+        let spread = asin((hub - tip) / length)
+        func point(_ centre: NSPoint, _ radius: CGFloat, _ angle: CGFloat) -> NSPoint {
+            NSPoint(x: centre.x + cos(angle) * radius, y: centre.y + sin(angle) * radius)
+        }
+        let path = NSBezierPath()
+        for ray in 0..<5 {
+            let angle = CGFloat.pi / 2 + tilt + CGFloat(ray) * 2 * .pi / 5, end = point(.zero, length, angle)
+            path.move(to: point(.zero, hub, angle - .pi / 2 - spread))
+            path.line(to: point(end, tip, angle - .pi / 2 - spread))
+            path.line(to: point(end, tip, angle + .pi / 2 + spread))
+            path.line(to: point(.zero, hub, angle + .pi / 2 + spread))
+            path.close()
+            path.appendOval(in: NSRect(x: end.x - tip, y: end.y - tip, width: 2 * tip, height: 2 * tip))
+        }
+        path.appendOval(in: NSRect(x: -hub, y: -hub, width: 2 * hub, height: 2 * hub))
+        let box = path.bounds
+        path.transform(using: AffineTransform(translationByX: -box.midX, byY: -box.midY))
+        path.transform(using: AffineTransform(scale: min(rect.width / box.width, rect.height / box.height)))
+        path.transform(using: AffineTransform(translationByX: rect.midX, byY: rect.midY))
+        (tint ?? .black).setFill()
+        path.fill()
+        return true
+    }
+    image.isTemplate = tint == nil
+    image.accessibilityDescription = "Claudiostat"
+    return image
+}
+
 /// "3d 18h", "2h 13m", "7m"
 nonisolated func span(_ seconds: TimeInterval) -> String {
     let minutes = max(0, Int(seconds / 60)), days = minutes / 1440, hours = minutes / 60 % 24

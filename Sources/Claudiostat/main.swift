@@ -98,20 +98,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
                           showBudget: defaults.bool(forKey: "showBudget"), now: now)
         guard let button = item.button else { return }
         let tint = mode == "icon" ? max(pace.session, pace.week).color : nil
-        func symbol(_ name: String) -> NSImage? {
-            let image = NSImage(systemSymbolName: name, accessibilityDescription: alert ?? "Claudiostat")
+        func warningIcon() -> NSImage? {
+            let image = NSImage(systemSymbolName: "exclamationmark.triangle.fill", accessibilityDescription: alert)
             guard let tint else { return image }
             // The menu bar draws template images in its own color and ignores contentTintColor.
-            // One color per symbol layer: the triangle's "!" stays white.
-            let colored = image?.withSymbolConfiguration(.init(paletteColors: name == "star.fill" ? [tint] : [.white, tint]))
+            // One color per symbol layer: the "!" stays white.
+            let colored = image?.withSymbolConfiguration(.init(paletteColors: [.white, tint]))
             colored?.isTemplate = false
             return colored
         }
         let appIcon = NSApp.applicationIconImage.copy() as? NSImage
         appIcon?.size = NSSize(width: 18, height: 18)
-        button.image = alert != nil ? symbol("exclamationmark.triangle.fill")
+        button.image = alert != nil ? warningIcon()
             : mode == "numbers" ? nil
-            : defaults.string(forKey: "icon") == "app" ? appIcon : symbol("star.fill")
+            : defaults.string(forKey: "icon") == "app" ? appIcon : star(tint)
         button.attributedTitle = mode == "icon" ? NSAttributedString() : bar
         button.imagePosition = mode == "icon" ? .imageOnly : .imageLeading
         button.appearsDisabled = paused
