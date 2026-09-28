@@ -5,15 +5,22 @@
 Your Claude plan limits, live in the macOS menu bar.
 
 ```
-S 42% · W 18% · F 7% · L 12%
+★ S 42% · W 18% · F 7%
 ```
 
 - **S**: current session
 - **W**: this week, all models
 - **F**: this week, Fable
-- **L**: daily budget. What's left of the week, spread evenly per 24 hours until the weekly reset, rounded up.
+- **L** (off by default): daily budget. What's left of the week, spread evenly per 24 hours until the weekly reset, rounded up.
 
-Click it for reset countdowns and settings: refresh interval, show or hide F and L, only refresh while the Claude app is open, and launch at login.
+S and W change color when you're using them too fast. The needed pace is what's left spread evenly until the reset: S 50% with 2 hours left needs 25% per hour.
+
+- **Orange**: faster than the needed pace. S is measured over the last 30 minutes, W per day over the last 24 hours (or per hour, like S).
+- **Red**: 5 points per hour past it for S, 10 points past it for W.
+
+A warning triangle replaces the icon when Claude itself flags a limit: locked out, or its severity is anything but normal.
+
+Click it for reset countdowns and settings: refresh interval, icon and numbers, icon only or numbers only, a plain star or the app icon, speed colors (W per day, W per hour or off), show or hide F and L, only refresh while the Claude app is open, and launch at login.
 
 ## Requirements
 

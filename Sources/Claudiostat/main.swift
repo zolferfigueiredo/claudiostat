@@ -12,6 +12,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     lazy var claudeID = defaults.string(forKey: "watchBundleID") ?? "com.anthropic.claudefordesktop"
 
     var usage: Usage?        // nil after a failed fetch: dashes, never stale numbers
+    var samples: [Sample] = []
     var updated: Date?
     var failedAt: Date?
     var problem: String?     // Claude Code missing or signed out
@@ -23,8 +24,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     var paused: Bool { defaults.bool(forKey: "onlyWhileClaude") && !claudeRunning }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
-        defaults.register(defaults: ["interval": 150, "showFable": true, "showBudget": true, "onlyWhileClaude": true])
-        item.button?.font = .monospacedDigitSystemFont(ofSize: 0, weight: .regular)
+        defaults.register(defaults: ["interval": 150, "showFable": true, "showBudget": false, "onlyWhileClaude": true,
+                                     "menuBar": "both", "icon": "star", "speedColors": "day"])
+        samples = (try? JSONDecoder().decode([Sample].self, from: defaults.data(forKey: "history") ?? Data())) ?? []
         let menu = NSMenu()
         menu.delegate = self
         menu.autoenablesItems = false
@@ -69,7 +71,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             usage = nil
             problem = nil
             switch result {
-            case .ok(let fresh): usage = fresh; updated = .now; failedAt = nil
+            case .ok(let reply):
+                let fresh = keepSeverity(reply, from: samples.last?.usage)
+                usage = fresh; updated = .now; failedAt = nil
+                samples.append(Sample(at: .now, usage: fresh))
+                // speed() needs the newest reading from before its window, so keep one older than a day.
+                while samples.count > 1, samples[1].at <= Date.now.addingTimeInterval(-86400) { samples.removeFirst() }
+                defaults.set(try? JSONEncoder().encode(samples), forKey: "history")
             case .notFound: problem = "Claude Code not found"
             case .signedOut: problem = "Sign in to Claude Code first (run claude)"
             case .failed: failedAt = .now
@@ -80,12 +88,34 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         }
     }
 
+    func pacing(_ now: Date) -> (session: Pace, week: Pace) {
+        paces(usage, samples: samples, colors: defaults.string(forKey: "speedColors") ?? "day", now: now)
+    }
+
     func render() {
-        let bar = barText(usage, showFable: defaults.bool(forKey: "showFable"),
-                          showBudget: defaults.bool(forKey: "showBudget"), now: .now)
-        item.button?.title = bar
-        item.button?.appearsDisabled = paused
-        let line = bar + (paused ? " (paused)" : "")
+        let now = Date.now, pace = pacing(now), mode = defaults.string(forKey: "menuBar"), alert = warning(usage)
+        let bar = barText(usage, paces: pace, showFable: defaults.bool(forKey: "showFable"),
+                          showBudget: defaults.bool(forKey: "showBudget"), now: now)
+        guard let button = item.button else { return }
+        let tint = mode == "icon" ? max(pace.session, pace.week).color : nil
+        func warningIcon() -> NSImage? {
+            let image = NSImage(systemSymbolName: "exclamationmark.triangle.fill", accessibilityDescription: alert)
+            guard let tint else { return image }
+            // The menu bar draws template images in its own color and ignores contentTintColor.
+            // One color per symbol layer: the "!" stays white.
+            let colored = image?.withSymbolConfiguration(.init(paletteColors: [.white, tint]))
+            colored?.isTemplate = false
+            return colored
+        }
+        let appIcon = NSApp.applicationIconImage.copy() as? NSImage
+        appIcon?.size = NSSize(width: 18, height: 18)
+        button.image = alert != nil ? warningIcon()
+            : mode == "numbers" ? nil
+            : defaults.string(forKey: "icon") == "app" ? appIcon : star(tint)
+        button.attributedTitle = mode == "icon" ? NSAttributedString() : bar
+        button.imagePosition = mode == "icon" ? .imageOnly : .imageLeading
+        button.appearsDisabled = paused
+        let line = (alert.map { "⚠ \($0) · " } ?? "") + bar.string + " · pace S \(pace.session) W \(pace.week)" + (paused ? " (paused)" : "")
         if line != lastBar { log.notice("bar: \(line, privacy: .public)") }
         lastBar = line
     }
@@ -94,14 +124,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     func menuNeedsUpdate(_ menu: NSMenu) {
         menu.removeAllItems()
         let now = Date.now
-        func info(_ text: String) {
+        func info(_ text: String, _ color: NSColor? = nil) {
             let line = NSMenuItem()
-            line.attributedTitle = NSAttributedString(string: text, attributes: [.font: NSFont.menuFont(ofSize: 0), .foregroundColor: NSColor.labelColor])
+            line.attributedTitle = NSAttributedString(string: text, attributes: [.font: NSFont.menuFont(ofSize: 0), .foregroundColor: color ?? NSColor.labelColor])
             line.isEnabled = false
             menu.addItem(line)
         }
-        func limit(_ name: String, _ value: Limit?) {
-            info("\(name) \(percent(value?.percent))" + (value?.resetsAt.map { " · resets in \(span($0.timeIntervalSince(now)))" } ?? ""))
+        func limit(_ name: String, _ value: Limit?, _ pace: Pace = .ok) {
+            info("\(name) \(percent(value?.percent))" + (value?.resetsAt.map { " · resets in \(span($0.timeIntervalSince(now)))" } ?? ""), pace.color)
         }
         @discardableResult
         func action(_ title: String, _ selector: Selector, key: String = "", on: Bool = false, enabled: Bool = true) -> NSMenuItem {
@@ -113,8 +143,28 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             return entry
         }
 
-        limit("Session", usage?.session)
-        limit("Week", usage?.week)
+        // Each group sets one setting, groups split by a line.
+        func submenu(_ title: String, _ groups: [(key: String, options: [(value: Any, title: String)])]) {
+            let choices = NSMenu()
+            for (key, options) in groups {
+                if choices.numberOfItems > 0 { choices.addItem(.separator()) }
+                for (value, name) in options {
+                    let choice = NSMenuItem(title: name, action: #selector(choose), keyEquivalent: "")
+                    choice.target = self
+                    choice.representedObject = [key: value]
+                    choice.state = "\(defaults.object(forKey: key) ?? "")" == "\(value)" ? .on : .off
+                    choices.addItem(choice)
+                }
+            }
+            let entry = NSMenuItem(title: title, action: nil, keyEquivalent: "")
+            entry.submenu = choices
+            menu.addItem(entry)
+        }
+
+        let pace = pacing(now)
+        if let alert = warning(usage) { info("⚠ \(alert)") }
+        limit("Session", usage?.session, pace.session)
+        limit("Week", usage?.week, pace.week)
         limit("Fable", usage?.fable)
         if let week = usage?.week, let reset = week.resetsAt, let daily = budget(usage, now: now) {
             info("Daily budget \(daily)% · \(max(0, 100 - week.percent))% left over \(span(reset.timeIntervalSince(now)))")
@@ -135,19 +185,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
         action("Refresh now", #selector(tick), key: "r", enabled: !paused && !busy)
 
-        let every = NSMenu()
-        for (seconds, title) in [(150, "150 seconds"), (300, "5 minutes"), (600, "10 minutes")] {
-            let choice = NSMenuItem(title: title, action: #selector(setInterval), keyEquivalent: "")
-            choice.target = self
-            choice.tag = seconds
-            choice.state = defaults.integer(forKey: "interval") == seconds ? .on : .off
-            every.addItem(choice)
-        }
-        let everyItem = NSMenuItem(title: "Refresh every", action: nil, keyEquivalent: "")
-        everyItem.submenu = every
-        menu.addItem(everyItem)
+        submenu("Refresh every", [("interval", [(150, "150 seconds"), (300, "5 minutes"), (600, "10 minutes")])])
         menu.addItem(.separator())
 
+        submenu("Menu bar", [("menuBar", [("both", "Icon and numbers"), ("icon", "Icon only"), ("numbers", "Numbers only")]),
+                             ("icon", [("star", "Plain star"), ("app", "App icon")])])
+        submenu("Speed colors", [("speedColors", [("day", "W per day"), ("hour", "W per hour"), ("off", "Off")])])
         for (title, key) in [("Show Fable in menu bar", "showFable"), ("Show daily budget in menu bar", "showBudget"),
                              ("Only refresh while Claude is open", "onlyWhileClaude")] {
             action(title, #selector(toggleSetting), on: defaults.bool(forKey: key)).representedObject = key
@@ -163,9 +206,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         menu.addItem(quit)
     }
 
-    @objc func setInterval(_ sender: NSMenuItem) {
-        defaults.set(sender.tag, forKey: "interval")
-        reschedule()
+    @objc func choose(_ sender: NSMenuItem) {
+        guard let pick = (sender.representedObject as? [String: Any])?.first else { return }
+        defaults.set(pick.value, forKey: pick.key)
+        log.notice("\(pick.key, privacy: .public) = \(String(describing: pick.value), privacy: .public)")
+        if pick.key == "interval" { reschedule() }
+        render()
     }
 
     @objc func toggleSetting(_ sender: NSMenuItem) {
