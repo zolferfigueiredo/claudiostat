@@ -11,10 +11,11 @@ export TMPDIR="$WORK/tmp" SWIFTPM_MODULECACHE_OVERRIDE="$WORK/modules" CLANG_MOD
 mkdir -p "$TMPDIR"
 SWIFT_OPTS=(--scratch-path "$WORK/build" --cache-path "$WORK/cache" --config-path "$WORK/config"
             --security-path "$WORK/security" --manifest-cache none)
+RELEASE_OPTS=(-c release --arch arm64 --arch x86_64)
 
 swift test "${SWIFT_OPTS[@]}"
-swift build -c release "${SWIFT_OPTS[@]}"
-BIN=$(swift build -c release "${SWIFT_OPTS[@]}" --show-bin-path)
+swift build "${RELEASE_OPTS[@]}" "${SWIFT_OPTS[@]}"
+BIN=$(swift build "${RELEASE_OPTS[@]}" "${SWIFT_OPTS[@]}" --show-bin-path)
 
 APP="$WORK/dmg/Claudiostat.app"
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
