@@ -19,11 +19,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     var busy = false
     var timer: Timer?
     var lastBar = ""
+    var checking = false     // an update check or install is running
 
     var paused: Bool { defaults.bool(forKey: "onlyWhileClaude") && !claudeRunning }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
-        defaults.register(defaults: ["interval": 150, "showFable": true, "showBudget": true, "onlyWhileClaude": true])
+        defaults.register(defaults: ["interval": 150, "showFable": true, "showBudget": true, "onlyWhileClaude": true, "updateEvery": 86400])
         item.button?.font = .monospacedDigitSystemFont(ofSize: 0, weight: .regular)
         let menu = NSMenu()
         menu.delegate = self
@@ -37,6 +38,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         log.notice("start, watching \(self.claudeID, privacy: .public), running: \(self.claudeRunning, privacy: .public)")
         reschedule()
         render()
+
+        let updates = Timer(timeInterval: 3600, target: self, selector: #selector(autoCheck), userInfo: nil, repeats: true)
+        updates.tolerance = 600
+        RunLoop.main.add(updates, forMode: .common)
+        autoCheck()
     }
 
     @objc func appsChanged(_ note: Notification) {
@@ -156,6 +162,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         action("Launch at login", #selector(toggleLogin), on: SMAppService.mainApp.status == .enabled,
                enabled: Bundle.main.bundlePath.hasPrefix("/Applications/"))
         menu.addItem(.separator())
+        action("Check for Updates…", #selector(checkNow), enabled: !checking)
+        let auto = NSMenu()
+        for (seconds, title) in [(86400, "Daily"), (604800, "Weekly"), (0, "Never")] {
+            let choice = NSMenuItem(title: title, action: #selector(setUpdateEvery), keyEquivalent: "")
+            choice.target = self
+            choice.tag = seconds
+            choice.state = defaults.integer(forKey: "updateEvery") == seconds ? .on : .off
+            auto.addItem(choice)
+        }
+        let autoItem = NSMenuItem(title: "Check automatically", action: nil, keyEquivalent: "")
+        autoItem.submenu = auto
+        menu.addItem(autoItem)
         action("About Claudiostat", #selector(showAbout))
         let quit = NSMenuItem(title: "Quit", action: #selector(NSApplication.terminate), keyEquivalent: "q")
         quit.target = NSApp
@@ -165,6 +183,65 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     @objc func setInterval(_ sender: NSMenuItem) {
         defaults.set(sender.tag, forKey: "interval")
         reschedule()
+    }
+
+    @objc func setUpdateEvery(_ sender: NSMenuItem) {
+        defaults.set(sender.tag, forKey: "updateEvery")
+    }
+
+    @objc func autoCheck() {
+        let every = TimeInterval(defaults.integer(forKey: "updateEvery"))
+        guard updateCheckIsDue(last: defaults.object(forKey: "lastUpdateCheck") as? Date, every: every, now: .now) else { return }
+        checkForUpdates(quiet: true)
+    }
+
+    @objc func checkNow() { checkForUpdates(quiet: false) }
+
+    /// Quiet checks only speak up when there is a new version.
+    func checkForUpdates(quiet: Bool) {
+        guard !checking else { return }
+        checking = true
+        Task {
+            defer { checking = false }
+            guard let latest = await latestVersion() else {
+                log.notice("update check failed")
+                if !quiet { alert("Couldn't check for updates", "Check your connection and try again.") }
+                return
+            }
+            defaults.set(Date.now, forKey: "lastUpdateCheck")
+            log.notice("latest \(latest, privacy: .public), running \(appVersion, privacy: .public)")
+            guard isNewer(latest, than: appVersion) else {
+                if !quiet { alert("You're up to date", "Claudiostat \(appVersion) is the latest version.") }
+                return
+            }
+            guard alert("Claudiostat \(latest) is available", "You have \(appVersion). Update now?", "Update Now", "Later") else { return }
+            do {
+                guard Bundle.main.bundlePath.hasPrefix("/Applications/") else {
+                    throw UpdateError(errorDescription: "Claudiostat updates itself only when it runs from the Applications folder.")
+                }
+                try await install(latest)
+                let relaunch = NSWorkspace.OpenConfiguration()
+                relaunch.createsNewApplicationInstance = true
+                try await NSWorkspace.shared.openApplication(at: Bundle.main.bundleURL, configuration: relaunch)
+                NSApp.terminate(nil)
+            } catch {
+                log.error("update: \(error.localizedDescription, privacy: .public)")
+                if alert("Couldn't install the update", error.localizedDescription, "Download", "Cancel") {
+                    NSWorkspace.shared.open(dmgURL(latest))
+                }
+            }
+        }
+    }
+
+    /// True when the first button was clicked.
+    @discardableResult
+    func alert(_ title: String, _ text: String, _ buttons: String...) -> Bool {
+        let alert = NSAlert()
+        alert.messageText = title
+        alert.informativeText = text
+        buttons.forEach { alert.addButton(withTitle: $0) }
+        NSApp.activate()
+        return alert.runModal() == .alertFirstButtonReturn
     }
 
     @objc func toggleSetting(_ sender: NSMenuItem) {
@@ -204,8 +281,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 }
 
 struct AboutView: View {
-    let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "-"
-
     var body: some View {
         HStack(spacing: 24) {
             Image(nsImage: NSApp.applicationIconImage)
@@ -217,7 +292,7 @@ struct AboutView: View {
                     Text("By")
                     Link("Zolfer Figueiredo", destination: URL(string: "https://zolfer.com/")!)
                 }
-                Text("Version \(version)")
+                Text("Version \(appVersion)")
                 Link("Website", destination: URL(string: "https://claudiostat.zolfer.com/")!)
             }
         }

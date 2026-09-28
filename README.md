@@ -26,12 +26,16 @@ On every refresh, Claudiostat runs your installed Claude Code once, headless, an
 
 Claude Code uses its own login. Claudiostat never sees or stores a credential. Hooks, plugins and MCP servers are off for that run, and nothing is saved as a session.
 
-While "Only refresh while Claude is open" is on and the Claude desktop app is closed, Claudiostat makes no requests at all and dims the last numbers.
+While "Only refresh while Claude is open" is on and the Claude desktop app is closed, Claudiostat runs no usage refreshes and dims the last numbers.
+
+## Updates
+
+**Check for Updates…** in the menu asks claudiostat.zolfer.com for `latest.json`, a plain download that sends nothing about you. **Check automatically** does the same daily (the default), weekly or never. When there is a newer version, **Update Now** downloads it, replaces the copy in Applications and relaunches.
 
 ## Install
 
 1. Open `Claudiostat.dmg` and drag Claudiostat to Applications.
-2. The app is not notarized, so the first launch of a downloaded copy is blocked. Open System Settings > Privacy & Security, scroll down, click **Open Anyway** next to Claudiostat and confirm. You only do this once.
+2. The app is not notarized, so the first launch of a downloaded copy is blocked. Open System Settings > Privacy & Security, scroll down, click **Open Anyway** next to Claudiostat and confirm. You only do this once. Updates installed from the menu don't need it.
 
 ## Build
 
@@ -42,6 +46,8 @@ While "Only refresh while Claude is open" is on and the Claude desktop app is cl
 It runs the tests, builds the app and writes `dist/Claudiostat.dmg`. It needs Xcode 26 (Swift 6.2 or later). Every intermediate goes to a folder in `/tmp` that is deleted when the script ends.
 
 To try a change, run `./run.sh`. It builds a debug copy in `/tmp/claudiostat-run`, quits any running Claudiostat and opens the new one.
+
+To release: bump both versions in `Info.plist`, run `./build.sh`, copy `dist/Claudiostat.dmg` into the website repo as `Claudiostat-<version>.dmg`, set the version in its `latest.json` and deploy.
 
 ## Disclaimer
 
