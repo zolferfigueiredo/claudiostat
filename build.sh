@@ -29,6 +29,13 @@ iconutil -c icns "$WORK/AppIcon.iconset" -o "$APP/Contents/Resources/AppIcon.icn
 codesign --force --options runtime ${SIGN_ID:+--timestamp} --sign "${SIGN_ID:--}" "$APP"
 codesign --verify --strict "$APP"
 ln -s /Applications "$WORK/dmg/Applications"
+swift -module-cache-path "$WORK/modules" Icon/make-dmg-background.swift "$WORK/bg"
+mkdir "$WORK/dmg/.background"
+tiffutil -cathidpicheck "$WORK/bg/background.png" "$WORK/bg/background@2x.png" -out "$WORK/dmg/.background/background.tiff"
+
+# The window layout (size, icon spots, background) is Finder's .DS_Store, saved once from a Finder-arranged
+# ClaudioStat volume so the build never mounts anything. Icon spots must match the arrow in make-dmg-background.swift.
+cp Icon/dmg.DS_Store "$WORK/dmg/.DS_Store"
 
 mkdir -p dist
 hdiutil create -quiet -volname ClaudioStat -srcfolder "$WORK/dmg" -format UDZO -ov "$DMG"
