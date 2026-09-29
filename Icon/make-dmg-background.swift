@@ -1,5 +1,5 @@
 // DMG window background: the website's desktop wallpaper (.wall in claudiostatwebsite/style.css) with a curved
-// arrow from the app (left) to the Applications link (right). Icon spots must match Icon/dmg.DS_Store.
+// arrow from the app (left) to the Applications link (right). Positions must match the Finder script in build.sh.
 // build.sh runs this: swift Icon/make-dmg-background.swift <output folder>
 import CoreGraphics
 import Foundation
