@@ -1,6 +1,6 @@
 import Foundation
 import Testing
-@testable import Claudiostat
+@testable import ClaudioStat
 
 @Test(arguments: [
     ("0.1.3", "0.1.2", true),

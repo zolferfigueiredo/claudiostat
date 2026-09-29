@@ -1,6 +1,6 @@
 import AppKit
 import Testing
-@testable import Claudiostat
+@testable import ClaudioStat
 
 private func date(_ text: String) -> Date { ISO8601DateFormatter().date(from: text)! }
 /// Decimals follow the Mac's locale: "0.8" reads "0,8" in Portuguese.

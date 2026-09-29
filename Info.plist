@@ -7,7 +7,7 @@
 	<key>CFBundleName</key>
 	<string>ClaudioStat</string>
 	<key>CFBundleExecutable</key>
-	<string>Claudiostat</string>
+	<string>ClaudioStat</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
