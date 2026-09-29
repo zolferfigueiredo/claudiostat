@@ -274,7 +274,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             defaults.set(Date.now, forKey: "lastUpdateCheck")
             log.notice("latest \(latest, privacy: .public), running \(appVersion, privacy: .public)")
             guard isNewer(latest, than: appVersion) else {
-                if !quiet { alert("You're up to date", "ClaudioStat \(appVersion) is the latest version.") }
+                if !quiet { alert("You're up to date!", "ClaudioStat \(appVersion) is currently the newest version available.", "OK") }
                 return
             }
             guard alert("ClaudioStat \(latest) is available", "You have \(appVersion). Update now?", "Update Now", "Later") else { return }
