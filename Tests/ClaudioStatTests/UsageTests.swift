@@ -150,6 +150,17 @@ private func sample(_ time: String, s: Int, sReset: Date = reset, w: Int = 60) -
     #expect(off.speed == 16 && off.needed == 13 && off.pace == .ok && off.reason == nil)  // P and L still show
 }
 
+@Test func workingTimeScalesTheWeek() {
+    // Same readings as above: 1 point over 1.5 hours, 40% left over 71h.
+    let samples = [sample("2026-09-28T10:30:00Z", s: 0, w: 59), sample("2026-09-28T12:00:00Z", s: 0, w: 60)]
+    let usage = samples.last!.usage, now = date("2026-09-28T12:00:00Z")
+    let day = paces(usage, samples: samples, colors: "day", workHours: 8, now: now)
+    #expect(abs(day.week.speed! - 16.0 / 3) < 1e-9 && day.week.needed == 13 && day.week.pace == .ok)  // days stay days
+    let hour = paces(usage, samples: samples, colors: "hour", workHours: 8, now: now).week
+    #expect(hour.needed == 1.6 && hour.pace == .ok)  // 40 over the 24 working hours in 71h (23.7 rounded up)
+    #expect(day.session.needed == paces(usage, samples: samples, colors: "day", now: now).session.needed)  // S ignores it
+}
+
 @Test func paceIsTheLastHour() {
     let samples = [sample("2026-09-28T10:30:00Z", s: 0, w: 58), sample("2026-09-28T11:00:00Z", s: 0, w: 60),
                    sample("2026-09-28T11:30:00Z", s: 0, w: 61), sample("2026-09-28T12:00:00Z", s: 0, w: 62)]

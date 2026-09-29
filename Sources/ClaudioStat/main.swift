@@ -26,7 +26,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         defaults.register(defaults: ["interval": 180, "showFable": true, "showPace": false, "showBudget": false, "onlyWhileClaude": true,
-                                     "menuBar": "both", "icon": "app", "speedColors": "day", "updateEvery": 604800])
+                                     "menuBar": "both", "icon": "app", "speedColors": "day", "workHours": 8, "updateEvery": 604800])
         // 150 seconds is no longer an option.
         if defaults.integer(forKey: "interval") == 150 { defaults.removeObject(forKey: "interval") }
         samples = (try? JSONDecoder().decode([Sample].self, from: defaults.data(forKey: "history") ?? Data())) ?? []
@@ -97,7 +97,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     }
 
     func pacing(_ now: Date) -> (session: Rate, week: Rate) {
-        paces(usage, samples: samples, colors: defaults.string(forKey: "speedColors") ?? "day", now: now)
+        paces(usage, samples: samples, colors: defaults.string(forKey: "speedColors") ?? "day",
+              workHours: Double(defaults.integer(forKey: "workHours")), now: now)
     }
 
     func render() {
@@ -223,6 +224,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         dataEntry.submenu = data
         menu.addItem(dataEntry)
         submenu("Pace warning mode", [("speedColors", [("day", "W per day"), ("hour", "W per hour"), ("off", "Off")])])
+        // Hours a day spent using Claude, so the pace ignores the rest of the day.
+        submenu("Working time", [("workHours", [24, 16, 12, 8, 6, 4].map { ($0, "\($0) hours") })])
         menu.addItem(.separator())
         // Registering from anywhere else (a build folder in /tmp) would point the login item at a bundle that disappears.
         action("Launch at login", #selector(toggleLogin), on: SMAppService.mainApp.status == .enabled,

@@ -131,11 +131,14 @@ nonisolated func evenPace(_ limit: Limit?, unit: TimeInterval, now: Date) -> Dou
 
 /// S per hour over the last 30 minutes against what's left spread evenly.
 /// W over the last hour against the budget, per day, or per hour when `colors` is "hour": these are P and L.
-nonisolated func paces(_ usage: Usage?, samples: [Sample], colors: String, now: Date) -> (session: Rate, week: Rate) {
+/// Only `workHours` of each day are spent using Claude: P per day is the hourly rise times that,
+/// and L per hour splits what's left over the working hours until the reset.
+nonisolated func paces(_ usage: Usage?, samples: [Sample], colors: String, workHours: Double = 24,
+                       now: Date) -> (session: Rate, week: Rate) {
     let hour: TimeInterval = 3600, unit = colors == "hour" ? hour : 24 * hour, warns = colors != "off"
     let session = speed(samples, \.session, length: 5 * hour, window: hour / 2, unit: hour)
-    let week = speed(samples, \.week, length: 7 * 24 * hour, window: hour, unit: unit)
-    let allowed = usage?.week.flatMap { budget(week: $0.percent, resetsAt: $0.resetsAt, unit: unit, now: now) }
+    let week = speed(samples, \.week, length: 7 * 24 * hour, window: hour, unit: colors == "hour" ? hour : workHours * hour)
+    let allowed = usage?.week.flatMap { budget(week: $0.percent, resetsAt: $0.resetsAt, unit: unit, workHours: workHours, now: now) }
     return (Rate(speed: session, needed: evenPace(usage?.session, unit: hour, now: now), unit: hour, margin: 5, warns: warns),
             Rate(speed: week, needed: allowed, unit: unit, margin: 10, warns: warns))
 }
@@ -150,13 +153,14 @@ nonisolated func parseDate(_ value: Any?) -> Date? {
 
 /// L: what's left of the weekly limit split over the whole days (or hours) until the reset, a partial
 /// last one counting in full, rounded down to whole percents a day or tenths an hour.
-/// 35% left over 1d 17h is 17% a day, or 0.8% an hour.
-nonisolated func budget(week: Int, resetsAt: Date?, unit: TimeInterval, now: Date) -> Double? {
+/// 35% left over 1d 17h is 17% a day, or 0.8% an hour. Per hour only `workHours` of each day count.
+nonisolated func budget(week: Int, resetsAt: Date?, unit: TimeInterval, workHours: Double = 24, now: Date) -> Double? {
     let remaining = max(0, 100 - week)
     if remaining == 0 { return 0 }
     guard let resetsAt else { return nil }
+    let left = resetsAt.timeIntervalSince(now) * (unit < 86400 ? workHours / 24 : 1)
     // The epsilon keeps float noise (3.000000001) from rounding up to the next day.
-    let units = (resetsAt.timeIntervalSince(now) / unit - 1e-9).rounded(.up)
+    let units = (left / unit - 1e-9).rounded(.up)
     guard units > 0 else { return Double(remaining) }
     let steps: Double = unit < 86400 ? 10 : 1
     return (Double(remaining) * steps / units).rounded(.down) / steps
