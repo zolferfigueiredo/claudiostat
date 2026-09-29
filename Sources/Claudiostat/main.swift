@@ -26,7 +26,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         defaults.register(defaults: ["interval": 180, "showFable": true, "showPace": false, "showBudget": false, "onlyWhileClaude": true,
-                                     "menuBar": "both", "icon": "app", "speedColors": "day", "updateEvery": 86400])
+                                     "menuBar": "both", "icon": "app", "speedColors": "day", "updateEvery": 604800, "keepInDock": false])
         // 150 seconds is no longer an option.
         if defaults.integer(forKey: "interval") == 150 { defaults.removeObject(forKey: "interval") }
         samples = (try? JSONDecoder().decode([Sample].self, from: defaults.data(forKey: "history") ?? Data())) ?? []
@@ -42,6 +42,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         log.notice("start, watching \(self.claudeID, privacy: .public), running: \(self.claudeRunning, privacy: .public)")
         reschedule()
         render()
+        applyDock()
 
         let updates = Timer(timeInterval: 3600, target: self, selector: #selector(autoCheck), userInfo: nil, repeats: true)
         updates.tolerance = 600
@@ -155,7 +156,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         }
 
         // Each group sets one setting, groups split by a line. The `disabled` group is greyed out.
-        func submenu(_ title: String, _ groups: [(key: String, options: [(value: Any, title: String)])], disabled: String? = nil) {
+        @discardableResult
+        func submenu(_ title: String, _ groups: [(key: String, options: [(value: Any, title: String)])], disabled: String? = nil) -> NSMenuItem {
             let choices = NSMenu()
             choices.autoenablesItems = false
             for (key, options) in groups {
@@ -172,6 +174,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             let entry = NSMenuItem(title: title, action: nil, keyEquivalent: "")
             entry.submenu = choices
             menu.addItem(entry)
+            return entry
         }
 
         let rate = pacing(now)
@@ -221,17 +224,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         dataEntry.submenu = data
         menu.addItem(dataEntry)
         submenu("Pace warning mode", [("speedColors", [("day", "W per day"), ("hour", "W per hour"), ("off", "Off")])])
+        menu.addItem(.separator())
         // Registering from anywhere else (a build folder in /tmp) would point the login item at a bundle that disappears.
         action("Launch at login", #selector(toggleLogin), on: SMAppService.mainApp.status == .enabled,
                enabled: Bundle.main.bundlePath.hasPrefix("/Applications/"))
+        action("Keep in Dock", #selector(toggleSetting), on: defaults.bool(forKey: "keepInDock")).representedObject = "keepInDock"
         menu.addItem(.separator())
-        action("About ClaudioStat", #selector(showAbout))
+        action("About ClaudioStat", #selector(showAbout)).image = NSImage(systemSymbolName: "info.circle", accessibilityDescription: nil)
         menu.addItem(.separator())
-        action("Check for Updates…", #selector(checkNow), enabled: !checking)
-        submenu("Check automatically", [("updateEvery", [(86400, "Daily"), (604800, "Weekly"), (0, "Never")])])
+        action("Check for updates…", #selector(checkNow), enabled: !checking).image = NSImage(systemSymbolName: "arrow.down.circle", accessibilityDescription: nil)
+        // A blank image lines the title up with the icon rows.
+        submenu("Check automatically", [("updateEvery", [(86400, "Daily"), (604800, "Weekly"), (0, "Never")])]).image = NSImage(size: NSSize(width: 16, height: 16))
         menu.addItem(.separator())
-        let quit = NSMenuItem(title: "Quit", action: #selector(NSApplication.terminate), keyEquivalent: "q")
-        quit.image = NSImage(systemSymbolName: "power", accessibilityDescription: nil)
+        let quit = NSMenuItem(title: "Quit ClaudioStat", action: #selector(NSApplication.terminate), keyEquivalent: "q")
+        quit.image = NSImage(systemSymbolName: "xmark.square", accessibilityDescription: nil)
         quit.target = NSApp
         menu.addItem(quit)
     }
@@ -304,7 +310,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         defaults.set(!defaults.bool(forKey: key), forKey: key)
         log.notice("\(key, privacy: .public) = \(self.defaults.bool(forKey: key), privacy: .public)")
         if key == "onlyWhileClaude" { reschedule() }
+        if key == "keepInDock" { applyDock() }
         render()
+    }
+
+    func applyDock() {
+        NSApp.setActivationPolicy(defaults.bool(forKey: "keepInDock") ? .regular : .accessory)
     }
 
     @objc func openStatus() {
