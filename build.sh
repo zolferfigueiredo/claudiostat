@@ -27,13 +27,14 @@ cp "$BIN/Claudiostat" "$APP/Contents/MacOS/"
 cp Info.plist "$APP/Contents/"
 swift -module-cache-path "$WORK/modules" Icon/make-icon.swift "$WORK/AppIcon.iconset"
 iconutil -c icns "$WORK/AppIcon.iconset" -o "$APP/Contents/Resources/AppIcon.icns"
+# The DMG window's background lives inside the app, so the DMG shows nothing but the app and Applications.
+swift -module-cache-path "$WORK/modules" Icon/make-dmg-background.swift "$WORK/bg"
+tiffutil -cathidpicheck "$WORK/bg/background.png" "$WORK/bg/background@2x.png" \
+    -out "$APP/Contents/Resources/dmg-background.tiff"
 # Notarization requires the hardened runtime and a secure timestamp. Without SIGN_ID the app is signed ad hoc.
 codesign --force --options runtime ${SIGN_ID:+--timestamp} --sign "${SIGN_ID:--}" "$APP"
 codesign --verify --strict "$APP"
 ln -s /Applications "$WORK/dmg/Applications"
-swift -module-cache-path "$WORK/modules" Icon/make-dmg-background.swift "$WORK/bg"
-mkdir "$WORK/dmg/.background"
-tiffutil -cathidpicheck "$WORK/bg/background.png" "$WORK/bg/background@2x.png" -out "$WORK/dmg/.background/background.tiff"
 
 # Finder lays out the window (background, icon spots) and saves it in the volume's .DS_Store.
 # Icon positions must match the arrow in Icon/make-dmg-background.swift.
@@ -51,7 +52,7 @@ tell application "Finder" to tell disk "ClaudioStat"
     set arrangement of opts to not arranged
     set icon size of opts to 128
     set text size of opts to 13
-    set background picture of opts to file ".background:background.tiff"
+    set background picture of opts to file "ClaudioStat.app:Contents:Resources:dmg-background.tiff"
     set position of item "ClaudioStat.app" to {160, 190}
     set position of item "Applications" to {480, 190}
     update without registering applications
@@ -59,7 +60,7 @@ tell application "Finder" to tell disk "ClaudioStat"
 end tell
 EOF
 until [ -f "$MNT/.DS_Store" ]; do sleep 1; done
-rm -rf "$MNT/.fseventsd"
+rm -rf "$MNT/.fseventsd" "$MNT/.Trashes"
 sync
 hdiutil detach -quiet "$MNT"
 MNT=
