@@ -26,7 +26,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         defaults.register(defaults: ["interval": 180, "showFable": true, "showPace": false, "showBudget": false, "onlyWhileClaude": true,
-                                     "menuBar": "both", "icon": "app", "speedColors": "day", "updateEvery": 604800, "keepInDock": false])
+                                     "menuBar": "both", "icon": "app", "speedColors": "day", "updateEvery": 604800])
         // 150 seconds is no longer an option.
         if defaults.integer(forKey: "interval") == 150 { defaults.removeObject(forKey: "interval") }
         samples = (try? JSONDecoder().decode([Sample].self, from: defaults.data(forKey: "history") ?? Data())) ?? []
@@ -42,7 +42,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         log.notice("start, watching \(self.claudeID, privacy: .public), running: \(self.claudeRunning, privacy: .public)")
         reschedule()
         render()
-        applyDock()
 
         let updates = Timer(timeInterval: 3600, target: self, selector: #selector(autoCheck), userInfo: nil, repeats: true)
         updates.tolerance = 600
@@ -228,7 +227,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         // Registering from anywhere else (a build folder in /tmp) would point the login item at a bundle that disappears.
         action("Launch at login", #selector(toggleLogin), on: SMAppService.mainApp.status == .enabled,
                enabled: Bundle.main.bundlePath.hasPrefix("/Applications/"))
-        action("Keep in Dock", #selector(toggleSetting), on: defaults.bool(forKey: "keepInDock")).representedObject = "keepInDock"
+        action("Keep in Dock", #selector(toggleDock), on: inDock())
         menu.addItem(.separator())
         action("About ClaudioStat", #selector(showAbout)).image = NSImage(systemSymbolName: "info.circle", accessibilityDescription: nil)
         menu.addItem(.separator())
@@ -310,13 +309,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         defaults.set(!defaults.bool(forKey: key), forKey: key)
         log.notice("\(key, privacy: .public) = \(self.defaults.bool(forKey: key), privacy: .public)")
         if key == "onlyWhileClaude" { reschedule() }
-        if key == "keepInDock" { applyDock() }
         render()
     }
 
-    func applyDock() {
-        NSApp.setActivationPolicy(defaults.bool(forKey: "keepInDock") ? .regular : .accessory)
-    }
+    @objc func toggleDock() { toggleDockTile() }
 
     @objc func openStatus() {
         NSWorkspace.shared.open(URL(string: "https://status.claude.com/")!)
