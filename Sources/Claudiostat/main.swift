@@ -210,7 +210,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         menu.addItem(.separator())
         action("Check for Updates…", #selector(checkNow), enabled: !checking)
         submenu("Check automatically", [("updateEvery", [(86400, "Daily"), (604800, "Weekly"), (0, "Never")])])
-        action("About Claudiostat", #selector(showAbout))
+        action("About ClaudioStat", #selector(showAbout))
         let quit = NSMenuItem(title: "Quit", action: #selector(NSApplication.terminate), keyEquivalent: "q")
         quit.target = NSApp
         menu.addItem(quit)
@@ -246,13 +246,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             defaults.set(Date.now, forKey: "lastUpdateCheck")
             log.notice("latest \(latest, privacy: .public), running \(appVersion, privacy: .public)")
             guard isNewer(latest, than: appVersion) else {
-                if !quiet { alert("You're up to date", "Claudiostat \(appVersion) is the latest version.") }
+                if !quiet { alert("You're up to date", "ClaudioStat \(appVersion) is the latest version.") }
                 return
             }
-            guard alert("Claudiostat \(latest) is available", "You have \(appVersion). Update now?", "Update Now", "Later") else { return }
+            guard alert("ClaudioStat \(latest) is available", "You have \(appVersion). Update now?", "Update Now", "Later") else { return }
             do {
                 guard Bundle.main.bundlePath.hasPrefix("/Applications/") else {
-                    throw UpdateError(errorDescription: "Claudiostat updates itself only when it runs from the Applications folder.")
+                    throw UpdateError(errorDescription: "ClaudioStat updates itself only when it runs from the Applications folder.")
                 }
                 try await install(latest)
                 let relaunch = NSWorkspace.OpenConfiguration()
@@ -304,7 +304,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     lazy var about: NSWindow = {
         let window = NSWindow(contentViewController: NSHostingController(rootView: AboutView()))
         window.styleMask = [.titled, .closable]
-        window.title = "About Claudiostat"
+        window.title = "About ClaudioStat"
         window.titleVisibility = .hidden
         window.isReleasedWhenClosed = false
         // The hosting controller only sizes the window once shown, too late for center().
@@ -326,7 +326,7 @@ struct AboutView: View {
                 .resizable()
                 .frame(width: 96, height: 96)
             VStack(spacing: 8) {
-                Text("Claudiostat").font(.title2.bold())
+                Text("ClaudioStat").font(.title2.bold())
                 HStack(spacing: 4) {
                     Text("By")
                     Link("Zolfer Figueiredo", destination: URL(string: "https://zolfer.com/")!)

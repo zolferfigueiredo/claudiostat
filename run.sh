@@ -1,5 +1,5 @@
 #!/bin/bash
-# Builds a debug Claudiostat.app in /tmp/claudiostat-run and opens it, quitting any running copy first.
+# Builds a debug ClaudioStat.app in /tmp/claudiostat-run and opens it, quitting any running copy first.
 set -euo pipefail
 cd "$(dirname "$0")"
 
@@ -12,7 +12,7 @@ SWIFT_OPTS=(--scratch-path "$WORK/build" --cache-path "$WORK/cache" --config-pat
 swift build "${SWIFT_OPTS[@]}"
 BIN=$(swift build "${SWIFT_OPTS[@]}" --show-bin-path)
 
-APP="$WORK/Claudiostat.app"
+APP="$WORK/ClaudioStat.app"
 rm -rf "$APP"
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
 cp "$BIN/Claudiostat" "$APP/Contents/MacOS/"

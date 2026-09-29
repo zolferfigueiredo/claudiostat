@@ -5,7 +5,7 @@
 	<key>CFBundleIdentifier</key>
 	<string>com.zolfer.claudiostat</string>
 	<key>CFBundleName</key>
-	<string>Claudiostat</string>
+	<string>ClaudioStat</string>
 	<key>CFBundleExecutable</key>
 	<string>Claudiostat</string>
 	<key>CFBundlePackageType</key>
