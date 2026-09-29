@@ -80,18 +80,20 @@ nonisolated struct Sample: Codable, Equatable {
     var usage: Usage
 }
 
-/// How much a limit rose over the last `window`, in percent per `unit`. A limit window lasts `length`.
-/// Nil without a reading from before `window` in the same limit window.
+/// How fast a limit rose since the last reading at least `window` old, in percent per `unit`.
+/// A limit window lasts `length`. Nil without such a reading in the same limit window.
 nonisolated func speed(_ samples: [Sample], _ limit: KeyPath<Usage, Limit?>,
                        length: TimeInterval, window: TimeInterval, unit: TimeInterval) -> Double? {
     guard let latest = samples.last, let now = latest.usage[keyPath: limit], let reset = now.resetsAt else { return nil }
     let start = latest.at.addingTimeInterval(-window)
-    var base = 0  // the limit started over inside the window, from 0
+    var base = 0, elapsed = window  // the limit started over inside the window, from 0
     if reset.addingTimeInterval(-length) < start {
         guard let before = samples.last(where: { $0.at <= start && sameWindow($0.usage[keyPath: limit], now) }) else { return nil }
         base = before.usage[keyPath: limit]?.percent ?? 0
+        // After a pause that reading can be hours old: spread the rise over all of it.
+        elapsed = latest.at.timeIntervalSince(before.at)
     }
-    return Double(max(0, now.percent - base)) * unit / window
+    return Double(max(0, now.percent - base)) * unit / elapsed
 }
 
 nonisolated enum Pace: Comparable {
@@ -99,22 +101,43 @@ nonisolated enum Pace: Comparable {
     var color: NSColor? { self == .ok ? nil : self == .fast ? .systemOrange : .systemRed }
 }
 
-/// Orange once a limit rises faster than the pace that would use exactly what's left by the reset,
-/// red once it's `margin` points (per `unit`) past that.
-nonisolated func pace(speed: Double?, limit: Limit?, unit: TimeInterval, margin: Double, now: Date) -> Pace {
-    guard let speed, let limit, let reset = limit.resetsAt, reset > now else { return .ok }
-    let needed = Double(max(0, 100 - limit.percent)) * unit / reset.timeIntervalSince(now)
-    return speed > needed + margin ? .tooFast : speed > needed ? .fast : .ok
+/// How fast a limit rises against the pace it can keep until the reset, both in percent per `unit`.
+nonisolated struct Rate {
+    var speed: Double?
+    var needed: Double?
+    var unit: TimeInterval
+    var margin: Double
+    var warns = true
+
+    /// Orange once faster than needed, red once `margin` points past it.
+    var pace: Pace {
+        guard warns, let speed, let needed else { return .ok }
+        return speed > needed + margin ? .tooFast : speed > needed ? .fast : .ok
+    }
+
+    /// Why it's colored: "Using 24% a day, 17% a day lasts until reset".
+    var reason: String? {
+        guard pace != .ok else { return nil }
+        let per = unit == 3600 ? "an hour" : "a day"
+        return "Using \(percent(speed)) \(per), \(percent(needed)) \(per) lasts until reset"
+    }
 }
 
-/// S per hour over the last 30 minutes. W per day over the last 24 hours, or like S when `colors` is "hour".
-nonisolated func paces(_ usage: Usage?, samples: [Sample], colors: String, now: Date) -> (session: Pace, week: Pace) {
-    guard colors != "off" else { return (.ok, .ok) }
-    let hour: TimeInterval = 3600, unit = colors == "hour" ? hour : 24 * hour
+/// What's left spread evenly until the reset, in percent per `unit`.
+nonisolated func evenPace(_ limit: Limit?, unit: TimeInterval, now: Date) -> Double? {
+    guard let limit, let reset = limit.resetsAt, reset > now else { return nil }
+    return Double(max(0, 100 - limit.percent)) * unit / reset.timeIntervalSince(now)
+}
+
+/// S per hour over the last 30 minutes against what's left spread evenly.
+/// W over the last hour against the budget, per day, or per hour when `colors` is "hour": these are P and L.
+nonisolated func paces(_ usage: Usage?, samples: [Sample], colors: String, now: Date) -> (session: Rate, week: Rate) {
+    let hour: TimeInterval = 3600, unit = colors == "hour" ? hour : 24 * hour, warns = colors != "off"
     let session = speed(samples, \.session, length: 5 * hour, window: hour / 2, unit: hour)
-    let week = speed(samples, \.week, length: 7 * 24 * hour, window: unit == hour ? hour / 2 : unit, unit: unit)
-    return (pace(speed: session, limit: usage?.session, unit: hour, margin: 5, now: now),
-            pace(speed: week, limit: usage?.week, unit: unit, margin: 10, now: now))
+    let week = speed(samples, \.week, length: 7 * 24 * hour, window: hour, unit: unit)
+    let allowed = usage?.week.flatMap { budget(week: $0.percent, resetsAt: $0.resetsAt, unit: unit, now: now) }
+    return (Rate(speed: session, needed: evenPace(usage?.session, unit: hour, now: now), unit: hour, margin: 5, warns: warns),
+            Rate(speed: week, needed: allowed, unit: unit, margin: 10, warns: warns))
 }
 
 /// ISO 8601 string (any fractional digits) or epoch seconds.
@@ -125,29 +148,33 @@ nonisolated func parseDate(_ value: Any?) -> Date? {
     return ISO8601DateFormatter().date(from: text.replacingOccurrences(of: #"\.\d+"#, with: "", options: .regularExpression))
 }
 
-/// L: what's left of the weekly limit, spread evenly per 24h until the weekly reset, rounded up.
-nonisolated func dailyBudget(week: Int, resetsAt: Date?, now: Date) -> Int? {
+/// L: what's left of the weekly limit split over the whole days (or hours) until the reset, a partial
+/// last one counting in full, rounded down to whole percents a day or tenths an hour.
+/// 35% left over 1d 17h is 17% a day, or 0.8% an hour.
+nonisolated func budget(week: Int, resetsAt: Date?, unit: TimeInterval, now: Date) -> Double? {
     let remaining = max(0, 100 - week)
     if remaining == 0 { return 0 }
     guard let resetsAt else { return nil }
-    let hours = resetsAt.timeIntervalSince(now) / 3600
-    guard hours > 0 else { return remaining }
-    // The epsilon keeps float noise (10.000000001) from rounding up to the next percent.
-    return min(remaining, Int((Double(remaining) * 24 / hours - 1e-9).rounded(.up)))
-}
-
-nonisolated func budget(_ usage: Usage?, now: Date) -> Int? {
-    guard let week = usage?.week else { return nil }
-    return dailyBudget(week: week.percent, resetsAt: week.resetsAt, now: now)
+    // The epsilon keeps float noise (3.000000001) from rounding up to the next day.
+    let units = (resetsAt.timeIntervalSince(now) / unit - 1e-9).rounded(.up)
+    guard units > 0 else { return Double(remaining) }
+    let steps: Double = unit < 86400 ? 10 : 1
+    return (Double(remaining) * steps / units).rounded(.down) / steps
 }
 
 nonisolated func percent(_ value: Int?) -> String { value.map { "\($0)%" } ?? "-" }
+nonisolated func percent(_ value: Double?) -> String {
+    value.map { "\($0.formatted(.number.precision(.fractionLength(0...1))))%" } ?? "-"
+}
 
-nonisolated func barText(_ usage: Usage?, paces: (session: Pace, week: Pace) = (.ok, .ok),
-                         showFable: Bool, showBudget: Bool, now: Date) -> NSAttributedString {
-    var parts = [("S \(percent(usage?.session?.percent))", paces.session), ("W \(percent(usage?.week?.percent))", paces.week)]
+/// P and L are W's speed and budget.
+nonisolated func barText(_ usage: Usage?, rates: (session: Rate, week: Rate)? = nil,
+                         showFable: Bool, showPace: Bool = false, showBudget: Bool) -> NSAttributedString {
+    var parts = [("S \(percent(usage?.session?.percent))", rates?.session.pace ?? .ok),
+                 ("W \(percent(usage?.week?.percent))", rates?.week.pace ?? .ok)]
     if showFable { parts.append(("F \(percent(usage?.fable?.percent))", .ok)) }
-    if showBudget { parts.append(("L \(percent(budget(usage, now: now)))", .ok)) }
+    if showPace { parts.append(("P \(percent(rates?.week.speed))", .ok)) }
+    if showBudget { parts.append(("L \(percent(rates?.week.needed))", .ok)) }
     let bar = NSMutableAttributedString()
     for (text, pace) in parts {
         if bar.length > 0 { bar.append(NSAttributedString(string: " · ")) }

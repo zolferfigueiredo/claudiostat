@@ -25,8 +25,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     var paused: Bool { defaults.bool(forKey: "onlyWhileClaude") && !claudeRunning }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
-        defaults.register(defaults: ["interval": 180, "showFable": true, "showBudget": false, "onlyWhileClaude": true,
-                                     "menuBar": "both", "icon": "star", "speedColors": "day", "updateEvery": 86400])
+        defaults.register(defaults: ["interval": 180, "showFable": true, "showPace": false, "showBudget": false, "onlyWhileClaude": true,
+                                     "menuBar": "both", "icon": "app", "speedColors": "day", "updateEvery": 86400])
         // 150 seconds is no longer an option.
         if defaults.integer(forKey: "interval") == 150 { defaults.removeObject(forKey: "interval") }
         samples = (try? JSONDecoder().decode([Sample].self, from: defaults.data(forKey: "history") ?? Data())) ?? []
@@ -96,14 +96,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         }
     }
 
-    func pacing(_ now: Date) -> (session: Pace, week: Pace) {
+    func pacing(_ now: Date) -> (session: Rate, week: Rate) {
         paces(usage, samples: samples, colors: defaults.string(forKey: "speedColors") ?? "day", now: now)
     }
 
     func render() {
-        let now = Date.now, pace = pacing(now), mode = defaults.string(forKey: "menuBar"), alert = warning(usage)
-        let bar = barText(usage, paces: pace, showFable: defaults.bool(forKey: "showFable"),
-                          showBudget: defaults.bool(forKey: "showBudget"), now: now)
+        let now = Date.now, rate = pacing(now), mode = defaults.string(forKey: "menuBar"), alert = warning(usage)
+        let pace = (session: rate.session.pace, week: rate.week.pace)
+        let bar = barText(usage, rates: rate, showFable: defaults.bool(forKey: "showFable"),
+                          showPace: defaults.bool(forKey: "showPace"), showBudget: defaults.bool(forKey: "showBudget"))
         guard let button = item.button else { return }
         let tint = mode == "icon" ? max(pace.session, pace.week).color : nil
         func warningIcon() -> NSImage? {
@@ -138,8 +139,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             line.isEnabled = false
             menu.addItem(line)
         }
-        func limit(_ name: String, _ value: Limit?, _ pace: Pace = .ok) {
-            info("\(name) \(percent(value?.percent))" + (value?.resetsAt.map { " · resets in \(span($0.timeIntervalSince(now)))" } ?? ""), pace.color)
+        func limit(_ name: String, _ value: Limit?, _ rate: Rate? = nil) {
+            let color = rate?.pace.color
+            info("\(name) \(percent(value?.percent))" + (value?.resetsAt.map { " · resets in \(span($0.timeIntervalSince(now)))" } ?? ""), color)
+            if let reason = rate?.reason { info(reason, color) }
         }
         @discardableResult
         func action(_ title: String, _ selector: Selector, key: String = "", on: Bool = false, enabled: Bool = true) -> NSMenuItem {
@@ -151,9 +154,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             return entry
         }
 
-        // Each group sets one setting, groups split by a line.
-        func submenu(_ title: String, _ groups: [(key: String, options: [(value: Any, title: String)])]) {
+        // Each group sets one setting, groups split by a line. The `disabled` group is greyed out.
+        func submenu(_ title: String, _ groups: [(key: String, options: [(value: Any, title: String)])], disabled: String? = nil) {
             let choices = NSMenu()
+            choices.autoenablesItems = false
             for (key, options) in groups {
                 if choices.numberOfItems > 0 { choices.addItem(.separator()) }
                 for (value, name) in options {
@@ -161,6 +165,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
                     choice.target = self
                     choice.representedObject = [key: value]
                     choice.state = "\(defaults.object(forKey: key) ?? "")" == "\(value)" ? .on : .off
+                    choice.isEnabled = key != disabled
                     choices.addItem(choice)
                 }
             }
@@ -169,15 +174,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             menu.addItem(entry)
         }
 
-        let pace = pacing(now)
+        let rate = pacing(now)
         if let alert = warning(usage) { info("⚠ \(alert)") }
-        limit("Session", usage?.session, pace.session)
-        limit("Week", usage?.week, pace.week)
+        limit("Session", usage?.session, rate.session)
+        limit("Week", usage?.week, rate.week)
         limit("Fable", usage?.fable)
-        if let week = usage?.week, let reset = week.resetsAt, let daily = budget(usage, now: now) {
-            info("Daily budget \(daily)% · \(max(0, 100 - week.percent))% left over \(span(reset.timeIntervalSince(now)))")
+        let budgetName = rate.week.unit == 3600 ? "Hourly budget" : "Daily budget"
+        if let week = usage?.week, let reset = week.resetsAt, rate.week.needed != nil {
+            info("\(budgetName) \(percent(rate.week.needed)) · \(max(0, 100 - week.percent))% left over \(span(reset.timeIntervalSince(now)))")
         } else {
-            info("Daily budget \(percent(budget(usage, now: now)))")
+            info("\(budgetName) \(percent(rate.week.needed))")
         }
         menu.addItem(.separator())
 
@@ -194,16 +200,27 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         action("Refresh now", #selector(tick), key: "r", enabled: !paused && !busy)
 
         submenu("Refresh every", [("interval", [(60, "1 minute"), (180, "3 minutes"), (300, "5 minutes"), (600, "10 minutes")])])
+        action("Only refresh while Claude is open", #selector(toggleSetting), on: defaults.bool(forKey: "onlyWhileClaude"))
+            .representedObject = "onlyWhileClaude"
         action("Claude Status", #selector(openStatus))
         menu.addItem(.separator())
 
         submenu("Display", [("menuBar", [("both", "Icon and numbers"), ("icon", "Icon only"), ("numbers", "Numbers only")]),
-                            ("icon", [("star", "Plain star"), ("app", "App icon")])])
-        submenu("Pace warning mode", [("speedColors", [("day", "W per day"), ("hour", "W per hour"), ("off", "Off")])])
-        for (title, key) in [("Show Fable in menu bar", "showFable"), ("Show daily budget in menu bar", "showBudget"),
-                             ("Only refresh while Claude is open", "onlyWhileClaude")] {
-            action(title, #selector(toggleSetting), on: defaults.bool(forKey: key)).representedObject = key
+                            ("icon", [("app", "App icon"), ("star", "Plain star icon")])],
+                disabled: defaults.string(forKey: "menuBar") == "numbers" ? "icon" : nil)
+        // What the menu bar shows after S and W.
+        let data = NSMenu()
+        for (title, key) in [("Fable", "showFable"), ("Pace (experimental)", "showPace"), ("Budget", "showBudget")] {
+            let toggle = NSMenuItem(title: title, action: #selector(toggleSetting), keyEquivalent: "")
+            toggle.target = self
+            toggle.state = defaults.bool(forKey: key) ? .on : .off
+            toggle.representedObject = key
+            data.addItem(toggle)
         }
+        let dataEntry = NSMenuItem(title: "Data", action: nil, keyEquivalent: "")
+        dataEntry.submenu = data
+        menu.addItem(dataEntry)
+        submenu("Pace warning mode", [("speedColors", [("day", "W per day"), ("hour", "W per hour"), ("off", "Off")])])
         // Registering from anywhere else (a build folder in /tmp) would point the login item at a bundle that disappears.
         action("Launch at login", #selector(toggleLogin), on: SMAppService.mainApp.status == .enabled,
                enabled: Bundle.main.bundlePath.hasPrefix("/Applications/"))
