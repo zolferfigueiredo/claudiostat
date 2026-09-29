@@ -92,7 +92,9 @@ func draw(pixels: Int) -> Data {
 
 let folder = URL(fileURLWithPath: CommandLine.arguments[1])
 try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
-for points in [16, 32, 128, 256, 512] {
-    try draw(pixels: points).write(to: folder.appendingPathComponent("icon_\(points)x\(points).png"))
-    try draw(pixels: points * 2).write(to: folder.appendingPathComponent("icon_\(points)x\(points)@2x.png"))
+// Nothing under 64 px: macOS 26 puts small drawn sizes on a grey plate, and scales the 64 px one down cleanly.
+for points in [32, 128, 256, 512] {
+    for scale in [1, 2] where points * scale >= 64 {
+        try draw(pixels: points * scale).write(to: folder.appendingPathComponent("icon_\(points)x\(points)\(scale == 2 ? "@2x" : "").png"))
+    }
 }
