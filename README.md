@@ -11,16 +11,19 @@ Your Claude plan limits, live in the macOS menu bar.
 - **S**: current session
 - **W**: this week, all models
 - **F**: this week, Fable
-- **L** (off by default): daily budget. What's left of the week, spread evenly per 24 hours until the weekly reset, rounded up.
+- **P** (off by default, experimental): pace. How fast W is going: its rise over the last hour, times 24, to compare with L. Shows "-" until there's a reading from an hour ago.
+- **L** (off by default): daily budget. What's left of the week split over the days until the weekly reset, a partial last day counting as a whole one, rounded down: 35% left with 1d 17h to go is 17%.
 
-S and W change color when you're using them too fast. The needed pace is what's left spread evenly until the reset: S 50% with 2 hours left needs 25% per hour.
+S and W change color when you're using them too fast. The needed pace is what's left spread evenly until the reset: S 50% with 2 hours left needs 25% per hour. W per day needs the daily budget, so it turns orange once the last 24 hours used more than L.
 
 - **Orange**: faster than the needed pace. S is measured over the last 30 minutes, W per day over the last 24 hours (or per hour, like S).
 - **Red**: 5 points per hour past it for S, 10 points past it for W.
 
+The menu says why under a colored S or W: "Using 24% a day, 17% a day lasts until reset".
+
 A warning triangle replaces the icon when Claude itself flags a limit: locked out, or its severity is anything but normal.
 
-Click it for reset countdowns and settings: refresh interval, icon and numbers, icon only or numbers only, a plain star or the app icon, pace warning mode (W per day, W per hour or off), show or hide F and L, only refresh while the Claude app is open, and launch at login.
+Click it for reset countdowns and settings: refresh interval, only refresh while the Claude app is open, icon and numbers, icon only or numbers only, the app icon (default) or a plain star icon, which of F, P and L to show (Data), pace warning mode (W per day, W per hour or off), and launch at login.
 
 ## Requirements
 

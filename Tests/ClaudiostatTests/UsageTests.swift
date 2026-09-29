@@ -4,13 +4,14 @@ import Testing
 
 private func date(_ text: String) -> Date { ISO8601DateFormatter().date(from: text)! }
 
-// The spec's table, reset = Thursday 18:00.
+// What's left over whole days to the reset, a partial day counting as one, rounded down.
 @Test(arguments: [
-    ("2026-09-28T18:00:00Z", 56, "2026-10-01T18:00:00Z", 72.0, 15),  // Mon 18:00, 14.67 rounded up
-    ("2026-09-29T12:00:00Z", 70, "2026-10-01T18:00:00Z", 54.0, 14),  // Tue 12:00, 13.33 rounded up
+    ("2026-09-28T18:00:00Z", 56, "2026-10-01T18:00:00Z", 72.0, 14),  // Mon 18:00, 44 over 3 days
+    ("2026-09-29T12:00:00Z", 70, "2026-10-01T18:00:00Z", 54.0, 10),  // Tue 12:00, 30 over 3 days
     ("2026-09-30T18:00:00Z", 90, "2026-10-01T18:00:00Z", 24.0, 10),  // Wed 18:00
-    ("2026-10-01T18:00:00Z", 5, "2026-10-08T18:00:00Z", 168.0, 14),  // Thu 18:00 just reset, 13.57 rounded up
-    ("2026-10-01T12:00:00Z", 80, "2026-10-01T18:00:00Z", 6.0, 20),   // Thu 12:00, capped at what's left
+    ("2026-10-01T18:00:00Z", 5, "2026-10-08T18:00:00Z", 168.0, 13),  // Thu 18:00 just reset, 95 over 7 days
+    ("2026-10-01T12:00:00Z", 80, "2026-10-01T18:00:00Z", 6.0, 20),   // Thu 12:00, the last 6 hours are a day
+    ("2026-09-29T18:00:00Z", 65, "2026-10-01T11:00:00Z", 41.0, 17),  // 35 over 1d 17h, 17.5 rounded down
 ])
 func dailyBudgetTable(now: String, week: Int, reset: String, hours: Double, expected: Int) {
     #expect(date(reset).timeIntervalSince(date(now)) == hours * 3600)
@@ -58,8 +59,9 @@ func dailyBudgetTable(now: String, week: Int, reset: String, hours: Double, expe
 
 @Test func missingRowsShowDash() {
     let usage = parseUsage(["five_hour": ["utilization": 42, "resets_at": NSNull()], "model_scoped": []])
-    #expect(barText(usage, showFable: true, showBudget: true, now: .now).string == "S 42% · W - · F - · L -")
+    #expect(barText(usage, showFable: true, showPace: true, showBudget: true, now: .now).string == "S 42% · W - · F - · P - · L -")
     #expect(barText(nil, showFable: false, showBudget: false, now: .now).string == "S - · W -")
+    #expect(barText(nil, perDay: 24, showFable: false, showPace: true, showBudget: false, now: .now).string == "S - · W - · P 24%")
 }
 
 // Your examples: needed = what's left ÷ time left. Orange past it, red past it + 5 (S) or + 10 (W).
@@ -70,19 +72,22 @@ func dailyBudgetTable(now: String, week: Int, reset: String, hours: Double, expe
 ])
 func sessionPace(used: Int, hoursLeft: Double, speed: Double, expected: Pace) {
     let now = date("2026-09-28T12:00:00Z"), limit = Limit(percent: used, resetsAt: now.addingTimeInterval(hoursLeft * 3600))
-    #expect(pace(speed: speed, limit: limit, unit: 3600, margin: 5, now: now) == expected)
+    #expect(Rate(speed: speed, needed: evenPace(limit, unit: 3600, now: now), unit: 3600, margin: 5).pace == expected)
 }
 
 @Test func weekPace() {
     let now = date("2026-09-28T18:00:00Z"), week = Limit(percent: 56, resetsAt: date("2026-10-01T18:00:00Z"))  // 44% over 3 days
-    #expect(pace(speed: 14, limit: week, unit: 86400, margin: 10, now: now) == .ok)       // needs 14.67 %/day
-    #expect(pace(speed: 15, limit: week, unit: 86400, margin: 10, now: now) == .fast)
-    #expect(pace(speed: 25, limit: week, unit: 86400, margin: 10, now: now) == .tooFast)
-    #expect(pace(speed: 0.6, limit: week, unit: 3600, margin: 10, now: now) == .ok)       // needs 0.61 %/h
-    #expect(pace(speed: 0.7, limit: week, unit: 3600, margin: 10, now: now) == .fast)
-    #expect(pace(speed: 11, limit: week, unit: 3600, margin: 10, now: now) == .tooFast)
-    #expect(pace(speed: nil, limit: week, unit: 86400, margin: 10, now: now) == .ok)
-    #expect(pace(speed: 99, limit: Limit(percent: 50, resetsAt: nil), unit: 3600, margin: 5, now: now) == .ok)
+    let budget = Double(dailyBudget(week: 56, resetsAt: week.resetsAt, now: now)!)  // 14 %/day
+    func day(_ speed: Double?) -> Pace { Rate(speed: speed, needed: budget, unit: 86400, margin: 10).pace }
+    func hour(_ speed: Double) -> Pace { Rate(speed: speed, needed: evenPace(week, unit: 3600, now: now), unit: 3600, margin: 10).pace }
+    #expect(day(14) == .ok)
+    #expect(day(15) == .fast)
+    #expect(day(25) == .tooFast)
+    #expect(hour(0.6) == .ok)       // needs 0.61 %/h
+    #expect(hour(0.7) == .fast)
+    #expect(hour(11) == .tooFast)
+    #expect(day(nil) == .ok)
+    #expect(evenPace(Limit(percent: 50, resetsAt: nil), unit: 3600, now: now) == nil)
 }
 
 private let reset = date("2026-09-28T15:00:00Z")  // session window 10:00 to 15:00
@@ -121,9 +126,19 @@ private func sample(_ time: String, s: Int, sReset: Date = reset, w: Int = 60) -
     let samples = [sample("2026-09-27T11:00:00Z", s: 0, w: 40), sample("2026-09-27T13:00:00Z", s: 0, w: 45),
                    sample("2026-09-28T12:00:00Z", s: 0, w: 60)]
     #expect(speed(samples, \.week, length: 7 * 86400, window: 86400, unit: 86400) == 20)
-    let usage = samples.last!.usage, now = date("2026-09-28T12:00:00Z")  // 40% left over 71h: needs 13.5 %/day
-    #expect(paces(usage, samples: samples, colors: "day", now: now).week == .fast)
-    #expect(paces(usage, samples: samples, colors: "off", now: now).week == .ok)
+    let usage = samples.last!.usage, now = date("2026-09-28T12:00:00Z")  // 40% left over 71h: budget 13 %/day
+    let week = paces(usage, samples: samples, colors: "day", now: now).week
+    #expect(week.pace == .fast)
+    #expect(week.reason == "Using 20% a day, 13% a day lasts until reset")
+    #expect(paces(usage, samples: samples, colors: "off", now: now).week.pace == .ok)
+    #expect(paces(usage, samples: samples, colors: "off", now: now).week.reason == nil)
+}
+
+@Test func paceIsTheLastHourTimes24() {
+    let samples = [sample("2026-09-28T10:30:00Z", s: 0, w: 58), sample("2026-09-28T11:00:00Z", s: 0, w: 60),
+                   sample("2026-09-28T11:30:00Z", s: 0, w: 61), sample("2026-09-28T12:00:00Z", s: 0, w: 62)]
+    #expect(perDay(samples) == 48)  // 60 to 62 since 11:00
+    #expect(perDay(Array(samples.suffix(2))) == nil)
 }
 
 @Test func barColorsSessionAndWeekOnly() {
