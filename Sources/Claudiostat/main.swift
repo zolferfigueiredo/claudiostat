@@ -208,10 +208,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         action("Launch at login", #selector(toggleLogin), on: SMAppService.mainApp.status == .enabled,
                enabled: Bundle.main.bundlePath.hasPrefix("/Applications/"))
         menu.addItem(.separator())
+        action("About ClaudioStat", #selector(showAbout))
+        menu.addItem(.separator())
         action("Check for Updates…", #selector(checkNow), enabled: !checking)
         submenu("Check automatically", [("updateEvery", [(86400, "Daily"), (604800, "Weekly"), (0, "Never")])])
-        action("About ClaudioStat", #selector(showAbout))
+        menu.addItem(.separator())
         let quit = NSMenuItem(title: "Quit", action: #selector(NSApplication.terminate), keyEquivalent: "q")
+        quit.image = NSImage(systemSymbolName: "power", accessibilityDescription: nil)
         quit.target = NSApp
         menu.addItem(quit)
     }
