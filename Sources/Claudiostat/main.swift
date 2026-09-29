@@ -103,8 +103,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     func render() {
         let now = Date.now, rate = pacing(now), mode = defaults.string(forKey: "menuBar"), alert = warning(usage)
         let pace = (session: rate.session.pace, week: rate.week.pace)
-        let bar = barText(usage, paces: pace, perDay: perDay(samples), showFable: defaults.bool(forKey: "showFable"),
-                          showPace: defaults.bool(forKey: "showPace"), showBudget: defaults.bool(forKey: "showBudget"), now: now)
+        let bar = barText(usage, rates: rate, showFable: defaults.bool(forKey: "showFable"),
+                          showPace: defaults.bool(forKey: "showPace"), showBudget: defaults.bool(forKey: "showBudget"))
         guard let button = item.button else { return }
         let tint = mode == "icon" ? max(pace.session, pace.week).color : nil
         func warningIcon() -> NSImage? {
@@ -179,10 +179,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         limit("Session", usage?.session, rate.session)
         limit("Week", usage?.week, rate.week)
         limit("Fable", usage?.fable)
-        if let week = usage?.week, let reset = week.resetsAt, let daily = budget(usage, now: now) {
-            info("Daily budget \(daily)% · \(max(0, 100 - week.percent))% left over \(span(reset.timeIntervalSince(now)))")
+        let budgetName = rate.week.unit == 3600 ? "Hourly budget" : "Daily budget"
+        if let week = usage?.week, let reset = week.resetsAt, rate.week.needed != nil {
+            info("\(budgetName) \(percent(rate.week.needed)) · \(max(0, 100 - week.percent))% left over \(span(reset.timeIntervalSince(now)))")
         } else {
-            info("Daily budget \(percent(budget(usage, now: now)))")
+            info("\(budgetName) \(percent(rate.week.needed))")
         }
         menu.addItem(.separator())
 
@@ -209,7 +210,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
                 disabled: defaults.string(forKey: "menuBar") == "numbers" ? "icon" : nil)
         // What the menu bar shows after S and W.
         let data = NSMenu()
-        for (title, key) in [("Fable", "showFable"), ("Pace (experimental)", "showPace"), ("Daily budget", "showBudget")] {
+        for (title, key) in [("Fable", "showFable"), ("Pace (experimental)", "showPace"), ("Budget", "showBudget")] {
             let toggle = NSMenuItem(title: title, action: #selector(toggleSetting), keyEquivalent: "")
             toggle.target = self
             toggle.state = defaults.bool(forKey: key) ? .on : .off

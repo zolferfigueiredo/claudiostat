@@ -11,13 +11,14 @@ Your Claude plan limits, live in the macOS menu bar.
 - **S**: current session
 - **W**: this week, all models
 - **F**: this week, Fable
-- **P** (off by default, experimental): pace. How fast W is going: its rise over the last hour, times 24, to compare with L. Shows "-" until there's a reading from an hour ago.
-- **L** (off by default): daily budget. What's left of the week split over the days until the weekly reset, a partial last day counting as a whole one, rounded down: 35% left with 1d 17h to go is 17%.
+- **P** (off by default, experimental): pace. How fast W is rising over the last hour, per day (times 24) or per hour, following the pace warning mode. Shows "-" until there's a reading from an hour ago. After a pause, the rise is spread over the whole gap.
+- **L** (off by default): budget. What's left of the week split over the days (or hours) until the weekly reset, a partial last one counting in full, rounded down: 35% left with 1d 17h to go is 17% a day, or 0.8% an hour.
 
-S and W change color when you're using them too fast. The needed pace is what's left spread evenly until the reset: S 50% with 2 hours left needs 25% per hour. W per day needs the daily budget, so it turns orange once the last 24 hours used more than L.
+S and W change color when you're using them too fast.
 
-- **Orange**: faster than the needed pace. S is measured over the last 30 minutes, W per day over the last 24 hours (or per hour, like S).
-- **Red**: 5 points per hour past it for S, 10 points past it for W.
+- **S**: its rise over the last 30 minutes against what's left spread evenly until the reset: S 50% with 2 hours left needs 25% per hour.
+- **W**: P against L, so it turns orange once P is over L.
+- **Orange**: faster than needed. **Red**: 5 points per hour past it for S, 10 points past it for W.
 
 The menu says why under a colored S or W: "Using 24% a day, 17% a day lasts until reset".
 

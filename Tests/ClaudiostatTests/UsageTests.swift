@@ -3,6 +3,8 @@ import Testing
 @testable import Claudiostat
 
 private func date(_ text: String) -> Date { ISO8601DateFormatter().date(from: text)! }
+/// Decimals follow the Mac's locale: "0.8" reads "0,8" in Portuguese.
+private func local(_ text: String) -> String { text.replacingOccurrences(of: ".", with: Locale.current.decimalSeparator ?? ".") }
 
 // What's left over whole days to the reset, a partial day counting as one, rounded down.
 @Test(arguments: [
@@ -15,18 +17,23 @@ private func date(_ text: String) -> Date { ISO8601DateFormatter().date(from: te
 ])
 func dailyBudgetTable(now: String, week: Int, reset: String, hours: Double, expected: Int) {
     #expect(date(reset).timeIntervalSince(date(now)) == hours * 3600)
-    #expect(dailyBudget(week: week, resetsAt: date(reset), now: date(now)) == expected)
+    #expect(budget(week: week, resetsAt: date(reset), unit: 86400, now: date(now)) == Double(expected))
+}
+
+@Test func hourlyBudget() {
+    // 35 over 41 hours is 0.85, rounded down to a tenth.
+    #expect(budget(week: 65, resetsAt: date("2026-10-01T11:00:00Z"), unit: 3600, now: date("2026-09-29T18:00:00Z")) == 0.8)
 }
 
 @Test func weekUsedUpIsZero() {
-    #expect(dailyBudget(week: 100, resetsAt: date("2026-10-01T18:00:00Z"), now: date("2026-09-28T18:00:00Z")) == 0)
-    #expect(dailyBudget(week: 100, resetsAt: nil, now: .now) == 0)
-    #expect(dailyBudget(week: 130, resetsAt: nil, now: .now) == 0)
+    #expect(budget(week: 100, resetsAt: date("2026-10-01T18:00:00Z"), unit: 86400, now: date("2026-09-28T18:00:00Z")) == 0)
+    #expect(budget(week: 100, resetsAt: nil, unit: 86400, now: .now) == 0)
+    #expect(budget(week: 130, resetsAt: nil, unit: 86400, now: .now) == 0)
 }
 
 @Test func missingOrPassedReset() {
-    #expect(dailyBudget(week: 50, resetsAt: nil, now: .now) == nil)
-    #expect(dailyBudget(week: 60, resetsAt: date("2026-10-01T18:00:00Z"), now: date("2026-10-01T19:00:00Z")) == 40)
+    #expect(budget(week: 50, resetsAt: nil, unit: 86400, now: .now) == nil)
+    #expect(budget(week: 60, resetsAt: date("2026-10-01T18:00:00Z"), unit: 86400, now: date("2026-10-01T19:00:00Z")) == 40)
 }
 
 // Trimmed from a real Claude Code reply to the get_usage control request.
@@ -59,9 +66,10 @@ func dailyBudgetTable(now: String, week: Int, reset: String, hours: Double, expe
 
 @Test func missingRowsShowDash() {
     let usage = parseUsage(["five_hour": ["utilization": 42, "resets_at": NSNull()], "model_scoped": []])
-    #expect(barText(usage, showFable: true, showPace: true, showBudget: true, now: .now).string == "S 42% · W - · F - · P - · L -")
-    #expect(barText(nil, showFable: false, showBudget: false, now: .now).string == "S - · W -")
-    #expect(barText(nil, perDay: 24, showFable: false, showPace: true, showBudget: false, now: .now).string == "S - · W - · P 24%")
+    #expect(barText(usage, showFable: true, showPace: true, showBudget: true).string == "S 42% · W - · F - · P - · L -")
+    #expect(barText(nil, showFable: false, showBudget: false).string == "S - · W -")
+    let rates = (Rate(unit: 3600, margin: 5), Rate(speed: 1, needed: 0.8, unit: 3600, margin: 10))
+    #expect(barText(nil, rates: rates, showFable: false, showPace: true, showBudget: true).string == local("S - · W - · P 1% · L 0.8%"))
 }
 
 // Your examples: needed = what's left ÷ time left. Orange past it, red past it + 5 (S) or + 10 (W).
@@ -77,8 +85,8 @@ func sessionPace(used: Int, hoursLeft: Double, speed: Double, expected: Pace) {
 
 @Test func weekPace() {
     let now = date("2026-09-28T18:00:00Z"), week = Limit(percent: 56, resetsAt: date("2026-10-01T18:00:00Z"))  // 44% over 3 days
-    let budget = Double(dailyBudget(week: 56, resetsAt: week.resetsAt, now: now)!)  // 14 %/day
-    func day(_ speed: Double?) -> Pace { Rate(speed: speed, needed: budget, unit: 86400, margin: 10).pace }
+    let daily = budget(week: 56, resetsAt: week.resetsAt, unit: 86400, now: now)!  // 14 %/day
+    func day(_ speed: Double?) -> Pace { Rate(speed: speed, needed: daily, unit: 86400, margin: 10).pace }
     func hour(_ speed: Double) -> Pace { Rate(speed: speed, needed: evenPace(week, unit: 3600, now: now), unit: 3600, margin: 10).pace }
     #expect(day(14) == .ok)
     #expect(day(15) == .fast)
@@ -99,8 +107,14 @@ private func sample(_ time: String, s: Int, sReset: Date = reset, w: Int = 60) -
 @Test func speedOverLastHalfHour() {
     let samples = [sample("2026-09-28T11:20:00Z", s: 5), sample("2026-09-28T11:28:00Z", s: 10),
                    sample("2026-09-28T11:45:00Z", s: 18), sample("2026-09-28T12:00:00Z", s: 30)]
-    // From the 11:28 reading (the last one before 11:30): 20 points in half an hour.
-    #expect(speed(samples, \.session, length: 5 * 3600, window: 1800, unit: 3600) == 40)
+    // From the 11:28 reading (the last one before 11:30): 20 points in 32 minutes.
+    #expect(speed(samples, \.session, length: 5 * 3600, window: 1800, unit: 3600) == 37.5)
+}
+
+@Test func speedAfterAPause() {
+    // Paused from 04:00 to 12:00: the 4 points spread over all 8 hours, not the last one.
+    let samples = [sample("2026-09-28T04:00:00Z", s: 0, w: 56), sample("2026-09-28T12:00:00Z", s: 0, w: 60)]
+    #expect(speed(samples, \.week, length: 7 * 86400, window: 3600, unit: 86400) == 12)
 }
 
 @Test func speedNeedsAnOlderReading() {
@@ -122,28 +136,32 @@ private func sample(_ time: String, s: Int, sReset: Date = reset, w: Int = 60) -
     #expect(speed(samples, \.session, length: 5 * 3600, window: 1800, unit: 3600) == 24)
 }
 
-@Test func weekSpeedPerDay() {
-    let samples = [sample("2026-09-27T11:00:00Z", s: 0, w: 40), sample("2026-09-27T13:00:00Z", s: 0, w: 45),
-                   sample("2026-09-28T12:00:00Z", s: 0, w: 60)]
-    #expect(speed(samples, \.week, length: 7 * 86400, window: 86400, unit: 86400) == 20)
-    let usage = samples.last!.usage, now = date("2026-09-28T12:00:00Z")  // 40% left over 71h: budget 13 %/day
-    let week = paces(usage, samples: samples, colors: "day", now: now).week
-    #expect(week.pace == .fast)
-    #expect(week.reason == "Using 20% a day, 13% a day lasts until reset")
-    #expect(paces(usage, samples: samples, colors: "off", now: now).week.pace == .ok)
-    #expect(paces(usage, samples: samples, colors: "off", now: now).week.reason == nil)
+@Test func weekPaceAgainstTheBudget() {
+    // The last reading at least an hour old is 10:30, so the 1 point spreads over 1.5 hours.
+    let samples = [sample("2026-09-28T10:30:00Z", s: 0, w: 59), sample("2026-09-28T12:00:00Z", s: 0, w: 60)]
+    let usage = samples.last!.usage, now = date("2026-09-28T12:00:00Z")  // 40% left over 71h
+    let day = paces(usage, samples: samples, colors: "day", now: now).week
+    #expect(day.speed == 16 && day.needed == 13 && day.pace == .fast)  // 40 over 3 days
+    #expect(day.reason == "Using 16% a day, 13% a day lasts until reset")
+    let hour = paces(usage, samples: samples, colors: "hour", now: now).week
+    #expect(hour.needed == 0.5 && hour.pace == .fast)  // 40 over 71 hours, 0.56 rounded down
+    #expect(hour.reason == local("Using 0.7% an hour, 0.5% an hour lasts until reset"))
+    let off = paces(usage, samples: samples, colors: "off", now: now).week
+    #expect(off.speed == 16 && off.needed == 13 && off.pace == .ok && off.reason == nil)  // P and L still show
 }
 
-@Test func paceIsTheLastHourTimes24() {
+@Test func paceIsTheLastHour() {
     let samples = [sample("2026-09-28T10:30:00Z", s: 0, w: 58), sample("2026-09-28T11:00:00Z", s: 0, w: 60),
                    sample("2026-09-28T11:30:00Z", s: 0, w: 61), sample("2026-09-28T12:00:00Z", s: 0, w: 62)]
-    #expect(perDay(samples) == 48)  // 60 to 62 since 11:00
-    #expect(perDay(Array(samples.suffix(2))) == nil)
+    let usage = samples.last!.usage, now = date("2026-09-28T12:00:00Z")
+    #expect(paces(usage, samples: samples, colors: "hour", now: now).week.speed == 2)  // 60 to 62 since 11:00
+    #expect(paces(usage, samples: samples, colors: "day", now: now).week.speed == 48)
+    #expect(paces(usage, samples: Array(samples.suffix(2)), colors: "day", now: now).week.speed == nil)
 }
 
 @Test func barColorsSessionAndWeekOnly() {
-    let bar = barText(Usage(session: Limit(percent: 30), week: Limit(percent: 60)), paces: (.fast, .tooFast),
-                      showFable: true, showBudget: false, now: .now)
+    let rates = (Rate(speed: 22, needed: 20, unit: 3600, margin: 5), Rate(speed: 30, needed: 13, unit: 86400, margin: 10))
+    let bar = barText(Usage(session: Limit(percent: 30), week: Limit(percent: 60)), rates: rates, showFable: true, showBudget: false)
     func color(_ text: String) -> NSColor? {
         bar.attribute(.foregroundColor, at: (bar.string as NSString).range(of: text).location, effectiveRange: nil) as? NSColor
     }
