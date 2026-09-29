@@ -1,6 +1,6 @@
-# Claudiostat
+# ClaudioStat
 
-<img src="Icon/icon.png" width="128" alt="Claudiostat icon">
+<img src="Icon/icon.png" width="128" alt="ClaudioStat icon">
 
 Your Claude plan limits, live in the macOS menu bar.
 
@@ -29,11 +29,11 @@ Click it for reset countdowns and settings: refresh interval, icon and numbers, 
 
 ## How it works
 
-On every refresh, Claudiostat runs your installed Claude Code once, headless, and asks it for its `/usage` data (the `get_usage` control request). No prompt is sent, so it costs zero tokens.
+On every refresh, ClaudioStat runs your installed Claude Code once, headless, and asks it for its `/usage` data (the `get_usage` control request). No prompt is sent, so it costs zero tokens.
 
-Claude Code uses its own login. Claudiostat never sees or stores a credential. Hooks, plugins and MCP servers are off for that run, and nothing is saved as a session.
+Claude Code uses its own login. ClaudioStat never sees or stores a credential. Hooks, plugins and MCP servers are off for that run, and nothing is saved as a session.
 
-While "Only refresh while Claude is open" is on and the Claude desktop app is closed, Claudiostat runs no usage refreshes and dims the last numbers.
+While "Only refresh while Claude is open" is on and the Claude desktop app is closed, ClaudioStat runs no usage refreshes and dims the last numbers.
 
 ## Updates
 
@@ -41,8 +41,7 @@ While "Only refresh while Claude is open" is on and the Claude desktop app is cl
 
 ## Install
 
-1. Open `Claudiostat.dmg` and drag Claudiostat to Applications.
-2. The app is not notarized, so the first launch of a downloaded copy is blocked. Open System Settings > Privacy & Security, scroll down, click **Open Anyway** next to Claudiostat and confirm. You only do this once. Updates installed from the menu don't need it.
+Open `ClaudioStat-<version>.dmg` and drag ClaudioStat to Applications.
 
 ## Build
 
@@ -50,11 +49,11 @@ While "Only refresh while Claude is open" is on and the Claude desktop app is cl
 ./build.sh
 ```
 
-It runs the tests, builds the app and writes `dist/Claudiostat.dmg`. It needs Xcode 26 (Swift 6.2 or later). Every intermediate goes to a folder in `/tmp` that is deleted when the script ends.
+It runs the tests, builds the app and writes `dist/ClaudioStat-<version>.dmg`. It needs Xcode 26 (Swift 6.2 or later). Every intermediate goes to a folder in `/tmp` that is deleted when the script ends.
 
-To try a change, run `./run.sh`. It builds a debug copy in `/tmp/claudiostat-run`, quits any running Claudiostat and opens the new one.
+To try a change, run `./run.sh`. It builds a debug copy in `/tmp/claudiostat-run`, quits any running ClaudioStat and opens the new one.
 
-To release: bump both versions in `Info.plist`, run `./build.sh`, copy `dist/Claudiostat.dmg` into the website repo as `Claudiostat-<version>.dmg`, set the version in its `latest.json` and deploy.
+To release: bump both versions in `Info.plist` and run `./release.sh`. It builds `dist/ClaudioStat-<version>.dmg`, signs it with Developer ID and notarizes it. Then publish it from the website repo. Notarizing needs a one-time `xcrun notarytool store-credentials bihan --key <AuthKey.p8> --key-id <id> --issuer <issuer-id>`.
 
 ## Disclaimer
 

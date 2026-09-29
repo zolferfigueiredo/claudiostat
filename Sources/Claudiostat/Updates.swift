@@ -5,7 +5,7 @@ let appVersion = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? S
 let site = URL(string: UserDefaults.standard.string(forKey: "updateSite") ?? "https://claudiostat.zolfer.com/")!
 
 /// The site names the DMG after the version, the same rule its deploy.sh uses.
-func dmgURL(_ version: String) -> URL { site.appending(path: "Claudiostat-\(version).dmg") }
+func dmgURL(_ version: String) -> URL { site.appending(path: "ClaudioStat-\(version).dmg") }
 
 /// The version the site offers, or nil when it can't be reached.
 func latestVersion() async -> String? {
@@ -44,9 +44,9 @@ func install(_ version: String) async throws {
     let mount = work.appending(path: "mount")
     try files.createDirectory(at: mount, withIntermediateDirectories: true)
     try await run("/usr/bin/hdiutil", "attach", dmg.path, "-nobrowse", "-readonly", "-noautoopen", "-mountpoint", mount.path)
-    let fresh = work.appending(path: "Claudiostat.app")
+    let fresh = work.appending(path: "ClaudioStat.app")
     do {
-        try await run("/usr/bin/ditto", mount.appending(path: "Claudiostat.app").path, fresh.path)
+        try await run("/usr/bin/ditto", mount.appending(path: "ClaudioStat.app").path, fresh.path)
     } catch {
         try? await run("/usr/bin/hdiutil", "detach", mount.path, "-force")
         throw error
@@ -57,7 +57,7 @@ func install(_ version: String) async throws {
     let info = Bundle(url: fresh)?.infoDictionary
     guard info?["CFBundleIdentifier"] as? String == Bundle.main.bundleIdentifier,
           info?["CFBundleShortVersionString"] as? String == version else {
-        throw UpdateError(errorDescription: "The download isn't Claudiostat \(version).")
+        throw UpdateError(errorDescription: "The download isn't ClaudioStat \(version).")
     }
     _ = try files.replaceItemAt(Bundle.main.bundleURL, withItemAt: fresh)
 }

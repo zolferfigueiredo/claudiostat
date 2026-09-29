@@ -187,7 +187,7 @@ nonisolated func star(_ tint: NSColor?) -> NSImage {
         return true
     }
     image.isTemplate = tint == nil
-    image.accessibilityDescription = "Claudiostat"
+    image.accessibilityDescription = "ClaudioStat"
     return image
 }
 
