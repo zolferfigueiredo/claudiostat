@@ -24,7 +24,7 @@ The menu says why under a colored S or W: "Using 24% a day, 17% a day lasts unti
 
 A warning triangle replaces the icon when Claude itself flags a limit: locked out, or its severity is anything but normal.
 
-Click it for reset countdowns and settings: refresh interval, only refresh while the Claude app is open, icon and numbers, icon only or numbers only, the app icon (default) or a plain star icon, which of F, P and L to show (Data), pace warning mode (W per day, W per hour or off), and launch at login.
+Click it for reset countdowns and settings: refresh interval, only refresh while the Claude app is open, icon and numbers, icon only or numbers only, the app icon (default) or a plain star icon, which of F, P and L to show (Data), pace warning mode (W per day, W per hour or off), launch at login, and keep in Dock.
 
 ## Requirements
 
@@ -41,7 +41,7 @@ While "Only refresh while Claude is open" is on and the Claude desktop app is cl
 
 ## Updates
 
-**Check for Updates…** in the menu asks claudiostat.zolfer.com for `latest.json`, a plain download that sends nothing about you. **Check automatically** does the same daily (the default), weekly or never. When there is a newer version, **Update Now** downloads it, replaces the copy in Applications and relaunches.
+**Check for updates…** in the menu asks claudiostat.zolfer.com for `latest.json`, a plain download that sends nothing about you. **Check automatically** does the same daily, weekly (the default) or never. When there is a newer version, **Update Now** downloads it, replaces the copy in Applications and relaunches.
 
 ## Install
 
