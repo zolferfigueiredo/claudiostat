@@ -23,7 +23,7 @@ BIN=$(swift build "${RELEASE_OPTS[@]}" "${SWIFT_OPTS[@]}" --show-bin-path)
 
 APP="$WORK/dmg/ClaudioStat.app"
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
-cp "$BIN/Claudiostat" "$APP/Contents/MacOS/"
+cp "$BIN/ClaudioStat" "$APP/Contents/MacOS/"
 cp Info.plist "$APP/Contents/"
 swift -module-cache-path "$WORK/modules" Icon/make-icon.swift "$WORK/AppIcon.iconset"
 iconutil -c icns "$WORK/AppIcon.iconset" -o "$APP/Contents/Resources/AppIcon.icns"
