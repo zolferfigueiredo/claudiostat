@@ -65,7 +65,7 @@ extension Strings {
         "notify_reset": "Лимит сброшен",
         "now_using": "Теперь вы используете ClaudioStat {version}, самую новую доступную версию.",
         "ok": "OK",
-        "only": "Обновлять, только когда Claude открыт",
+        "only": "Пауза, когда Claude закрыт",
         "pace_experimental": "Темп (эксперимент)",
         "paused": "Пауза · Claude не открыт",
         "paused_updated": "Пауза · Claude не открыт · обновлено в {time}",

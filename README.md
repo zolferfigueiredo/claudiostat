@@ -35,7 +35,7 @@ You need:
 
 - macOS 15 or later, on Apple silicon or Intel
 - [Claude Code](https://code.claude.com) installed and signed in with a Claude plan
-- The Claude desktop app open, or Only refresh while Claude is open turned off
+- The Claude desktop app open, or Pause when Claude is closed turned off
 - ClaudioStat in Applications, for launch at login and updates
 
 ## What the letters mean
@@ -77,7 +77,7 @@ Every refresh, ClaudioStat runs your installed Claude Code once, headless, and s
 
 - **Show data below** (on): every limit with its reset countdown, then pace and the budget.
 - **Refresh now** (⌘R), and **Refresh every** 1, 3 (default), 5 or 10 minutes.
-- **Only refresh while Claude is open** (on): while the Claude desktop app is closed, nothing refreshes and the last numbers dim.
+- **Pause when Claude is closed** (on): while the Claude desktop app is closed, nothing refreshes and the last numbers dim.
 - **Claude Status** opens status.claude.com.
 - **Profile**: one per Claude Code folder, each signed in to its own Claude account (`~/.claude`, or one you set up with `CLAUDE_CONFIG_DIR=~/.claude-work claude`). The checked one fills the bar and the menu. **Add profile…** picks a folder, **Remove profile** forgets the checked one after asking; the folder and its login stay.
 - **Display**: icon and text, icon only or text only, with the app icon or a plain star. **Loading icon** (on) and **Loading text** (off) pick what pulses while Claude Code writes a reply.
