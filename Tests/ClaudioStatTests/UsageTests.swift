@@ -66,10 +66,12 @@ func dailyBudgetTable(now: String, week: Int, reset: String, hours: Double, expe
 
 @Test func missingRowsShowDash() {
     let usage = parseUsage(["five_hour": ["utilization": 42, "resets_at": NSNull()], "model_scoped": []])
-    #expect(barText(usage, showFable: true, showPace: true, showBudget: true).string == "S 42% · W - · F - · P - · L -")
+    #expect(barText(usage, showFable: true, showPace: true, showBudget: true).string == "S 42% · W - · F - · P - · D -")
     #expect(barText(nil, showFable: false, showBudget: false).string == "S - · W -")
     let rates = (Rate(unit: 3600, margin: 5), Rate(speed: 1, needed: 0.8, unit: 3600, margin: 10))
-    #expect(barText(nil, rates: rates, showFable: false, showPace: true, showBudget: true).string == local("S - · W - · P 1% · L 0.8%"))
+    #expect(barText(nil, rates: rates, showFable: false, showPace: true, showBudget: true).string == local("S - · W - · P 1% · D 0.8%"))
+    let daily = (Rate(unit: 86400, margin: 5), Rate(speed: 16, needed: 13, unit: 86400, margin: 10))
+    #expect(barText(nil, rates: daily, showFable: false, showBudget: true).string == "S - · W - · D 13%")
 }
 
 // Your examples: needed = what's left ÷ time left. Orange past it, red past it + 5 (S) or + 10 (W).
@@ -213,4 +215,30 @@ private func sample(_ time: String, s: Int, sReset: Date = reset, w: Int = 60) -
     #expect(span(3 * 86400 + 18 * 3600 + 59) == "3d 18h")
     #expect(span(7 * 60) == "7m")
     #expect(span(-5) == "0m")
+}
+
+@Test func noticesWhenALimitIsReached() {
+    let now = date("2026-09-28T12:00:00Z"), reset = date("2026-09-28T14:13:00Z")
+    let before = Usage(session: Limit(percent: 97, resetsAt: reset), week: Limit(percent: 50))
+    let after = Usage(session: Limit(percent: 100, resetsAt: reset, locked: true), week: Limit(percent: 50))
+    let found = notices(from: before, to: after, now: now)
+    #expect(found.map(\.id) == ["reached-session", "reset-session"])
+    #expect(found[0].title == "Session limit reached" && found[0].body == "Resets in 2h 13m.")
+    #expect(found[1].title == "Session limit reset" && found[1].at == reset && found[1].body == "You can use Claude again.")
+    #expect(notices(from: after, to: after, now: now).isEmpty)  // no repeats while it stays reached
+}
+
+@Test func noticesWhenTheWeekCrossesAMark() {
+    let now = date("2026-09-28T12:00:00Z"), reset = date("2026-10-01T16:00:00Z")  // 3d 4h away
+    func week(_ percent: Int) -> Usage { Usage(week: Limit(percent: percent, resetsAt: reset)) }
+    #expect(notices(from: week(79), to: week(80), now: now).map(\.title) == ["Week at 80%"])
+    #expect(notices(from: week(79), to: week(80), now: now).first?.body == "20% left, resets in 3d 4h.")
+    #expect(notices(from: week(79), to: week(93), now: now).map(\.title) == ["Week at 90%"])  // the highest mark only
+    #expect(notices(from: week(80), to: week(85), now: now).isEmpty)
+    // A new window (another reset time) starting high is not a crossing.
+    let next = Usage(week: Limit(percent: 85, resetsAt: reset.addingTimeInterval(7 * 86400)))
+    #expect(notices(from: week(10), to: next, now: now).isEmpty)
+    // Running out is its own notice, not also a mark.
+    let out = Usage(week: Limit(percent: 100, resetsAt: reset, locked: true))
+    #expect(notices(from: week(85), to: out, now: now).map(\.kind) == [.reached, .reset])
 }
