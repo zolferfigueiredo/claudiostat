@@ -182,9 +182,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         limit("Session", usage?.session, rate.session)
         limit("Week", usage?.week, rate.week)
         limit("Fable", usage?.fable)
-        let budgetName = rate.week.unit == 3600 ? "Hourly budget" : "Daily budget"
+        let hourly = rate.week.unit == 3600
+        info("Pace (experimental) \(percent(rate.week.speed))" + (rate.week.speed == nil ? "" : hourly ? " an hour" : " a day"))
+        let budgetName = hourly ? "Hourly budget" : "Daily budget"
         if let week = usage?.week, let reset = week.resetsAt, rate.week.needed != nil {
-            info("\(budgetName) \(percent(rate.week.needed)) · \(max(0, 100 - week.percent))% left over \(span(reset.timeIntervalSince(now)))")
+            let left = reset.timeIntervalSince(now)
+            // Hourly, L divides over working hours only, so show those rather than the wall-clock countdown.
+            let over = hourly ? "\(Int((left * Double(defaults.integer(forKey: "workHours")) / 24 / 3600).rounded(.up))) working hours"
+                              : span(left)
+            info("\(budgetName) \(percent(rate.week.needed)) · \(max(0, 100 - week.percent))% left over \(over)")
         } else {
             info("\(budgetName) \(percent(rate.week.needed))")
         }
@@ -225,7 +231,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         menu.addItem(dataEntry)
         submenu("Pace warning mode", [("speedColors", [("day", "W per day"), ("hour", "W per hour"), ("off", "Off")])])
         // Hours a day spent using Claude, so the pace ignores the rest of the day.
-        submenu("Working time", [("workHours", [24, 16, 12, 8, 6, 4].map { ($0, "\($0) hours") })])
+        submenu("Daily working time", [("workHours", [24, 16, 12, 8, 6, 4].map { ($0, "\($0) hours") })])
         menu.addItem(.separator())
         // Registering from anywhere else (a build folder in /tmp) would point the login item at a bundle that disappears.
         action("Launch at login", #selector(toggleLogin), on: SMAppService.mainApp.status == .enabled,
