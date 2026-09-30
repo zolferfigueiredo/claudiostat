@@ -21,6 +21,13 @@ nonisolated func isNewer(_ remote: String, than local: String) -> Bool {
     remote.compare(local, options: .numeric) == .orderedDescending
 }
 
+/// "0.3.6" gives "0.3.7": the version the test notification offers, so it reads like a real one.
+nonisolated func nextPatch(_ version: String) -> String {
+    var parts = version.split(separator: ".", omittingEmptySubsequences: false).map { Int($0) ?? 0 }
+    parts[parts.count - 1] += 1
+    return parts.map(String.init).joined(separator: ".")
+}
+
 /// `every` 0 means never.
 nonisolated func updateCheckIsDue(last: Date?, every: TimeInterval, now: Date) -> Bool {
     every > 0 && now.timeIntervalSince(last ?? .distantPast) >= every
@@ -66,6 +73,10 @@ final class UpdateProgress: NSObject {
     /// The window outlives the code that started the update, and its Reopen button needs this object
     /// alive: held only by a local variable, it was gone by the time Reopen was clicked.
     private static var open: UpdateProgress?
+
+    /// What the update underway says it is doing, nil when there is none. The window stays up until
+    /// Reopen, so an installed update counts too: nothing may start a second install meanwhile.
+    static var underway: String? { open?.status.stringValue }
 
     init(_ title: String) {
         super.init()
@@ -141,15 +152,20 @@ final class UpdateProgress: NSObject {
 /// an alert. False when notifications aren't allowed, so the caller falls back to the alert.
 func notifyUpdate(_ version: String) async -> Bool {
     if UserDefaults.standard.string(forKey: "notifiedVersion") == version { return true }
+    guard await showUpdateNotification(version) else { return false }
+    UserDefaults.standard.set(version, forKey: "notifiedVersion")
+    return true
+}
+
+/// "… is available", every time. testNotifications() shows it without an update.
+func showUpdateNotification(_ version: String) async -> Bool {
     let center = UNUserNotificationCenter.current()
     guard (try? await center.requestAuthorization(options: [.alert, .sound])) == true else { return false }
     let content = UNMutableNotificationContent()
     content.title = tr("available", ["version": version])
     content.body = tr("click_to_update", ["version": appVersion])
     content.sound = .default
-    guard (try? await center.add(UNNotificationRequest(identifier: "update", content: content, trigger: nil))) != nil else { return false }
-    UserDefaults.standard.set(version, forKey: "notifiedVersion")
-    return true
+    return (try? await center.add(UNNotificationRequest(identifier: "update", content: content, trigger: nil))) != nil
 }
 
 /// Replaces the running bundle with the one in the DMG for `version`. The caller relaunches.
@@ -231,7 +247,7 @@ extension AppDelegate {
 
     /// Quiet checks only speak up when there is a new version.
     func checkForUpdates(quiet: Bool) {
-        guard !checking else { return }
+        guard !checking, UpdateProgress.underway == nil else { return }
         checking = true
         Task {
             defer { checking = false }

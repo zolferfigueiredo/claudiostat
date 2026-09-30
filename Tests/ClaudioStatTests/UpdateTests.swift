@@ -2,6 +2,12 @@ import Foundation
 import Testing
 @testable import ClaudioStat
 
+@Test func nextPatchVersion() {
+    #expect(nextPatch("0.3.6") == "0.3.7")
+    #expect(nextPatch("0.9") == "0.10")
+    #expect(nextPatch("?") == "1")  // appVersion when the bundle has none
+}
+
 @Test(arguments: [
     ("0.1.3", "0.1.2", true),
     ("0.1.10", "0.1.9", true),  // numeric, not alphabetical

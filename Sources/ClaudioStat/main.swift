@@ -59,6 +59,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         RunLoop.main.add(updates, forMode: .common)
         autoCheck()
         Task { showUpdateComplete() }  // after launch finishes, not in the middle of it
+        if defaults.bool(forKey: "testNotifications") { testNotifications() }
     }
 
     @objc func appsChanged(_ note: Notification) {

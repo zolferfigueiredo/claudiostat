@@ -25,5 +25,5 @@ codesign --force --sign - "$APP"
 # -i: builds before 0.2.0 run as Claudiostat.
 pkill -ix claudiostat || true
 while pgrep -ix claudiostat >/dev/null; do sleep 0.2; done
-open "$APP"
+open "$APP" --args "$@"
 echo "Running $APP"
