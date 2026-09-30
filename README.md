@@ -4,14 +4,18 @@
 
 <h1 align="center">ClaudioStat</h1>
 
+<h3 align="center">Your limits. Zero tokens.</h3>
+
 <p align="center">
   Your Claude plan limits, live in the macOS menu bar.<br>
   A refresh costs zero tokens and never touches your login.
 </p>
 
 <p align="center">
-  <a href="https://github.com/zolferfigueiredo/claudiostat/releases/latest"><img src="https://img.shields.io/github/v/release/zolferfigueiredo/claudiostat?label=version" alt="Latest version"></a>
-  <img src="https://img.shields.io/badge/macOS-15%2B-blue" alt="macOS 15 or later">
+  <a href="https://github.com/zolferfigueiredo/claudiostat/releases/latest"><img src="https://img.shields.io/github/v/release/zolferfigueiredo/claudiostat" alt="Latest release"></a>
+  <a href="https://www.swift.org"><img src="https://img.shields.io/badge/Swift-6.2-orange" alt="Swift 6.2"></a>
+  <img src="https://img.shields.io/badge/Platform-macOS%2015%2B-blue" alt="macOS 15 or later">
+  <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-yellow" alt="MIT license"></a>
   <a href="https://github.com/zolferfigueiredo/claudiostat/actions/workflows/ci.yml"><img src="https://github.com/zolferfigueiredo/claudiostat/actions/workflows/ci.yml/badge.svg" alt="CI status"></a>
 </p>
 
@@ -20,6 +24,19 @@
   &nbsp;·&nbsp;
   <a href="https://claudiostat.zolfer.com">Try the menu in your browser</a>
 </p>
+
+## Install
+
+1. [Download the DMG](https://github.com/zolferfigueiredo/claudiostat/releases/latest), open it and drag ClaudioStat to Applications.
+2. Open ClaudioStat. It's signed and notarized by Apple, so macOS only asks you to confirm the first time.
+3. With the Claude app open, your numbers show up in the menu bar a few seconds later.
+
+You need:
+
+- macOS 15 or later, on Apple silicon or Intel
+- [Claude Code](https://code.claude.com) installed and signed in with a Claude plan
+- The Claude desktop app open, or Only refresh while Claude is open turned off
+- ClaudioStat in Applications, for launch at login and updates
 
 ## What the letters mean
 
@@ -42,19 +59,6 @@ S and W turn orange when you're using them faster than they last until the reset
 - **Tells you in time.** Notifications when a limit is reached, when it resets, and when the week hits 80% and 90%.
 - **Sleeps when Claude does.** While the Claude app is closed it stops asking, and the last numbers dim so you can tell they're old.
 - **Native and tiny.** A small Swift app with no Dock icon. It can launch at login and installs updates in one click.
-
-## Install
-
-1. [Download the DMG](https://github.com/zolferfigueiredo/claudiostat/releases/latest), open it and drag ClaudioStat to Applications.
-2. Open ClaudioStat. It's signed and notarized by Apple, so macOS only asks you to confirm the first time.
-3. With the Claude app open, your numbers show up in the menu bar a few seconds later.
-
-You need:
-
-- macOS 15 or later, on Apple silicon or Intel
-- [Claude Code](https://code.claude.com) installed and signed in with a Claude plan
-- The Claude desktop app open, or Only refresh while Claude is open turned off
-- ClaudioStat in Applications, for launch at login and updates
 
 ## How it works
 
@@ -115,3 +119,9 @@ Unofficial. Not affiliated with or endorsed by Anthropic. It relies on an experi
 ## License
 
 [MIT](LICENSE)
+
+---
+
+<p align="center">
+  Made with ❤️ for the Claude community by <a href="https://zolfer.com">zolfer.com</a>
+</p>
