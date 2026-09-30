@@ -21,7 +21,8 @@ extension AppDelegate {
         }
         func limit(_ name: String, _ value: Limit?, _ rate: Rate? = nil) {
             let color = rate?.pace.color
-            info("\(name) \(percent(value?.percent))" + (value?.resetsAt.map { " · resets in \(span($0.timeIntervalSince(now)))" } ?? ""), color)
+            let used = "\(name) \(percent(value?.percent))"
+            info(value?.resetsAt.map { tr("resets", ["limit": used, "time": span($0.timeIntervalSince(now))]) } ?? used, color)
             if let reason = rate?.reason { info(reason, color) }
         }
         @discardableResult
@@ -66,22 +67,23 @@ extension AppDelegate {
         }
 
         let details = defaults.bool(forKey: "showDetails")
-        action("Show data below", #selector(toggleSetting), on: details).representedObject = "showDetails"
+        action(tr("show_data"), #selector(toggleSetting), on: details).representedObject = "showDetails"
         if details {
             if let alert = warning(usage) { info("⚠ \(alert)") }
             let rate = pacing(now)
-            limit("Session", usage?.session, rate.session)
-            limit("Week", usage?.week, rate.week)
-            limit("Fable", usage?.fable)
+            limit(tr("session"), usage?.session, rate.session)
+            limit(tr("week"), usage?.week, rate.week)
+            limit(tr("fable"), usage?.fable)
             let hourly = rate.week.unit == 3600
-            info("Pace (experimental) · \(percent(rate.week.speed))" + (rate.week.speed == nil ? "" : hourly ? " an hour" : " a day"))
-            let budgetName = hourly ? "Budget per hour" : "Budget per day"
+            let speed = percent(rate.week.speed)
+            info("\(tr("pace_experimental")) · " + (rate.week.speed == nil ? speed : tr(hourly ? "rate_hour" : "rate_day", ["n": speed])))
+            let budgetName = tr(hourly ? "budget_hour" : "budget_day")
             if let week = usage?.week, let reset = week.resetsAt, rate.week.needed != nil {
                 let left = reset.timeIntervalSince(now)
                 // Hourly, the budget divides over working hours only, so show those rather than the wall-clock countdown.
-                let over = hourly ? "\(Int((left * Double(defaults.integer(forKey: "workHours")) / 24 / 3600).rounded(.up))) working hours"
+                let over = hourly ? plural("working_hours", Int((left * Double(defaults.integer(forKey: "workHours")) / 24 / 3600).rounded(.up)))
                                   : span(left)
-                info("\(budgetName) \(percent(rate.week.needed)) · \(max(0, 100 - week.percent))% left over \(over)")
+                info("\(budgetName) \(percent(rate.week.needed)) · " + tr("left_over", ["left": max(0, 100 - week.percent), "time": over]))
             } else {
                 info("\(budgetName) \(percent(rate.week.needed))")
             }
@@ -90,29 +92,29 @@ extension AppDelegate {
 
         let time = { (date: Date) in date.formatted(date: .omitted, time: .shortened) }
         let status: String
-        if paused { status = "Paused · Claude isn't open" + (updated.map { " · updated \(time($0))" } ?? "") }
-        else if let problem { status = problem }
-        else if let failedAt { status = "Update failed \(time(failedAt))" }
-        else { status = updated.map { "Updated \(time($0))" } ?? "Updating…" }
+        if paused { status = updated.map { tr("paused_updated", ["time": time($0)]) } ?? tr("paused") }
+        else if let problem { status = tr(problem) }
+        else if let failedAt { status = tr("failed", ["time": time(failedAt)]) }
+        else { status = updated.map { tr("updated", ["time": time($0)]) } ?? tr("updating") }
         let statusLine = NSMenuItem(title: status, action: nil, keyEquivalent: "")
         statusLine.isEnabled = false
         menu.addItem(statusLine)
 
-        action("Refresh now", #selector(tick), key: "r", enabled: !paused && !busy)
+        action(tr("refresh"), #selector(tick), key: "r", enabled: !paused && !busy)
 
-        submenu("Refresh every", [("interval", [(60, "1 minute"), (180, "3 minutes"), (300, "5 minutes"), (600, "10 minutes")])])
-        action("Only refresh while Claude is open", #selector(toggleSetting), on: defaults.bool(forKey: "onlyWhileClaude"))
+        submenu(tr("every"), [("interval", [1, 3, 5, 10].map { ($0 * 60, plural("minutes", $0)) })])
+        action(tr("only"), #selector(toggleSetting), on: defaults.bool(forKey: "onlyWhileClaude"))
             .representedObject = "onlyWhileClaude"
-        action("Claude Status", #selector(openStatus))
+        action(tr("status"), #selector(openStatus))
         menu.addItem(.separator())
 
-        let display = submenu("Display", [("menuBar", [("both", "Icon and numbers"), ("icon", "Icon only"), ("numbers", "Numbers only")]),
-                                          ("icon", [("app", "App icon"), ("star", "Plain star icon")])],
+        let display = submenu(tr("display"), [("menuBar", [("both", tr("both")), ("icon", tr("icon_only")), ("numbers", tr("numbers_only"))]),
+                                              ("icon", [("app", tr("app_icon")), ("star", tr("star_icon"))])],
                               disabled: mode == "numbers" ? "icon" : nil)
         // They pulse while tokens are being spent. Numbers only has no icon, Icon only no numbers.
         display.submenu?.addItem(.separator())
-        display.submenu?.addItem(toggle("Loading icon", "loadingIcon", enabled: mode != "numbers"))
-        display.submenu?.addItem(toggle("Loading text", "loadingText", enabled: mode != "icon"))
+        display.submenu?.addItem(toggle(tr("loading_icon"), "loadingIcon", enabled: mode != "numbers"))
+        display.submenu?.addItem(toggle(tr("loading_text"), "loadingText", enabled: mode != "icon"))
         // A submenu of on/off settings.
         @discardableResult
         func toggles(_ title: String, _ settings: [(title: String, key: String)]) -> NSMenuItem {
@@ -126,26 +128,39 @@ extension AppDelegate {
         }
 
         // What the menu bar shows after S and W. speedColors is the unit of P and B, which W's color compares.
-        let data = toggles("Data", [("Fable", "showFable"), ("Pace (experimental)", "showPace"), ("Budget", "showBudget")])
+        let data = toggles(tr("data"), [(tr("fable"), "showFable"), (tr("pace_experimental"), "showPace"), (tr("budget"), "showBudget")])
         data.submenu?.addItem(.separator())
-        for (value, name) in [("day", "Budget per day"), ("hour", "Budget per hour")] {
+        for (value, name) in [("day", tr("budget_day")), ("hour", tr("budget_hour"))] {
             data.submenu?.addItem(choice(name, "speedColors", value, enabled: defaults.bool(forKey: "showBudget")))
         }
         data.submenu?.addItem(.separator())
-        data.submenu?.addItem(toggle("Resets in", "showResets"))
+        data.submenu?.addItem(toggle(tr("resets_in"), "showResets"))
         // Hours a day spent using Claude, so the pace ignores the rest of the day.
-        submenu("Daily working time", [("workHours", [24, 16, 12, 8, 6, 4].map { ($0, "\($0) hours") })])
-        toggles("Notifications", [("Limit reached", NoticeKind.reached.setting), ("Limit reset", NoticeKind.reset.setting),
-                                  ("Week at 80% and 90%", NoticeKind.week.setting)])
+        submenu(tr("work"), [("workHours", [24, 16, 12, 8, 6, 4].map { ($0, plural("hours", $0)) })])
+        toggles(tr("notify"), [(tr("notify_reached"), NoticeKind.reached.setting), (tr("notify_reset"), NoticeKind.reset.setting),
+                               (tr("notify_marks"), NoticeKind.week.setting)])
+        // The globe is the website's language picker. Each language is named in itself, so it can always be found.
+        let languages = NSMenu()
+        for language in Language.allCases {
+            let entry = NSMenuItem(title: "\(language.flag) \(language.name)", action: #selector(chooseLanguage), keyEquivalent: "")
+            entry.target = self
+            entry.representedObject = language.rawValue
+            entry.state = language == .current ? .on : .off
+            languages.addItem(entry)
+        }
+        let languageEntry = NSMenuItem(title: tr("language"), action: nil, keyEquivalent: "")
+        languageEntry.image = NSImage(systemSymbolName: "globe", accessibilityDescription: nil)
+        languageEntry.submenu = languages
+        menu.addItem(languageEntry)
         menu.addItem(.separator())
         // Registering from anywhere else (a build folder in /tmp) would point the login item at a bundle that disappears.
-        action("Launch at login", #selector(toggleLogin), on: SMAppService.mainApp.status == .enabled,
+        action(tr("login"), #selector(toggleLogin), on: SMAppService.mainApp.status == .enabled,
                enabled: Bundle.main.bundlePath.hasPrefix("/Applications/"))
-        action("Keep in Dock", #selector(toggleDock), on: inDock())
+        action(tr("dock"), #selector(toggleDock), on: inDock())
         menu.addItem(.separator())
-        action("About ClaudioStat", #selector(showAbout)).image = NSImage(systemSymbolName: "info.circle", accessibilityDescription: nil)
+        action(tr("about"), #selector(showAbout)).image = NSImage(systemSymbolName: "info.circle", accessibilityDescription: nil)
         menu.addItem(.separator())
-        let check = action("Check for updates…", #selector(checkNow), enabled: !checking)
+        let check = action(tr("check"), #selector(checkNow), enabled: !checking)
         if let version = availableUpdate {
             check.attributedTitle = updateAvailableTitle(version)
             check.image = updateAvailableIcon()
@@ -153,9 +168,9 @@ extension AppDelegate {
             check.image = NSImage(systemSymbolName: "arrow.down.circle", accessibilityDescription: nil)
         }
         // A blank image lines the title up with the icon rows.
-        submenu("Check automatically", [("updateEvery", [(86400, "Daily"), (604800, "Weekly"), (0, "Never")])]).image = NSImage(size: NSSize(width: 16, height: 16))
+        submenu(tr("auto"), [("updateEvery", [(86400, tr("daily")), (604800, tr("weekly")), (0, tr("never"))])]).image = NSImage(size: NSSize(width: 16, height: 16))
         menu.addItem(.separator())
-        let quit = NSMenuItem(title: "Quit ClaudioStat", action: #selector(NSApplication.terminate), keyEquivalent: "q")
+        let quit = NSMenuItem(title: tr("quit"), action: #selector(NSApplication.terminate), keyEquivalent: "q")
         quit.image = NSImage(systemSymbolName: "xmark.square", accessibilityDescription: nil)
         quit.target = NSApp
         menu.addItem(quit)
@@ -174,6 +189,15 @@ extension AppDelegate {
         defaults.set(!defaults.bool(forKey: key), forKey: key)
         log.notice("\(key, privacy: .public) = \(self.defaults.bool(forKey: key), privacy: .public)")
         if key == "onlyWhileClaude" { reschedule() }
+        render()
+    }
+
+    @objc func chooseLanguage(_ sender: NSMenuItem) {
+        guard let code = sender.representedObject as? String else { return }
+        defaults.set(code, forKey: "language")
+        log.notice("language = \(code, privacy: .public)")
+        aboutWindow?.close()  // it was built in the old language
+        aboutWindow = nil
         render()
     }
 

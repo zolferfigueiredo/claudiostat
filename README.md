@@ -60,6 +60,7 @@ S and W turn orange when you're using them faster than they last until the reset
 - **Shows when tokens are going.** The icon pulses while Claude Code is writing a reply on this Mac.
 - **Tells you in time.** Notifications when a limit is reached, when it resets, and when the week hits 80% and 90%.
 - **Sleeps when Claude does.** While the Claude app is closed it stops asking, and the last numbers dim so you can tell they're old.
+- **Speaks 12 languages.** Deutsch, English, Español, Français, Italiano, Polski, Português, Русский, Українська, 中文, 日本語 and 한국어. It starts in your Mac's language, and **Language** in the menu changes it.
 - **Native and tiny.** A small Swift app with no Dock icon. It can launch at login and installs updates in one click.
 
 ## How it works

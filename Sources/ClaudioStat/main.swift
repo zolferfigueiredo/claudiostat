@@ -99,8 +99,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
                 // speed() needs the newest reading from before its window, so keep one older than a day.
                 while samples.count > 1, samples[1].at <= Date.now.addingTimeInterval(-86400) { samples.removeFirst() }
                 defaults.set(try? JSONEncoder().encode(samples), forKey: "history")
-            case .notFound: problem = "Claude Code not found"
-            case .signedOut: problem = "Sign in to Claude Code first (run claude)"
+            case .notFound: problem = "not_found"
+            case .signedOut: problem = "signed_out"
             case .failed: failedAt = .now
             }
             if let problem { log.notice("\(problem, privacy: .public)") }
