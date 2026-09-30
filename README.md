@@ -4,9 +4,7 @@
 
 Your Claude plan limits, live in the macOS menu bar.
 
-```
-★ S 42% · W 18% · F 7%
-```
+<pre><img src="Icon/icon.png" width="18" align="absmiddle" alt="ClaudioStat icon"> S 42% · W 18% · F 7%</pre>
 
 - **S**: current session
 - **W**: this week, all models
