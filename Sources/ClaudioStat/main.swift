@@ -24,7 +24,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         defaults.register(defaults: ["interval": 180, "showFable": true, "showPace": false, "showBudget": false, "onlyWhileClaude": true,
-                                     "menuBar": "both", "icon": "app", "speedColors": "day", "workHours": 8, "updateEvery": 604800])
+                                     "menuBar": "both", "icon": "app", "speedColors": "day", "workHours": 8, "updateEvery": 604800,
+                                     "notifyReached": true, "notifyReset": true, "notifyWeek": true])
         // 150 seconds is no longer an option.
         if defaults.integer(forKey: "interval") == 150 { defaults.removeObject(forKey: "interval") }
         samples = (try? JSONDecoder().decode([Sample].self, from: defaults.data(forKey: "history") ?? Data())) ?? []
@@ -80,6 +81,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             switch result {
             case .ok(let reply):
                 let fresh = keepSeverity(reply, from: samples.last?.usage)
+                post(notices(from: samples.last?.usage, to: fresh, now: .now), settings: defaults)
                 usage = fresh; updated = .now; failedAt = nil
                 samples.append(Sample(at: .now, usage: fresh))
                 // speed() needs the newest reading from before its window, so keep one older than a day.

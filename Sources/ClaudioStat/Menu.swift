@@ -66,7 +66,7 @@ extension AppDelegate {
         let budgetName = hourly ? "Hourly budget" : "Daily budget"
         if let week = usage?.week, let reset = week.resetsAt, rate.week.needed != nil {
             let left = reset.timeIntervalSince(now)
-            // Hourly, L divides over working hours only, so show those rather than the wall-clock countdown.
+            // Hourly, the budget divides over working hours only, so show those rather than the wall-clock countdown.
             let over = hourly ? "\(Int((left * Double(defaults.integer(forKey: "workHours")) / 24 / 3600).rounded(.up))) working hours"
                               : span(left)
             info("\(budgetName) \(percent(rate.week.needed)) · \(max(0, 100 - week.percent))% left over \(over)")
@@ -96,21 +96,28 @@ extension AppDelegate {
         submenu("Display", [("menuBar", [("both", "Icon and numbers"), ("icon", "Icon only"), ("numbers", "Numbers only")]),
                             ("icon", [("app", "App icon"), ("star", "Plain star icon")])],
                 disabled: defaults.string(forKey: "menuBar") == "numbers" ? "icon" : nil)
-        // What the menu bar shows after S and W.
-        let data = NSMenu()
-        for (title, key) in [("Fable", "showFable"), ("Pace (experimental)", "showPace"), ("Budget", "showBudget")] {
-            let toggle = NSMenuItem(title: title, action: #selector(toggleSetting), keyEquivalent: "")
-            toggle.target = self
-            toggle.state = defaults.bool(forKey: key) ? .on : .off
-            toggle.representedObject = key
-            data.addItem(toggle)
+        // A submenu of on/off settings.
+        func toggles(_ title: String, _ settings: [(title: String, key: String)]) {
+            let choices = NSMenu()
+            for (name, key) in settings {
+                let toggle = NSMenuItem(title: name, action: #selector(toggleSetting), keyEquivalent: "")
+                toggle.target = self
+                toggle.state = defaults.bool(forKey: key) ? .on : .off
+                toggle.representedObject = key
+                choices.addItem(toggle)
+            }
+            let entry = NSMenuItem(title: title, action: nil, keyEquivalent: "")
+            entry.submenu = choices
+            menu.addItem(entry)
         }
-        let dataEntry = NSMenuItem(title: "Data", action: nil, keyEquivalent: "")
-        dataEntry.submenu = data
-        menu.addItem(dataEntry)
+
+        // What the menu bar shows after S and W.
+        toggles("Data", [("Fable", "showFable"), ("Pace (experimental)", "showPace"), ("Budget", "showBudget")])
         submenu("Pace warning mode", [("speedColors", [("day", "W per day"), ("hour", "W per hour"), ("off", "Off")])])
         // Hours a day spent using Claude, so the pace ignores the rest of the day.
         submenu("Daily working time", [("workHours", [24, 16, 12, 8, 6, 4].map { ($0, "\($0) hours") })])
+        toggles("Notifications", [("Limit reached", NoticeKind.reached.setting), ("Limit reset", NoticeKind.reset.setting),
+                                  ("Week at 80% and 90%", NoticeKind.week.setting)])
         menu.addItem(.separator())
         // Registering from anywhere else (a build folder in /tmp) would point the login item at a bundle that disappears.
         action("Launch at login", #selector(toggleLogin), on: SMAppService.mainApp.status == .enabled,

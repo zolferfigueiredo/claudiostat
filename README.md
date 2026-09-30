@@ -10,19 +10,19 @@ Your Claude plan limits, live in the macOS menu bar.
 - **W**: this week, all models
 - **F**: this week, Fable
 - **P** (off by default, experimental): pace. How fast W is rising over the last hour, per day (times the working time, 8 hours by default) or per hour, following the pace warning mode. Shows "-" until there's a reading from an hour ago. After a pause, the rise is spread over the whole gap.
-- **L** (off by default): budget. What's left of the week split over the days (or working hours) until the weekly reset, a partial last one counting in full, rounded down: 35% left with 1d 17h to go is 17% a day, or 0.8% an hour with a 24-hour working time. The menu shows P and L too, and per hour says how many working hours L is spread over.
+- **D** (off by default): budget, **H** when pace warning mode is per hour. What's left of the week split over the days (or working hours) until the weekly reset, a partial last one counting in full, rounded down: 35% left with 1d 17h to go is 17% a day, or 0.8% an hour with a 24-hour working time. The menu shows P and the budget too, and per hour says how many working hours it is spread over.
 
 S and W change color when you're using them too fast.
 
 - **S**: its rise over the last 30 minutes against what's left spread evenly until the reset: S 50% with 2 hours left needs 25% per hour.
-- **W**: P against L, so it turns orange once P is over L.
+- **W**: P against D, so it turns orange once P is over D.
 - **Orange**: faster than needed. **Red**: 5 points per hour past it for S, 10 points past it for W.
 
 The menu says why under a colored S or W: "Using 24% a day, 17% a day lasts until reset".
 
 A warning triangle replaces the icon when Claude itself flags a limit: locked out, or its severity is anything but normal.
 
-Click it for reset countdowns and settings: refresh interval, only refresh while the Claude app is open, icon and numbers, icon only or numbers only, the app icon (default) or a plain star icon, which of F, P and L to show (Data), pace warning mode (W per day, W per hour or off), daily working time (the hours a day you use Claude, 24 down to 4, 8 by default, so P and L leave out the rest of the day), launch at login, and keep in Dock.
+Click it for reset countdowns and settings: refresh interval, only refresh while the Claude app is open, icon and numbers, icon only or numbers only, the app icon (default) or a plain star icon, which of F, P and D to show (Data), pace warning mode (W per day, W per hour or off), daily working time (the hours a day you use Claude, 24 down to 4, 8 by default, so P and D leave out the rest of the day), notifications (a limit reached, its reset, the week at 80% and 90%, all on by default), launch at login, and keep in Dock.
 
 ## Requirements
 

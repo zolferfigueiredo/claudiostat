@@ -130,9 +130,9 @@ nonisolated func evenPace(_ limit: Limit?, unit: TimeInterval, now: Date) -> Dou
 }
 
 /// S per hour over the last 30 minutes against what's left spread evenly.
-/// W over the last hour against the budget, per day, or per hour when `colors` is "hour": these are P and L.
+/// W over the last hour against the budget, per day, or per hour when `colors` is "hour": these are P and D (H per hour).
 /// Only `workHours` of each day are spent using Claude: P per day is the hourly rise times that,
-/// and L per hour splits what's left over the working hours until the reset.
+/// and the budget per hour splits what's left over the working hours until the reset.
 nonisolated func paces(_ usage: Usage?, samples: [Sample], colors: String, workHours: Double = 24,
                        now: Date) -> (session: Rate, week: Rate) {
     let hour: TimeInterval = 3600, unit = colors == "hour" ? hour : 24 * hour, warns = colors != "off"
@@ -143,6 +143,52 @@ nonisolated func paces(_ usage: Usage?, samples: [Sample], colors: String, workH
             Rate(speed: week, needed: allowed, unit: unit, margin: 10, warns: warns))
 }
 
+/// What a notification is about. Each kind has its own setting, all on by default.
+nonisolated enum NoticeKind {
+    case reached, reset, week
+
+    var setting: String {
+        switch self {
+        case .reached: "notifyReached"
+        case .reset: "notifyReset"
+        case .week: "notifyWeek"
+        }
+    }
+}
+
+nonisolated struct Notice: Equatable {
+    var kind: NoticeKind
+    var id: String       // one per limit and kind, so a newer notice replaces an older one
+    var title: String
+    var body: String
+    var at: Date? = nil  // delivered then instead of now
+}
+
+/// What happened between the previous reading and this one: a limit reached, which also schedules
+/// the notice that it's usable again for its reset time, or the week crossing 80% or 90% in one window.
+nonisolated func notices(from old: Usage?, to new: Usage, now: Date) -> [Notice] {
+    var found: [Notice] = []
+    for (name, before, after) in [("Session", old?.session, new.session), ("Week", old?.week, new.week),
+                                  ("Fable", old?.fable, new.fable)] {
+        guard let after, after.locked, before?.locked != true else { continue }
+        let id = name.lowercased()
+        found.append(Notice(kind: .reached, id: "reached-\(id)", title: "\(name) limit reached",
+                            body: after.resetsAt.map { "Resets in \(span($0.timeIntervalSince(now)))." } ?? ""))
+        if let reset = after.resetsAt, reset > now {
+            found.append(Notice(kind: .reset, id: "reset-\(id)", title: "\(name) limit reset",
+                                body: "You can use \(name == "Fable" ? "Fable" : "Claude") again.", at: reset))
+        }
+    }
+    // Only the highest mark crossed, and not when the week just ran out: that has its own notice.
+    if let before = old?.week, let after = new.week, !after.locked, sameWindow(before, after),
+       let mark = [90, 80].first(where: { before.percent < $0 && after.percent >= $0 }) {
+        let left = "\(max(0, 100 - after.percent))% left"
+        found.append(Notice(kind: .week, id: "week", title: "Week at \(mark)%",
+                            body: left + (after.resetsAt.map { ", resets in \(span($0.timeIntervalSince(now)))." } ?? ".")))
+    }
+    return found
+}
+
 /// ISO 8601 string (any fractional digits) or epoch seconds.
 nonisolated func parseDate(_ value: Any?) -> Date? {
     if let seconds = value as? NSNumber { return Date(timeIntervalSince1970: seconds.doubleValue) }
@@ -151,7 +197,7 @@ nonisolated func parseDate(_ value: Any?) -> Date? {
     return ISO8601DateFormatter().date(from: text.replacingOccurrences(of: #"\.\d+"#, with: "", options: .regularExpression))
 }
 
-/// L: what's left of the weekly limit split over the whole days (or hours) until the reset, a partial
+/// D (H per hour): what's left of the weekly limit split over the whole days (or hours) until the reset, a partial
 /// last one counting in full, rounded down to whole percents a day or tenths an hour.
 /// 35% left over 1d 17h is 17% a day, or 0.8% an hour. Per hour only `workHours` of each day count.
 nonisolated func budget(week: Int, resetsAt: Date?, unit: TimeInterval, workHours: Double = 24, now: Date) -> Double? {
@@ -171,14 +217,14 @@ nonisolated func percent(_ value: Double?) -> String {
     value.map { "\($0.formatted(.number.precision(.fractionLength(0...1))))%" } ?? "-"
 }
 
-/// P and L are W's speed and budget.
+/// P and D are W's speed and budget. The budget reads H when it is per hour.
 nonisolated func barText(_ usage: Usage?, rates: (session: Rate, week: Rate)? = nil,
                          showFable: Bool, showPace: Bool = false, showBudget: Bool) -> NSAttributedString {
     var parts = [("S \(percent(usage?.session?.percent))", rates?.session.pace ?? .ok),
                  ("W \(percent(usage?.week?.percent))", rates?.week.pace ?? .ok)]
     if showFable { parts.append(("F \(percent(usage?.fable?.percent))", .ok)) }
     if showPace { parts.append(("P \(percent(rates?.week.speed))", .ok)) }
-    if showBudget { parts.append(("L \(percent(rates?.week.needed))", .ok)) }
+    if showBudget { parts.append(("\(rates?.week.unit == 3600 ? "H" : "D") \(percent(rates?.week.needed))", .ok)) }
     let bar = NSMutableAttributedString()
     for (text, pace) in parts {
         if bar.length > 0 { bar.append(NSAttributedString(string: " · ")) }
