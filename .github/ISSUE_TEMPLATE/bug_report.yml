@@ -1,0 +1,31 @@
+name: Bug report
+description: Something doesn't work as it should
+labels: [bug]
+body:
+  - type: textarea
+    attributes:
+      label: What happened?
+      description: What you expected, what you got instead, and a screenshot if it helps.
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Open the menu
+        2. Choose ...
+  - type: input
+    attributes:
+      label: ClaudioStat version
+      description: Shown in About ClaudioStat.
+    validations:
+      required: true
+  - type: input
+    attributes:
+      label: macOS version
+    validations:
+      required: true
+  - type: input
+    attributes:
+      label: Claude Code version
+      description: Run `claude --version` in Terminal.
