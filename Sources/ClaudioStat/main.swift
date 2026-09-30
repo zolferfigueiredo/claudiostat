@@ -225,7 +225,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         let fadeText = thinking && mode != "icon" && defaults.bool(forKey: "loadingText")
         let alpha = 0.7 + 0.3 * cos(now.timeIntervalSinceReferenceDate * 2 * .pi / 1.5)
         button.image = fadeIcon ? redrawn(image, alpha: alpha) : image
-        button.attributedTitle = fadeText ? faded(title, alpha) : title
+        // appearsDisabled leaves colored text alone, so paused text is faded to half here.
+        let textAlpha = (fadeText ? alpha : 1) * (paused ? 0.5 : 1)
+        button.attributedTitle = textAlpha < 1 ? faded(title, textAlpha) : title
         button.imagePosition = mode == "icon" && !shown.isEmpty ? .imageOnly : .imageLeading
         button.appearsDisabled = paused
         if (fadeIcon || fadeText) != (pulse != nil) {
