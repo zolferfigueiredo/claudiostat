@@ -130,5 +130,10 @@ Unofficial. Not affiliated with or endorsed by Anthropic. It relies on an experi
 ---
 
 <p align="center">
+  If ClaudioStat is useful to you, please consider giving it a ⭐<br>
+  It helps other Claude users find it. Thank you!
+</p>
+
+<p align="center">
   Made with ❤️ for the Claude community by <a href="https://zolfer.com">zolfer.com</a>
 </p>
