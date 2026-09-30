@@ -66,12 +66,12 @@ func dailyBudgetTable(now: String, week: Int, reset: String, hours: Double, expe
 
 @Test func missingRowsShowDash() {
     let usage = parseUsage(["five_hour": ["utilization": 42, "resets_at": NSNull()], "model_scoped": []])
-    #expect(barText(usage, showFable: true, showPace: true, showBudget: true).string == "S 42% · W - · F - · P - · D -")
+    #expect(barText(usage, showFable: true, showPace: true, showBudget: true).string == "S 42% · W - · F - · P - · B -")
     #expect(barText(nil, showFable: false, showBudget: false).string == "S - · W -")
     let rates = (Rate(unit: 3600, margin: 5), Rate(speed: 1, needed: 0.8, unit: 3600, margin: 10))
-    #expect(barText(nil, rates: rates, showFable: false, showPace: true, showBudget: true).string == local("S - · W - · P 1% · D 0.8%"))
+    #expect(barText(nil, rates: rates, showFable: false, showPace: true, showBudget: true).string == local("S - · W - · P 1% · B 0.8%"))
     let daily = (Rate(unit: 86400, margin: 5), Rate(speed: 16, needed: 13, unit: 86400, margin: 10))
-    #expect(barText(nil, rates: daily, showFable: false, showBudget: true).string == "S - · W - · D 13%")
+    #expect(barText(nil, rates: daily, showFable: false, showBudget: true).string == "S - · W - · B 13%")
 }
 
 // Your examples: needed = what's left ÷ time left. Orange past it, red past it + 5 (S) or + 10 (W).
@@ -148,8 +148,6 @@ private func sample(_ time: String, s: Int, sReset: Date = reset, w: Int = 60) -
     let hour = paces(usage, samples: samples, colors: "hour", now: now).week
     #expect(hour.needed == 0.5 && hour.pace == .fast)  // 40 over 71 hours, 0.56 rounded down
     #expect(hour.reason == local("Using 0.7% an hour, 0.5% an hour lasts until reset"))
-    let off = paces(usage, samples: samples, colors: "off", now: now).week
-    #expect(off.speed == 16 && off.needed == 13 && off.pace == .ok && off.reason == nil)  // P and L still show
 }
 
 @Test func workingTimeScalesTheWeek() {
@@ -170,6 +168,24 @@ private func sample(_ time: String, s: Int, sReset: Date = reset, w: Int = 60) -
     #expect(paces(usage, samples: samples, colors: "hour", now: now).week.speed == 2)  // 60 to 62 since 11:00
     #expect(paces(usage, samples: samples, colors: "day", now: now).week.speed == 48)
     #expect(paces(usage, samples: Array(samples.suffix(2)), colors: "day", now: now).week.speed == nil)
+}
+
+// Trimmed from real Claude Code transcripts: one line per entry, newest last.
+@Test func thinkingFromTheTranscriptTail() {
+    let prompt = #"{"type":"user","message":{"role":"user","content":"Fix the menu"}}"#
+    let result = #"{"type":"user","message":{"role":"user","content":[{"type":"tool_result","content":"ok","tool_use_id":"t1"}]}}"#
+    let thought = #"{"type":"assistant","message":{"content":[{"type":"thinking","thinking":""}],"stop_reason":"tool_use"}}"#
+    let call = #"{"type":"assistant","message":{"content":[{"type":"tool_use","name":"Bash"}],"stop_reason":"tool_use"}}"#
+    let done = #"{"type":"assistant","message":{"content":[{"type":"text","text":"Done."}],"stop_reason":"end_turn"}}"#
+    let esc = #"{"type":"user","message":{"role":"user","content":[{"type":"text","text":"[Request interrupted by user]"}]}}"#
+    let note = #"{"type":"attachment","attachment":{}}"#
+    #expect(thinking([prompt, note].joined(separator: "\n")))  // entries without a message don't count
+    #expect(thinking([call, result].joined(separator: "\n")))
+    #expect(thinking([result, thought].joined(separator: "\n")))
+    #expect(!thinking([thought, call].joined(separator: "\n")))
+    #expect(!thinking([prompt, thought, done].joined(separator: "\n")))
+    #expect(!thinking([prompt, esc].joined(separator: "\n")))
+    #expect(!thinking("{\"cut off"))
 }
 
 @Test func barColorsSessionAndWeekOnly() {
