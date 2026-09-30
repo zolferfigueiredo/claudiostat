@@ -1,6 +1,7 @@
 #!/bin/bash
-# Builds dist/ClaudioStat-<version>.dmg, then signs and notarizes it with Developer ID.
-# One-time setup, shared with TheeJ: xcrun notarytool store-credentials bihan --key <AuthKey.p8> --key-id <id> --issuer <issuer-id>
+# Bump both versions in Info.plist first. Builds dist/ClaudioStat-<version>.dmg, signs and notarizes it with Developer ID,
+# then publishes it as a GitHub release of the current commit, which must be pushed. The website repo's release script puts it on the site.
+# One-time setup: xcrun notarytool store-credentials bihan --key <AuthKey.p8> --key-id <id> --issuer <issuer-id>
 set -euo pipefail
 cd "$(dirname "$0")"
 
@@ -19,3 +20,5 @@ echo "Release ready: $(pwd)/$DMG"
   loc=$(curl -fsS -o /dev/null -w '%{redirect_url}' --data-urlencode "url=https://claudiostat.zolfer.com/$NAME-$VERSION.dmg" https://url.zolfer.com/dmg)
   echo "Download link: https://url.zolfer.com/${loc##*c=}"
 }
+gh release view "v$VERSION" -R zolferfigueiredo/claudiostat >/dev/null 2>&1 ||
+  gh release create "v$VERSION" "$DMG" -R zolferfigueiredo/claudiostat --target "$(git rev-parse HEAD)" --title "$NAME $VERSION" --generate-notes
