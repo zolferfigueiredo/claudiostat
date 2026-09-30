@@ -281,3 +281,11 @@ private func sample(_ time: String, s: Int, sReset: Date = reset, w: Int = 60) -
     let out = Usage(week: Limit(percent: 100, resetsAt: reset, locked: true))
     #expect(notices(from: week(85), to: out, now: now).map(\.kind) == [.reached, .reset])
 }
+
+// ~/.claude comes back only once every profile is gone, so "remove all, then Add" reconnects it.
+@Test func nextProfileFolder() {
+    #expect(nextProfile(after: [], home: "/u") == "")
+    #expect(nextProfile(after: [""], home: "/u") == "/u/.claude-2")
+    #expect(nextProfile(after: ["/u/.claude-2"], home: "/u") == "/u/.claude-3")
+    #expect(nextProfile(after: ["", "/u/.claude-3", "/u/.claude-work"], home: "/u") == "/u/.claude-2")
+}

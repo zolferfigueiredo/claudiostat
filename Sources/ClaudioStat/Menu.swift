@@ -2,16 +2,18 @@ import AppKit
 import ServiceManagement
 
 extension AppDelegate {
-    // Opening the app again (its Dock shortcut, Spotlight, Finder) shows the menu at the pointer.
-    // That also reaches it when the notch hides the menu bar icon.
+    // Opening the app again (its Dock shortcut, Spotlight, Finder) shows the menu at the pointer, or the setup
+    // while there is no profile. That also reaches it when the notch hides the menu bar icon.
     func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
-        item.menu?.popUp(positioning: nil, at: NSEvent.mouseLocation, in: nil)
+        if allProfiles.isEmpty { addProfile() } else { item.menu?.popUp(positioning: nil, at: NSEvent.mouseLocation, in: nil) }
         return false
     }
 
     // Rebuilt on every open, so countdowns and the login item state are always current.
     func menuNeedsUpdate(_ menu: NSMenu) {
         menu.removeAllItems()
+        // choice() checks the stored value, which can still name a removed profile.
+        defaults.set(profile, forKey: "profile")
         let now = Date.now, mode = defaults.string(forKey: "menuBar")
         func info(_ text: String, _ color: NSColor? = nil) {
             let line = NSMenuItem()
@@ -68,7 +70,7 @@ extension AppDelegate {
 
         let details = defaults.bool(forKey: "showDetails")
         action(tr("show_data"), #selector(toggleSetting), on: details).representedObject = "showDetails"
-        if details {
+        if details && !allProfiles.isEmpty {
             if let alert = warning(usage) { info("⚠ \(alert)") }
             let rate = pacing(now)
             // Other languages' words needn't start with the bar's letter (W is "Semana"), so each line starts with it.
@@ -94,18 +96,21 @@ extension AppDelegate {
 
         let time = { (date: Date) in date.formatted(date: .omitted, time: .shortened) }
         let status: String
-        if paused { status = updated.map { tr("paused_updated", ["time": time($0)]) } ?? tr("paused") }
-        else if let problem { status = tr(problem) }
+        var fix: Selector?  // opens the setup, when that's the way out
+        if allProfiles.isEmpty { status = tr("add_profile"); fix = #selector(addProfile) }
+        else if paused { status = updated.map { tr("paused_updated", ["time": time($0)]) } ?? tr("paused") }
+        else if let problem { status = tr(problem); fix = #selector(reconnect) }
         else if let failedAt { status = tr("failed", ["time": time(failedAt)]) }
         else { status = updated.map { tr("updated", ["time": time($0)]) } ?? tr("updating") }
-        let statusLine = NSMenuItem(title: status, action: nil, keyEquivalent: "")
-        statusLine.isEnabled = false
+        let statusLine = NSMenuItem(title: status, action: fix, keyEquivalent: "")
+        statusLine.target = self
+        statusLine.isEnabled = fix != nil
         menu.addItem(statusLine)
 
         action(tr("refresh"), #selector(tick), key: "r", enabled: !paused && !busy)
 
         submenu(tr("every"), [("interval", [1, 3, 5, 10].map { ($0 * 60, plural("minutes", $0)) })])
-        action(tr("only"), #selector(toggleSetting), on: defaults.bool(forKey: "onlyWhileClaude"))
+        action(tr("only"), #selector(toggleSetting), on: defaults.bool(forKey: "onlyWhileClaude"), enabled: claudeInstalled)
             .representedObject = "onlyWhileClaude"
         action(tr("status"), #selector(openStatus))
         menu.addItem(.separator())
@@ -116,8 +121,8 @@ extension AppDelegate {
         add.target = self
         let remove = NSMenuItem(title: tr("remove_profile"), action: #selector(removeProfile), keyEquivalent: "")
         remove.target = self
-        remove.isEnabled = !profile.isEmpty
-        for entry in [.separator(), add, remove] { profiles.submenu?.addItem(entry) }
+        remove.isEnabled = !allProfiles.isEmpty
+        for entry in allProfiles.isEmpty ? [add, remove] : [.separator(), add, remove] { profiles.submenu?.addItem(entry) }
 
         // "numbers" stays the stored value from before the label became Text only.
         let display = submenu(tr("display"), [("menuBar", [("both", tr("both")), ("icon", tr("icon_only")), ("numbers", tr("text_only"))]),
@@ -220,31 +225,20 @@ extension AppDelegate {
         render()
     }
 
-    @objc func addProfile() {
-        let panel = NSOpenPanel()
-        panel.canChooseDirectories = true
-        panel.canChooseFiles = false
-        panel.showsHiddenFiles = true
-        panel.directoryURL = FileManager.default.homeDirectoryForCurrentUser
-        panel.message = tr("choose_folder")
-        NSApp.activate()
-        guard panel.runModal() == .OK, let url = panel.url else { return }
-        let path = url.path == FileManager.default.homeDirectoryForCurrentUser.appending(path: ".claude").path ? "" : url.path
-        if !allProfiles.contains(path) {
-            defaults.set(Array(allProfiles.dropFirst()) + [path], forKey: "profiles")
-            load(path)
-        }
-        defaults.set(path, forKey: "profile")
-        profilesChanged()
-    }
+    @objc func addProfile() { showSetup(nextProfile(after: allProfiles)) }
+
+    @objc func reconnect() { showSetup(profile) }
 
     // Only forgets it here: the folder and its login stay.
     @objc func removeProfile() {
-        guard !profile.isEmpty, alert(tr("remove_question", ["name": profileName(profile)]), tr("remove_info"), tr("remove"), tr("cancel"))
+        guard !allProfiles.isEmpty, alert(tr("remove_question", ["name": profileName(profile)]), tr("remove_info"), tr("remove"), tr("cancel"))
         else { return }
         let path = profile
-        defaults.set(allProfiles.dropFirst().filter { $0 != path }, forKey: "profiles")
+        defaults.set(allProfiles.filter { $0 != path }, forKey: "profileList")
         defaults.removeObject(forKey: historyKey(path))
+        var names = defaults.dictionary(forKey: "names") ?? [:]
+        names[path] = nil
+        defaults.set(names, forKey: "names")
         accounts[path] = nil
         defaults.removeObject(forKey: "profile")
         profilesChanged()

@@ -214,10 +214,15 @@ private nonisolated func run(_ tool: String, _ arguments: String...) async throw
     process.arguments = arguments
     process.standardOutput = FileHandle.nullDevice
     process.standardError = FileHandle.nullDevice
+    try await run(process)
+}
+
+/// Returns once the process has exited. Throws when it can't start, or UpdateError when it exits with an error.
+nonisolated func run(_ process: Process) async throws {
     try await withCheckedThrowingContinuation { (done: CheckedContinuation<Void, Error>) in
         process.terminationHandler = { process in
             if process.terminationStatus == 0 { done.resume() }
-            else { done.resume(throwing: UpdateError(errorDescription: tr("tool_failed", ["tool": (tool as NSString).lastPathComponent, "code": process.terminationStatus]))) }
+            else { done.resume(throwing: UpdateError(errorDescription: tr("tool_failed", ["tool": process.executableURL?.lastPathComponent ?? "", "code": process.terminationStatus]))) }
         }
         do { try process.run() } catch { done.resume(throwing: error) }
     }

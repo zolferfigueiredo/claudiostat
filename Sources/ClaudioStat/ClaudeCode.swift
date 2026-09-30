@@ -1,30 +1,48 @@
 import Foundation
 
-/// Asks the installed, unmodified Claude Code for its /usage data through a `get_usage` control request.
-/// Claude Code uses its own login, so this app never touches a credential. No prompt is sent: zero tokens.
-/// `configDir` is a profile's Claude Code folder, nil for ~/.claude.
-func fetchUsage(configDir: String?) async -> UsageResult {
+func claudePath() -> String? {
     let home = FileManager.default.homeDirectoryForCurrentUser.path
-    guard let path = ["\(home)/.local/bin/claude", "/opt/homebrew/bin/claude", "/usr/local/bin/claude"]
-        .first(where: FileManager.default.isExecutableFile(atPath:)) else { return .notFound }
+    // The Claude desktop app keeps its own copy here, one folder per version, for people without the CLI.
+    let desktop = "\(home)/Library/Application Support/Claude/claude-code"
+    let versions = ((try? FileManager.default.contentsOfDirectory(atPath: desktop)) ?? [])
+        .sorted { $0.compare($1, options: .numeric) == .orderedDescending }
+    return (["\(home)/.local/bin/claude", "/opt/homebrew/bin/claude", "/usr/local/bin/claude"]
+            + versions.map { "\(desktop)/\($0)/claude.app/Contents/MacOS/claude" })
+        .first(where: FileManager.default.isExecutableFile(atPath:))
+}
 
+/// Claude Code with `arguments` for a profile's folder (nil for ~/.claude), its output discarded. Nil when not installed.
+func claude(_ arguments: [String], configDir: String?) -> Process? {
+    guard let path = claudePath() else { return nil }
     let process = Process()
     process.executableURL = URL(fileURLWithPath: path)
-    // Empty setting sources: no hooks, plugins or MCP servers run. Nothing is saved as a session.
-    process.arguments = ["-p", "--input-format", "stream-json", "--output-format", "stream-json", "--verbose",
-                         "--no-session-persistence", "--strict-mcp-config", "--setting-sources", ""]
+    process.arguments = arguments
     // Not CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC: it also blocks the usage fetch itself.
-    var environment = ["HOME": home, "USER": NSUserName(), "LANG": "en_US.UTF-8",
-                       "PATH": "/usr/bin:/bin:/usr/sbin:/sbin",
+    // Its own folder first: installed with npm, claude is a node script and node sits next to it.
+    var environment = ["HOME": FileManager.default.homeDirectoryForCurrentUser.path, "USER": NSUserName(), "LANG": "en_US.UTF-8",
+                       "PATH": (path as NSString).deletingLastPathComponent + ":/usr/bin:/bin:/usr/sbin:/sbin",
                        "DISABLE_TELEMETRY": "1", "DISABLE_ERROR_REPORTING": "1", "DISABLE_AUTOUPDATER": "1"]
     // Claude Code keys its login by this variable, so ~/.claude goes without it: set, it would look for another login.
     environment["CLAUDE_CONFIG_DIR"] = configDir
     process.environment = environment
     process.currentDirectoryURL = FileManager.default.temporaryDirectory
+    process.standardInput = FileHandle.nullDevice
+    process.standardOutput = FileHandle.nullDevice
+    process.standardError = FileHandle.nullDevice
+    return process
+}
+
+/// Asks the installed, unmodified Claude Code for its /usage data through a `get_usage` control request.
+/// Claude Code uses its own login, so this app never touches a credential. No prompt is sent: zero tokens.
+/// `configDir` is a profile's Claude Code folder, nil for ~/.claude.
+func fetchUsage(configDir: String?) async -> UsageResult {
+    // Empty setting sources: no hooks, plugins or MCP servers run. Nothing is saved as a session.
+    guard let process = claude(["-p", "--input-format", "stream-json", "--output-format", "stream-json", "--verbose",
+                                "--no-session-persistence", "--strict-mcp-config", "--setting-sources", ""],
+                               configDir: configDir) else { return .notFound }
     let input = Pipe(), output = Pipe()
     process.standardInput = input
     process.standardOutput = output
-    process.standardError = FileHandle.nullDevice
 
     log.notice("asking Claude Code")
     do { try process.run() } catch { return .failed }
@@ -52,9 +70,35 @@ func fetchUsage(configDir: String?) async -> UsageResult {
     return .failed
 }
 
+func accountEmail(configDir: String?) async -> String? {
+    guard let process = claude(["auth", "status", "--json"], configDir: configDir) else { return nil }
+    let output = Pipe()
+    process.standardOutput = output
+    do {
+        try process.run()
+        // Line by line, not as JSON: Claude Code draws this for a terminal, so a long value can wrap.
+        for try await line in output.fileHandleForReading.bytes.lines {
+            if let match = line.firstMatch(of: /"email": "([^"]+)"/) { return String(match.output.1) }
+        }
+    } catch {}
+    return nil
+}
+
+/// Where Add profile signs in: ~/.claude while there is no profile, else the first free ~/.claude-2, ~/.claude-3…
+nonisolated func nextProfile(after list: [String], home: String = FileManager.default.homeDirectoryForCurrentUser.path) -> String {
+    guard !list.isEmpty else { return "" }
+    var number = 2
+    while list.contains("\(home)/.claude-\(number)") { number += 1 }
+    return "\(home)/.claude-\(number)"
+}
+
 /// The folder's name without its leading dot: ~/.claude-work is "claude-work".
-nonisolated func profileName(_ path: String) -> String {
+nonisolated func folderName(_ path: String) -> String {
     path.isEmpty ? "claude" : String(URL(fileURLWithPath: path).lastPathComponent.drop { $0 == "." })
+}
+
+nonisolated func profileName(_ path: String) -> String {
+    UserDefaults.standard.dictionary(forKey: "names")?[path] as? String ?? folderName(path)
 }
 
 /// Whether a Claude Code session is writing a reply, from the end of its transcript: after a prompt or a tool result
@@ -100,7 +144,7 @@ extension AppDelegate {
             MainActor.assumeIsolated { delegate.sessionsChanged(files) }
         }
         let flags = kFSEventStreamCreateFlagFileEvents | kFSEventStreamCreateFlagUseCFTypes | kFSEventStreamCreateFlagNoDefer
-        guard let stream = FSEventStreamCreate(nil, changed, &context, projects as CFArray,
+        guard !projects.isEmpty, let stream = FSEventStreamCreate(nil, changed, &context, projects as CFArray,
                                                FSEventStreamEventId(kFSEventStreamEventIdSinceNow), 0.3,
                                                FSEventStreamCreateFlags(flags)) else { return }
         FSEventStreamSetDispatchQueue(stream, .main)
