@@ -59,7 +59,7 @@ extension Strings {
         "notify_reset": "한도 재설정",
         "now_using": "이제 ClaudioStat {version}을(를) 사용 중입니다. 현재 사용 가능한 최신 버전입니다.",
         "ok": "확인",
-        "only": "Claude가 열려 있을 때만 새로 고침",
+        "only": "Claude가 닫혀 있으면 일시 정지",
         "pace_experimental": "속도(실험적)",
         "paused": "일시 정지됨 · Claude가 열려 있지 않음",
         "paused_updated": "일시 정지됨 · Claude가 열려 있지 않음 · {time}에 새로 고침",

@@ -59,7 +59,7 @@ extension Strings {
         "notify_reset": "限额已重置",
         "now_using": "你现在使用的是 ClaudioStat {version}，这是目前最新的版本。",
         "ok": "好",
-        "only": "仅在 Claude 打开时刷新",
+        "only": "Claude 关闭时暂停",
         "pace_experimental": "速度（实验性）",
         "paused": "已暂停 · Claude 未打开",
         "paused_updated": "已暂停 · Claude 未打开 · 刷新于 {time}",

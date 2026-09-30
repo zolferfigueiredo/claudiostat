@@ -59,7 +59,7 @@ extension Strings {
         "notify_reset": "制限をリセット",
         "now_using": "ClaudioStat {version} を使用中です。現在入手できる最新バージョンです。",
         "ok": "OK",
-        "only": "Claude が開いているときだけ更新",
+        "only": "Claude を閉じているときは一時停止",
         "pace_experimental": "ペース（試験的）",
         "paused": "一時停止中 · Claude が開いていません",
         "paused_updated": "一時停止中 · Claude が開いていません · {time} に更新",
