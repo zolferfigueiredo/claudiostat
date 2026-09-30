@@ -71,13 +71,15 @@ extension AppDelegate {
         if details {
             if let alert = warning(usage) { info("⚠ \(alert)") }
             let rate = pacing(now)
-            limit(tr("session"), usage?.session, rate.session)
-            limit(tr("week"), usage?.week, rate.week)
-            limit(tr("fable"), usage?.fable)
+            // Other languages' words needn't start with the bar's letter (W is "Semana"), so each line starts with it.
+            let letter = { (letter: String, key: String) in Language.current == .en ? tr(key) : "\(letter) · \(tr(key))" }
+            limit(letter("S", "session"), usage?.session, rate.session)
+            limit(letter("W", "week"), usage?.week, rate.week)
+            limit(letter("F", "fable"), usage?.fable)
             let hourly = rate.week.unit == 3600
             let speed = percent(rate.week.speed)
-            info("\(tr("pace_experimental")) · " + (rate.week.speed == nil ? speed : tr(hourly ? "rate_hour" : "rate_day", ["n": speed])))
-            let budgetName = tr(hourly ? "budget_hour" : "budget_day")
+            info("\(letter("P", "pace_experimental")) · " + (rate.week.speed == nil ? speed : tr(hourly ? "rate_hour" : "rate_day", ["n": speed])))
+            let budgetName = letter("B", hourly ? "budget_hour" : "budget_day")
             if let week = usage?.week, let reset = week.resetsAt, rate.week.needed != nil {
                 let left = reset.timeIntervalSince(now)
                 // Hourly, the budget divides over working hours only, so show those rather than the wall-clock countdown.
