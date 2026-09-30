@@ -71,6 +71,9 @@ func dailyBudgetTable(now: String, week: Int, reset: String, hours: Double, expe
     #expect(barText(usage, showFable: true, showPace: true, showBudget: true).string == "S 42% · W - · F - · P - · B -")
     #expect(barText(nil, showFable: false, showBudget: false).string == "S - · W -")
     #expect(barText(nil, showFable: false, showBudget: false, profile: "claude-work").string == "claude-work · S - · W -")
+    // Multiple users: each profile in turn.
+    #expect(joined(["claude", "claude-work"].map { barText(nil, showFable: false, showBudget: false, profile: $0) }).string
+            == "claude · S - · W - · claude-work · S - · W -")
     let rates = (Rate(unit: 3600, margin: 5), Rate(speed: 1, needed: 0.8, unit: 3600, margin: 10))
     #expect(barText(nil, rates: rates, showFable: false, showPace: true, showBudget: true).string == local("S - · W - · P 1% · B 0.8%"))
     let daily = (Rate(unit: 86400, margin: 5), Rate(speed: 16, needed: 13, unit: 86400, margin: 10))

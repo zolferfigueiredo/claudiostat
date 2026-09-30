@@ -80,7 +80,7 @@ nonisolated func thinking(_ transcript: String) -> Bool {
 }
 
 extension AppDelegate {
-    /// Claude Code logs each session to a transcript under the profile's projects folder as it goes.
+    /// Claude Code logs each session to a transcript under its folder's projects as it goes. Only the shown profiles count.
     func watchSessions() {
         if let sessions {
             FSEventStreamStop(sessions)
@@ -88,8 +88,9 @@ extension AppDelegate {
             FSEventStreamRelease(sessions)
             self.sessions = nil
         }
-        let folder = profile.isEmpty ? FileManager.default.homeDirectoryForCurrentUser.appending(path: ".claude").path : profile
-        let projects = folder + "/projects"
+        midReply = [:]
+        let home = FileManager.default.homeDirectoryForCurrentUser.appending(path: ".claude").path
+        let projects = shown.map { ($0.isEmpty ? home : $0) + "/projects" }
         var context = FSEventStreamContext(version: 0, info: Unmanaged.passUnretained(self).toOpaque(),
                                            retain: nil, release: nil, copyDescription: nil)
         let changed: FSEventStreamCallback = { _, info, _, paths, _, _ in
@@ -99,7 +100,7 @@ extension AppDelegate {
             MainActor.assumeIsolated { delegate.sessionsChanged(files) }
         }
         let flags = kFSEventStreamCreateFlagFileEvents | kFSEventStreamCreateFlagUseCFTypes | kFSEventStreamCreateFlagNoDefer
-        guard let stream = FSEventStreamCreate(nil, changed, &context, [projects] as CFArray,
+        guard let stream = FSEventStreamCreate(nil, changed, &context, projects as CFArray,
                                                FSEventStreamEventId(kFSEventStreamEventIdSinceNow), 0.3,
                                                FSEventStreamCreateFlags(flags)) else { return }
         FSEventStreamSetDispatchQueue(stream, .main)

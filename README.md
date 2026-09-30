@@ -81,7 +81,7 @@ Every refresh, ClaudioStat runs your installed Claude Code once, headless, and s
 - **Claude Status** opens status.claude.com.
 - **Profile**: one per Claude Code folder, each signed in to its own Claude account (`~/.claude`, or one you set up with `CLAUDE_CONFIG_DIR=~/.claude-work claude`). The checked one fills the bar and the menu. **Add profile…** picks a folder, **Remove profile** forgets the checked one after asking; the folder and its login stay.
 - **Display**: icon and text, icon only or text only, with the app icon or a plain star. **Loading icon** (on) and **Loading text** (off) pick what pulses while Claude Code writes a reply.
-- **Data**: whether the menu bar starts with the profile's name (off), shows F (on), P and B (off), and whether P and B count per day or per hour.
+- **Data**: whether the menu bar starts with the profile's name (off); **Multiple users** to show every profile one after another, or **Single user** (default) for the checked one; whether it shows F (on), P and B (off), and whether P and B count per day or per hour.
 - **Daily working time**: the hours a day you use Claude, 24 down to 4 (8 by default), so P and B leave out the rest of the day.
 - **Notifications**: a limit reached, its reset, and the week at 80% and 90%. All on.
 - **Launch at login** (from the Applications folder) and **Keep in Dock**.

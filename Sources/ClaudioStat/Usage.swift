@@ -231,14 +231,18 @@ nonisolated func barText(_ usage: Usage?, rates: (session: Rate, week: Rate)? = 
     if showPace { parts.append(("P \(percent(rates?.week.speed))", .ok)) }
     if showBudget { parts.append(("B \(percent(rates?.week.needed))", .ok)) }
     if let profile { parts.insert((profile, .ok), at: 0) }
-    let bar = NSMutableAttributedString()
-    for (text, pace) in parts {
-        if bar.length > 0 { bar.append(NSAttributedString(string: " · ")) }
-        bar.append(NSAttributedString(string: text, attributes: pace.color.map { [.foregroundColor: $0] } ?? [:]))
+    return joined(parts.map { text, pace in NSAttributedString(string: text, attributes: pace.color.map { [.foregroundColor: $0] } ?? [:]) })
+}
+
+/// The parts with " · " between them, in the menu bar's font.
+nonisolated func joined(_ parts: [NSAttributedString]) -> NSAttributedString {
+    let line = NSMutableAttributedString()
+    for part in parts {
+        if line.length > 0 { line.append(NSAttributedString(string: " · ")) }
+        line.append(part)
     }
-    bar.addAttribute(.font, value: NSFont.monospacedDigitSystemFont(ofSize: 0, weight: .regular),
-                     range: NSRange(location: 0, length: bar.length))
-    return bar
+    line.addAttribute(.font, value: NSFont.monospacedDigitSystemFont(ofSize: 0, weight: .regular), range: NSRange(location: 0, length: line.length))
+    return line
 }
 
 /// The app icon's tilted five-ray star, one color. A template in the menu bar's own color unless tinted.

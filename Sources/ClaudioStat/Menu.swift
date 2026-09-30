@@ -109,7 +109,7 @@ extension AppDelegate {
         menu.addItem(.separator())
 
         // Each profile is a Claude Code folder with its own login. The checked one fills the bar and this menu.
-        let profiles = submenu(tr("profile"), [("profile", ([""] + (defaults.stringArray(forKey: "profiles") ?? [])).map { ($0, profileName($0)) })])
+        let profiles = submenu(tr("profile"), [("profile", allProfiles.map { ($0, profileName($0)) })])
         let add = NSMenuItem(title: tr("add_profile"), action: #selector(addProfile), keyEquivalent: "")
         add.target = self
         let remove = NSMenuItem(title: tr("remove_profile"), action: #selector(removeProfile), keyEquivalent: "")
@@ -145,8 +145,9 @@ extension AppDelegate {
         }
         data.submenu?.addItem(.separator())
         data.submenu?.addItem(toggle(tr("resets_in"), "showResets"))
-        data.submenu?.insertItem(toggle(tr("profile_name"), "showProfile"), at: 0)
-        data.submenu?.insertItem(.separator(), at: 1)
+        let head = [toggle(tr("profile_name"), "showProfile"), .separator(),
+                    choice(tr("multiple_users"), "users", "multiple"), choice(tr("single_user"), "users", "single"), .separator()]
+        for (index, entry) in head.enumerated() { data.submenu?.insertItem(entry, at: index) }
         // Hours a day spent using Claude, so the pace ignores the rest of the day.
         submenu(tr("work"), [("workHours", [24, 16, 12, 8, 6, 4].map { ($0, plural("hours", $0)) })])
         toggles(tr("notify"), [(tr("notify_reached"), NoticeKind.reached.setting), (tr("notify_reset"), NoticeKind.reset.setting),
@@ -192,11 +193,11 @@ extension AppDelegate {
 
     @objc func choose(_ sender: NSMenuItem) {
         guard let pick = (sender.representedObject as? [String: Any])?.first else { return }
-        let before = profile
+        let before = shown
         defaults.set(pick.value, forKey: pick.key)
         log.notice("\(pick.key, privacy: .public) = \(String(describing: pick.value), privacy: .public)")
         if pick.key == "interval" { reschedule() }
-        if profile != before { switchProfile() }
+        if shown != before { profilesChanged() }
         render()
     }
 
@@ -227,20 +228,24 @@ extension AppDelegate {
         NSApp.activate()
         guard panel.runModal() == .OK, let url = panel.url else { return }
         let path = url.path == FileManager.default.homeDirectoryForCurrentUser.appending(path: ".claude").path ? "" : url.path
-        let list = defaults.stringArray(forKey: "profiles") ?? []
-        if !path.isEmpty, !list.contains(path) { defaults.set(list + [path], forKey: "profiles") }
+        if !allProfiles.contains(path) {
+            defaults.set(Array(allProfiles.dropFirst()) + [path], forKey: "profiles")
+            load(path)
+        }
         defaults.set(path, forKey: "profile")
-        switchProfile()
+        profilesChanged()
     }
 
     // Only forgets it here: the folder and its login stay.
     @objc func removeProfile() {
         guard !profile.isEmpty, alert(tr("remove_question", ["name": profileName(profile)]), tr("remove_info"), tr("remove"), tr("cancel"))
         else { return }
-        defaults.set((defaults.stringArray(forKey: "profiles") ?? []).filter { $0 != profile }, forKey: "profiles")
-        defaults.removeObject(forKey: historyKey)
+        let path = profile
+        defaults.set(allProfiles.dropFirst().filter { $0 != path }, forKey: "profiles")
+        defaults.removeObject(forKey: historyKey(path))
+        accounts[path] = nil
         defaults.removeObject(forKey: "profile")
-        switchProfile()
+        profilesChanged()
     }
 
     @objc func toggleDock() { toggleDockTile() }
