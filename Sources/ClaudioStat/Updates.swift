@@ -1,4 +1,5 @@
 import AppKit
+import UserNotifications
 
 let appVersion = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "-"
 // Launch argument `-updateSite http://localhost:8022/` tests against the website's run.sh.
@@ -124,6 +125,21 @@ final class UpdateProgress: NSObject {
     }
 }
 
+/// An automatic check tells about a new version once, as a notification, instead of interrupting with
+/// an alert. False when notifications aren't allowed, so the caller falls back to the alert.
+func notifyUpdate(_ version: String) async -> Bool {
+    if UserDefaults.standard.string(forKey: "notifiedVersion") == version { return true }
+    let center = UNUserNotificationCenter.current()
+    guard (try? await center.requestAuthorization(options: [.alert, .sound])) == true else { return false }
+    let content = UNMutableNotificationContent()
+    content.title = "ClaudioStat \(version) is available"
+    content.body = "You have \(appVersion). Click to update."
+    content.sound = .default
+    guard (try? await center.add(UNNotificationRequest(identifier: "update", content: content, trigger: nil))) != nil else { return false }
+    UserDefaults.standard.set(version, forKey: "notifiedVersion")
+    return true
+}
+
 /// Replaces the running bundle with the one in the DMG for `version`. The caller relaunches.
 /// URLSession downloads carry no quarantine flag, so the new copy opens without the Gatekeeper prompt.
 func install(_ version: String, step: (String) -> Void) async throws {
@@ -219,6 +235,7 @@ extension AppDelegate {
                 if !quiet { alert("You're up to date!", "ClaudioStat \(appVersion) is currently the newest version available.", "OK") }
                 return
             }
+            if quiet, await notifyUpdate(latest) { return }
             guard alert("ClaudioStat \(latest) is available", "You have \(appVersion). Update now?", "Update Now", "Later") else { return }
             let progress = UpdateProgress("Updating ClaudioStat to \(latest)")
             do {
@@ -248,5 +265,20 @@ extension AppDelegate {
         buttons.forEach { alert.addButton(withTitle: $0) }
         NSApp.activate()
         return alert.runModal() == .alertFirstButtonReturn
+    }
+}
+
+extension AppDelegate: UNUserNotificationCenterDelegate {
+    /// Clicking "… is available" checks again, which offers Update Now.
+    nonisolated func userNotificationCenter(_ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse,
+                                withCompletionHandler done: @escaping () -> Void) {
+        if response.notification.request.identifier == "update" { Task { @MainActor in self.checkNow() } }
+        done()
+    }
+
+    /// Shown even while the app is in front.
+    nonisolated func userNotificationCenter(_ center: UNUserNotificationCenter, willPresent notification: UNNotification,
+                                withCompletionHandler done: @escaping (UNNotificationPresentationOptions) -> Void) {
+        done([.banner, .sound])
     }
 }

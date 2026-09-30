@@ -1,4 +1,5 @@
 import AppKit
+import UserNotifications
 import os
 
 let log = Logger(subsystem: "com.zolfer.claudiostat", category: "app")
@@ -37,6 +38,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         menu.delegate = self
         menu.autoenablesItems = false
         item.menu = menu
+        UNUserNotificationCenter.current().delegate = self
 
         let workspace = NSWorkspace.shared.notificationCenter
         workspace.addObserver(self, selector: #selector(appsChanged), name: NSWorkspace.didLaunchApplicationNotification, object: nil)
