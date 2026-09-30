@@ -2,7 +2,8 @@ import Foundation
 
 /// Asks the installed, unmodified Claude Code for its /usage data through a `get_usage` control request.
 /// Claude Code uses its own login, so this app never touches a credential. No prompt is sent: zero tokens.
-func fetchUsage() async -> UsageResult {
+/// `configDir` is a profile's Claude Code folder, nil for ~/.claude.
+func fetchUsage(configDir: String?) async -> UsageResult {
     let home = FileManager.default.homeDirectoryForCurrentUser.path
     guard let path = ["\(home)/.local/bin/claude", "/opt/homebrew/bin/claude", "/usr/local/bin/claude"]
         .first(where: FileManager.default.isExecutableFile(atPath:)) else { return .notFound }
@@ -13,9 +14,12 @@ func fetchUsage() async -> UsageResult {
     process.arguments = ["-p", "--input-format", "stream-json", "--output-format", "stream-json", "--verbose",
                          "--no-session-persistence", "--strict-mcp-config", "--setting-sources", ""]
     // Not CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC: it also blocks the usage fetch itself.
-    process.environment = ["HOME": home, "USER": NSUserName(), "LANG": "en_US.UTF-8",
-                           "PATH": "/usr/bin:/bin:/usr/sbin:/sbin",
-                           "DISABLE_TELEMETRY": "1", "DISABLE_ERROR_REPORTING": "1", "DISABLE_AUTOUPDATER": "1"]
+    var environment = ["HOME": home, "USER": NSUserName(), "LANG": "en_US.UTF-8",
+                       "PATH": "/usr/bin:/bin:/usr/sbin:/sbin",
+                       "DISABLE_TELEMETRY": "1", "DISABLE_ERROR_REPORTING": "1", "DISABLE_AUTOUPDATER": "1"]
+    // Claude Code keys its login by this variable, so ~/.claude goes without it: set, it would look for another login.
+    environment["CLAUDE_CONFIG_DIR"] = configDir
+    process.environment = environment
     process.currentDirectoryURL = FileManager.default.temporaryDirectory
     let input = Pipe(), output = Pipe()
     process.standardInput = input
@@ -48,6 +52,11 @@ func fetchUsage() async -> UsageResult {
     return .failed
 }
 
+/// The folder's name without its leading dot: ~/.claude-work is "claude-work".
+nonisolated func profileName(_ path: String) -> String {
+    path.isEmpty ? "claude" : String(URL(fileURLWithPath: path).lastPathComponent.drop { $0 == "." })
+}
+
 /// Whether a Claude Code session is writing a reply, from the end of its transcript: after a prompt or a tool result
 /// it is. A tool call stops it (the tool runs, or waits for you), and so does the reply's final text or pressing Esc.
 nonisolated func thinking(_ transcript: String) -> Bool {
@@ -71,9 +80,17 @@ nonisolated func thinking(_ transcript: String) -> Bool {
 }
 
 extension AppDelegate {
-    /// Claude Code logs each session to a transcript under ~/.claude/projects as it goes.
+    /// Claude Code logs each session to a transcript under its folder's projects as it goes. Only the shown profiles count.
     func watchSessions() {
-        let projects = FileManager.default.homeDirectoryForCurrentUser.appending(path: ".claude/projects").path
+        if let sessions {
+            FSEventStreamStop(sessions)
+            FSEventStreamInvalidate(sessions)
+            FSEventStreamRelease(sessions)
+            self.sessions = nil
+        }
+        midReply = [:]
+        let home = FileManager.default.homeDirectoryForCurrentUser.appending(path: ".claude").path
+        let projects = shown.map { ($0.isEmpty ? home : $0) + "/projects" }
         var context = FSEventStreamContext(version: 0, info: Unmanaged.passUnretained(self).toOpaque(),
                                            retain: nil, release: nil, copyDescription: nil)
         let changed: FSEventStreamCallback = { _, info, _, paths, _, _ in
@@ -83,11 +100,12 @@ extension AppDelegate {
             MainActor.assumeIsolated { delegate.sessionsChanged(files) }
         }
         let flags = kFSEventStreamCreateFlagFileEvents | kFSEventStreamCreateFlagUseCFTypes | kFSEventStreamCreateFlagNoDefer
-        guard let stream = FSEventStreamCreate(nil, changed, &context, [projects] as CFArray,
+        guard let stream = FSEventStreamCreate(nil, changed, &context, projects as CFArray,
                                                FSEventStreamEventId(kFSEventStreamEventIdSinceNow), 0.3,
                                                FSEventStreamCreateFlags(flags)) else { return }
         FSEventStreamSetDispatchQueue(stream, .main)
         FSEventStreamStart(stream)
+        sessions = stream
     }
 
     func sessionsChanged(_ files: [String]) {

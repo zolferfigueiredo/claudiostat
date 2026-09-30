@@ -71,13 +71,15 @@ extension AppDelegate {
         if details {
             if let alert = warning(usage) { info("⚠ \(alert)") }
             let rate = pacing(now)
-            limit(tr("session"), usage?.session, rate.session)
-            limit(tr("week"), usage?.week, rate.week)
-            limit(tr("fable"), usage?.fable)
+            // Other languages' words needn't start with the bar's letter (W is "Semana"), so each line starts with it.
+            let letter = { (letter: String, key: String) in Language.current == .en ? tr(key) : "\(letter) · \(tr(key))" }
+            limit(letter("S", "session"), usage?.session, rate.session)
+            limit(letter("W", "week"), usage?.week, rate.week)
+            limit(letter("F", "fable"), usage?.fable)
             let hourly = rate.week.unit == 3600
             let speed = percent(rate.week.speed)
-            info("\(tr("pace_experimental")) · " + (rate.week.speed == nil ? speed : tr(hourly ? "rate_hour" : "rate_day", ["n": speed])))
-            let budgetName = tr(hourly ? "budget_hour" : "budget_day")
+            info("\(letter("P", "pace_experimental")) · " + (rate.week.speed == nil ? speed : tr(hourly ? "rate_hour" : "rate_day", ["n": speed])))
+            let budgetName = letter("B", hourly ? "budget_hour" : "budget_day")
             if let week = usage?.week, let reset = week.resetsAt, rate.week.needed != nil {
                 let left = reset.timeIntervalSince(now)
                 // Hourly, the budget divides over working hours only, so show those rather than the wall-clock countdown.
@@ -108,10 +110,20 @@ extension AppDelegate {
         action(tr("status"), #selector(openStatus))
         menu.addItem(.separator())
 
-        let display = submenu(tr("display"), [("menuBar", [("both", tr("both")), ("icon", tr("icon_only")), ("numbers", tr("numbers_only"))]),
+        // Each profile is a Claude Code folder with its own login. The checked one fills the bar and this menu.
+        let profiles = submenu(tr("profile"), [("profile", allProfiles.map { ($0, profileName($0)) })])
+        let add = NSMenuItem(title: tr("add_profile"), action: #selector(addProfile), keyEquivalent: "")
+        add.target = self
+        let remove = NSMenuItem(title: tr("remove_profile"), action: #selector(removeProfile), keyEquivalent: "")
+        remove.target = self
+        remove.isEnabled = !profile.isEmpty
+        for entry in [.separator(), add, remove] { profiles.submenu?.addItem(entry) }
+
+        // "numbers" stays the stored value from before the label became Text only.
+        let display = submenu(tr("display"), [("menuBar", [("both", tr("both")), ("icon", tr("icon_only")), ("numbers", tr("text_only"))]),
                                               ("icon", [("app", tr("app_icon")), ("star", tr("star_icon"))])],
                               disabled: mode == "numbers" ? "icon" : nil)
-        // They pulse while tokens are being spent. Numbers only has no icon, Icon only no numbers.
+        // They pulse while tokens are being spent. Text only has no icon, Icon only no text.
         display.submenu?.addItem(.separator())
         display.submenu?.addItem(toggle(tr("loading_icon"), "loadingIcon", enabled: mode != "numbers"))
         display.submenu?.addItem(toggle(tr("loading_text"), "loadingText", enabled: mode != "icon"))
@@ -135,6 +147,9 @@ extension AppDelegate {
         }
         data.submenu?.addItem(.separator())
         data.submenu?.addItem(toggle(tr("resets_in"), "showResets"))
+        let head = [toggle(tr("profile_name"), "showProfile"), .separator(),
+                    choice(tr("multiple_users"), "users", "multiple"), choice(tr("single_user"), "users", "single"), .separator()]
+        for (index, entry) in head.enumerated() { data.submenu?.insertItem(entry, at: index) }
         // Hours a day spent using Claude, so the pace ignores the rest of the day.
         submenu(tr("work"), [("workHours", [24, 16, 12, 8, 6, 4].map { ($0, plural("hours", $0)) })])
         toggles(tr("notify"), [(tr("notify_reached"), NoticeKind.reached.setting), (tr("notify_reset"), NoticeKind.reset.setting),
@@ -180,9 +195,11 @@ extension AppDelegate {
 
     @objc func choose(_ sender: NSMenuItem) {
         guard let pick = (sender.representedObject as? [String: Any])?.first else { return }
+        let before = shown
         defaults.set(pick.value, forKey: pick.key)
         log.notice("\(pick.key, privacy: .public) = \(String(describing: pick.value), privacy: .public)")
         if pick.key == "interval" { reschedule() }
+        if shown != before { profilesChanged() }
         render()
     }
 
@@ -201,6 +218,36 @@ extension AppDelegate {
         aboutWindow?.close()  // it was built in the old language
         aboutWindow = nil
         render()
+    }
+
+    @objc func addProfile() {
+        let panel = NSOpenPanel()
+        panel.canChooseDirectories = true
+        panel.canChooseFiles = false
+        panel.showsHiddenFiles = true
+        panel.directoryURL = FileManager.default.homeDirectoryForCurrentUser
+        panel.message = tr("choose_folder")
+        NSApp.activate()
+        guard panel.runModal() == .OK, let url = panel.url else { return }
+        let path = url.path == FileManager.default.homeDirectoryForCurrentUser.appending(path: ".claude").path ? "" : url.path
+        if !allProfiles.contains(path) {
+            defaults.set(Array(allProfiles.dropFirst()) + [path], forKey: "profiles")
+            load(path)
+        }
+        defaults.set(path, forKey: "profile")
+        profilesChanged()
+    }
+
+    // Only forgets it here: the folder and its login stay.
+    @objc func removeProfile() {
+        guard !profile.isEmpty, alert(tr("remove_question", ["name": profileName(profile)]), tr("remove_info"), tr("remove"), tr("cancel"))
+        else { return }
+        let path = profile
+        defaults.set(allProfiles.dropFirst().filter { $0 != path }, forKey: "profiles")
+        defaults.removeObject(forKey: historyKey(path))
+        accounts[path] = nil
+        defaults.removeObject(forKey: "profile")
+        profilesChanged()
     }
 
     @objc func toggleDock() { toggleDockTile() }
