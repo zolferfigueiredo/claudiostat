@@ -26,7 +26,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     var paused: Bool { defaults.bool(forKey: "onlyWhileClaude") && !claudeRunning }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
-        defaults.register(defaults: ["interval": 180, "showFable": true, "showPace": false, "showBudget": false, "onlyWhileClaude": true,
+        defaults.register(defaults: ["interval": 180, "showFable": true, "showPace": false, "showBudget": false, "showResets": false, "onlyWhileClaude": true,
                                      "menuBar": "both", "icon": "app", "speedColors": "day", "workHours": 8, "updateEvery": 604800,
                                      "notifyReached": true, "notifyReset": true, "notifyWeek": true,
                                      "loadingIcon": true, "loadingText": false, "showDetails": true])
@@ -48,6 +48,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         reschedule()
         watchSessions()
         render()
+
+        // The countdowns on the line move between refreshes, and while paused.
+        let minute = Timer(timeInterval: 60, target: self, selector: #selector(render), userInfo: nil, repeats: true)
+        minute.tolerance = 10
+        RunLoop.main.add(minute, forMode: .common)
 
         let updates = Timer(timeInterval: 3600, target: self, selector: #selector(autoCheck), userInfo: nil, repeats: true)
         updates.tolerance = 600
@@ -113,7 +118,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         let now = Date.now, rate = pacing(now), mode = defaults.string(forKey: "menuBar"), alert = warning(usage)
         let pace = (session: rate.session.pace, week: rate.week.pace)
         let bar = barText(usage, rates: rate, showFable: defaults.bool(forKey: "showFable"),
-                          showPace: defaults.bool(forKey: "showPace"), showBudget: defaults.bool(forKey: "showBudget"))
+                          showPace: defaults.bool(forKey: "showPace"), showBudget: defaults.bool(forKey: "showBudget"),
+                          resetsFrom: defaults.bool(forKey: "showResets") ? now : nil)
         guard let button = item.button else { return }
         let tint = mode == "icon" ? max(pace.session, pace.week).color : nil
         func warningIcon() -> NSImage? {

@@ -74,6 +74,17 @@ func dailyBudgetTable(now: String, week: Int, reset: String, hours: Double, expe
     #expect(barText(nil, rates: daily, showFable: false, showBudget: true).string == "S - · W - · B 13%")
 }
 
+@Test func resetsOnTheLine() {
+    #expect(span(93600, short: true) == "1d2h")
+    #expect(span(3900, short: true) == "1h05")
+    #expect(span(420, short: true) == "7m")
+    let now = date("2026-09-28T12:00:00Z")
+    let usage = Usage(session: Limit(percent: 54, resetsAt: now.addingTimeInterval(4380)),
+                      week: Limit(percent: 6, resetsAt: now.addingTimeInterval(93600)), fable: Limit(percent: 0))
+    #expect(barText(usage, showFable: true, showBudget: true, resetsFrom: now).string == "S 54% (1h13) · W 6% (1d2h) · F 0% · B -")
+    #expect(barText(usage, showFable: true, showBudget: false).string == "S 54% · W 6% · F 0%")
+}
+
 // Your examples: needed = what's left ÷ time left. Orange past it, red past it + 5 (S) or + 10 (W).
 @Test(arguments: [
     (0, 5.0, 20.0, Pace.ok), (0, 5, 21, .fast), (0, 5, 25, .fast), (0, 5, 26, .tooFast),

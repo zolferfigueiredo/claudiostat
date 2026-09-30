@@ -216,12 +216,16 @@ nonisolated func percent(_ value: Double?) -> String {
     value.map { "\($0.formatted(.number.precision(.fractionLength(0...1))))%" } ?? "-"
 }
 
-/// P and B are W's speed and budget.
+/// P and B are W's speed and budget. With `resetsFrom`, S, W and F add the time to their reset: "S 54% (1h13)".
 nonisolated func barText(_ usage: Usage?, rates: (session: Rate, week: Rate)? = nil,
-                         showFable: Bool, showPace: Bool = false, showBudget: Bool) -> NSAttributedString {
-    var parts = [("S \(percent(usage?.session?.percent))", rates?.session.pace ?? .ok),
-                 ("W \(percent(usage?.week?.percent))", rates?.week.pace ?? .ok)]
-    if showFable { parts.append(("F \(percent(usage?.fable?.percent))", .ok)) }
+                         showFable: Bool, showPace: Bool = false, showBudget: Bool, resetsFrom now: Date? = nil) -> NSAttributedString {
+    func stat(_ letter: String, _ limit: Limit?) -> String {
+        guard let now, let reset = limit?.resetsAt else { return "\(letter) \(percent(limit?.percent))" }
+        return "\(letter) \(percent(limit?.percent)) (\(span(reset.timeIntervalSince(now), short: true)))"
+    }
+    var parts = [(stat("S", usage?.session), rates?.session.pace ?? .ok),
+                 (stat("W", usage?.week), rates?.week.pace ?? .ok)]
+    if showFable { parts.append((stat("F", usage?.fable), .ok)) }
     if showPace { parts.append(("P \(percent(rates?.week.speed))", .ok)) }
     if showBudget { parts.append(("B \(percent(rates?.week.needed))", .ok)) }
     let bar = NSMutableAttributedString()
@@ -289,8 +293,9 @@ nonisolated func faded(_ text: NSAttributedString, _ alpha: CGFloat) -> NSAttrib
     return copy
 }
 
-/// "3d 18h", "2h 13m", "7m"
-nonisolated func span(_ seconds: TimeInterval) -> String {
+/// "3d 18h", "2h 13m", "7m", or short for the menu bar: "3d18h", "2h13", "7m"
+nonisolated func span(_ seconds: TimeInterval, short: Bool = false) -> String {
     let minutes = max(0, Int(seconds / 60)), days = minutes / 1440, hours = minutes / 60 % 24
+    if short { return days > 0 ? "\(days)d\(hours)h" : hours > 0 ? "\(hours)h\(String(format: "%02d", minutes % 60))" : "\(minutes)m" }
     return days > 0 ? "\(days)d \(hours)h" : hours > 0 ? "\(hours)h \(minutes % 60)m" : "\(minutes)m"
 }
