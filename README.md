@@ -9,20 +9,22 @@ Your Claude plan limits, live in the macOS menu bar.
 - **S**: current session
 - **W**: this week, all models
 - **F**: this week, Fable
-- **P** (off by default, experimental): pace. How fast W is rising over the last hour, per day (times the working time, 8 hours by default) or per hour, following the pace warning mode. Shows "-" until there's a reading from an hour ago. After a pause, the rise is spread over the whole gap.
-- **D** (off by default): budget. What's left of the week split over the days (or working hours) until the weekly reset, a partial last one counting in full, rounded down: 35% left with 1d 17h to go is 17% a day, or 0.8% an hour with a 24-hour working time. The menu shows P and the budget too, and per hour says how many working hours it is spread over.
+- **P** (off by default, experimental): pace. How fast W is rising over the last hour, per day (times the working time, 8 hours by default) or per hour, following Budget per day or Budget per hour under Data. Shows "-" until there's a reading from an hour ago. After a pause, the rise is spread over the whole gap.
+- **B** (off by default): budget, per day or per hour. What's left of the week split over the days (or working hours) until the weekly reset, a partial last one counting in full, rounded down: 35% left with 1d 17h to go is 17% a day, or 0.8% an hour with a 24-hour working time. The menu shows P and the budget too, and per hour says how many working hours it is spread over.
 
 S and W change color when you're using them too fast.
 
 - **S**: its rise over the last 30 minutes against what's left spread evenly until the reset: S 50% with 2 hours left needs 25% per hour.
-- **W**: P against D, so it turns orange once P is over D.
+- **W**: P against B, so it turns orange once P is over B.
 - **Orange**: faster than needed. **Red**: 5 points per hour past it for S, 10 points past it for W.
 
 The menu says why under a colored S or W: "Using 24% a day, 17% a day lasts until reset".
 
 A warning triangle replaces the icon when Claude itself flags a limit: locked out, or its severity is anything but normal.
 
-Click it for reset countdowns and settings: refresh interval, only refresh while the Claude app is open, icon and numbers, icon only or numbers only, the app icon (default) or a plain star icon, which of F, P and D to show (Data), pace warning mode (W per day, W per hour or off), daily working time (the hours a day you use Claude, 24 down to 4, 8 by default, so P and D leave out the rest of the day), notifications (a limit reached, its reset, the week at 80% and 90%, all on by default), launch at login, and keep in Dock.
+While Claude Code is writing a reply on this Mac, it's spending tokens, and the icon pulses from 100% to 40% opacity. Loading icon and Loading text under Display pick what pulses: the icon (default), the numbers, both or neither. Chats in the Claude app, on the web or on your phone don't make it pulse.
+
+Click it for reset countdowns and settings: refresh interval, only refresh while the Claude app is open, icon and numbers, icon only or numbers only, the app icon (default) or a plain star icon, Loading icon and Loading text, which of F, P and B to show with B per day or per hour (Data), daily working time (the hours a day you use Claude, 24 down to 4, 8 by default, so P and B leave out the rest of the day), notifications (a limit reached, its reset, the week at 80% and 90%, all on by default), launch at login, and keep in Dock. Show data below, the menu's first item (on by default), lists every limit with its reset countdown, then P and the budget.
 
 ## Requirements
 
@@ -34,6 +36,8 @@ Click it for reset countdowns and settings: refresh interval, only refresh while
 On every refresh, ClaudioStat runs your installed Claude Code once, headless, and asks it for its `/usage` data (the `get_usage` control request). No prompt is sent, so it costs zero tokens.
 
 Claude Code uses its own login. ClaudioStat never sees or stores a credential. Hooks, plugins and MCP servers are off for that run, and nothing is saved as a session.
+
+To know when Claude Code is writing a reply, ClaudioStat watches its session files in `~/.claude/projects` and reads the end of the one that changed: after a prompt or a tool result a reply is being written, after a tool call or the reply's final text it isn't. It keeps and sends nothing.
 
 While "Only refresh while Claude is open" is on and the Claude desktop app is closed, ClaudioStat runs no usage refreshes and dims the last numbers.
 

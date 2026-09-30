@@ -17,6 +17,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     var claudeRunning = false
     var busy = false
     var timer: Timer?
+    var pulse: Timer?        // redraws the icon or numbers while they fade
+    var midReply: [String: Date] = [:]  // Claude Code transcripts mid-reply, by when they were last written
     var lastBar = ""
     var checking = false     // an update check or install is running
 
@@ -25,9 +27,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
         defaults.register(defaults: ["interval": 180, "showFable": true, "showPace": false, "showBudget": false, "onlyWhileClaude": true,
                                      "menuBar": "both", "icon": "app", "speedColors": "day", "workHours": 8, "updateEvery": 604800,
-                                     "notifyReached": true, "notifyReset": true, "notifyWeek": true])
-        // 150 seconds is no longer an option.
+                                     "notifyReached": true, "notifyReset": true, "notifyWeek": true,
+                                     "loadingIcon": true, "loadingText": false, "showDetails": true])
+        // 150 seconds and pace warnings off are no longer options.
         if defaults.integer(forKey: "interval") == 150 { defaults.removeObject(forKey: "interval") }
+        if defaults.string(forKey: "speedColors") == "off" { defaults.removeObject(forKey: "speedColors") }
         samples = (try? JSONDecoder().decode([Sample].self, from: defaults.data(forKey: "history") ?? Data())) ?? []
         let menu = NSMenu()
         menu.delegate = self
@@ -40,6 +44,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         claudeRunning = !NSRunningApplication.runningApplications(withBundleIdentifier: claudeID).isEmpty
         log.notice("start, watching \(self.claudeID, privacy: .public), running: \(self.claudeRunning, privacy: .public)")
         reschedule()
+        watchSessions()
         render()
 
         let updates = Timer(timeInterval: 3600, target: self, selector: #selector(autoCheck), userInfo: nil, repeats: true)
@@ -102,7 +107,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
               workHours: Double(defaults.integer(forKey: "workHours")), now: now)
     }
 
-    func render() {
+    @objc func render() {
         let now = Date.now, rate = pacing(now), mode = defaults.string(forKey: "menuBar"), alert = warning(usage)
         let pace = (session: rate.session.pace, week: rate.week.pace)
         let bar = barText(usage, rates: rate, showFable: defaults.bool(forKey: "showFable"),
@@ -110,23 +115,39 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         guard let button = item.button else { return }
         let tint = mode == "icon" ? max(pace.session, pace.week).color : nil
         func warningIcon() -> NSImage? {
-            let image = NSImage(systemSymbolName: "exclamationmark.triangle.fill", accessibilityDescription: alert)
-            guard let tint else { return image }
-            // The menu bar draws template images in its own color and ignores contentTintColor.
-            // One color per symbol layer: the "!" stays white.
-            let colored = image?.withSymbolConfiguration(.init(paletteColors: [.white, tint]))
-            colored?.isTemplate = false
-            return colored
+            var image = NSImage(systemSymbolName: "exclamationmark.triangle.fill", accessibilityDescription: alert)
+            if let tint {
+                // The menu bar draws template images in its own color and ignores contentTintColor.
+                // One color per symbol layer: the "!" stays white.
+                image = image?.withSymbolConfiguration(.init(paletteColors: [.white, tint]))
+                image?.isTemplate = false
+            }
+            // Centred as a whole, the triangle sits 1.5 points below the numbers.
+            return redrawn(image, lift: 1.5)
         }
         let appIcon = NSApp.applicationIconImage.copy() as? NSImage
         appIcon?.size = NSSize(width: 18, height: 18)
-        button.image = alert != nil ? warningIcon()
+        let image = alert != nil ? warningIcon()
             : mode == "numbers" ? nil
             : defaults.string(forKey: "icon") == "app" ? appIcon : star(tint)
-        button.attributedTitle = mode == "icon" ? NSAttributedString() : bar
+        let title = mode == "icon" ? NSAttributedString() : bar
+        // While Claude Code writes a reply: 100% to 40% opacity and back every 1.5 seconds.
+        // A session quiet for 10 minutes has stopped, however its transcript ends.
+        let thinking = midReply.values.contains { now.timeIntervalSince($0) < 600 }
+        let fadeIcon = thinking && mode != "numbers" && defaults.bool(forKey: "loadingIcon")
+        let fadeText = thinking && mode != "icon" && defaults.bool(forKey: "loadingText")
+        let alpha = 0.7 + 0.3 * cos(now.timeIntervalSinceReferenceDate * 2 * .pi / 1.5)
+        button.image = fadeIcon ? redrawn(image, alpha: alpha) : image
+        button.attributedTitle = fadeText ? faded(title, alpha) : title
         button.imagePosition = mode == "icon" ? .imageOnly : .imageLeading
         button.appearsDisabled = paused
-        let line = (alert.map { "⚠ \($0) · " } ?? "") + bar.string + " · pace S \(pace.session) W \(pace.week)" + (paused ? " (paused)" : "")
+        if (fadeIcon || fadeText) != (pulse != nil) {
+            pulse?.invalidate()
+            pulse = fadeIcon || fadeText ? Timer(timeInterval: 0.05, target: self, selector: #selector(render), userInfo: nil, repeats: true) : nil
+            if let pulse { RunLoop.main.add(pulse, forMode: .common) }
+        }
+        let line = (alert.map { "⚠ \($0) · " } ?? "") + bar.string + " · pace S \(pace.session) W \(pace.week)"
+            + (thinking ? " · thinking" : "") + (paused ? " (paused)" : "")
         if line != lastBar { log.notice("bar: \(line, privacy: .public)") }
         lastBar = line
     }
