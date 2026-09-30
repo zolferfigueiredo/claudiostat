@@ -213,11 +213,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         }
         let appIcon = NSApp.applicationIconImage.copy() as? NSImage
         appIcon?.size = NSSize(width: 18, height: 18)
-        // Text only with no profile would leave nothing to click.
+        // With no profile the bar keeps its icon and asks for one, whatever Display says.
         let image = alert != nil ? warningIcon()
             : mode == "numbers" && !shown.isEmpty ? nil
             : defaults.string(forKey: "icon") == "app" ? appIcon : star(tint)
-        let title = mode == "icon" ? NSAttributedString() : bar
+        let title = shown.isEmpty ? joined([NSAttributedString(string: tr("add_a_profile"))]) : mode == "icon" ? NSAttributedString() : bar
         // While Claude Code writes a reply: 100% to 40% opacity and back every 1.5 seconds.
         // A session quiet for 10 minutes has stopped, however its transcript ends.
         let thinking = midReply.values.contains { now.timeIntervalSince($0) < 600 }
@@ -226,7 +226,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         let alpha = 0.7 + 0.3 * cos(now.timeIntervalSinceReferenceDate * 2 * .pi / 1.5)
         button.image = fadeIcon ? redrawn(image, alpha: alpha) : image
         button.attributedTitle = fadeText ? faded(title, alpha) : title
-        button.imagePosition = mode == "icon" ? .imageOnly : .imageLeading
+        button.imagePosition = mode == "icon" && !shown.isEmpty ? .imageOnly : .imageLeading
         button.appearsDisabled = paused
         if (fadeIcon || fadeText) != (pulse != nil) {
             pulse?.invalidate()

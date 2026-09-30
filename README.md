@@ -68,7 +68,7 @@ S and W turn orange when you're using them faster than they last until the reset
 Every refresh, ClaudioStat runs your installed Claude Code once, headless, and sends it one `get_usage` control request: the same numbers as `/usage`. No prompt goes with it, so it costs zero tokens.
 
 - It looks for `claude` in `~/.local/bin`, `/opt/homebrew/bin` and `/usr/local/bin`, then for the copy the Claude desktop app keeps in `~/Library/Application Support/Claude/claude-code`.
-- Claude Code uses its own login. **Sign In** runs `claude auth login`, which finishes in your browser. ClaudioStat never sees or stores a credential. It keeps only each profile's email, from `claude auth status`, to name it.
+- Claude Code uses its own login. **Sign In** runs `claude auth login`, which finishes in your browser, and **Remove profile** runs `claude auth logout`. ClaudioStat never sees or stores a credential. It keeps only each profile's email, from `claude auth status`, to name it.
 - Hooks, plugins and MCP servers are off for that run, and no session is saved.
 - To know when Claude Code is writing a reply, it watches the session files in `~/.claude/projects` and reads the end of the one that changed. It keeps and sends nothing.
 - **Check for updates…** downloads `latest.json` from claudiostat.zolfer.com and sends nothing about you. An update installs only if it's signed by the same developer, and only into the copy in Applications. While it installs, a window shows each step under a loading bar; **Reopen** then starts the new version. When an automatic check finds a new version, a notification says so once; clicking it offers Update Now.
@@ -80,9 +80,9 @@ Every refresh, ClaudioStat runs your installed Claude Code once, headless, and s
 - **Refresh now** (⌘R), and **Refresh every** 1, 3 (default), 5 or 10 minutes.
 - **Pause when Claude is closed** (on): while the Claude desktop app is closed, nothing refreshes and the last numbers dim. Greyed out when the Claude desktop app isn't installed, and then it never pauses.
 - **Claude Status** opens status.claude.com.
-- **Profile**: one per Claude account, each in its own Claude Code folder and named by its email. The checked one fills the bar and the menu.
-  - **Add profile…** signs in to another account through your browser, into a new folder: `~/.claude-2`, `~/.claude-3` and so on. With no profile left, it reconnects `~/.claude` instead.
-  - **Remove profile** forgets the checked one after asking, `~/.claude` included. The folder and its login stay.
+- **Profiles**: one per Claude account, each in its own Claude Code folder and named by its email. The checked one fills the bar and the menu. With none, the menu bar says **Add a profile** and the menu starts with **Add profile…**.
+  - **Add profile…** signs in to another account through your browser, into a new folder: `~/.claude-2`, `~/.claude-3` and so on. With no profile left, it signs `~/.claude` in instead.
+  - **Remove profile** removes the checked one after asking, `~/.claude` included, and signs it out of Claude Code with `claude auth logout`. For `~/.claude` that is the login Claude Code uses in Terminal too. The folder stays.
   - When the checked profile is signed out, the menu says **Sign in to Claude Code…**, which signs it in again.
 - **Display**: icon and text, icon only or text only, with the app icon or a plain star. **Loading icon** (on) and **Loading text** (off) pick what pulses while Claude Code writes a reply.
 - **Data**: whether the menu bar starts with the profile's name (off); **Multiple users** to show every profile one after another, or **Single user** (default) for the checked one; whether it shows F (on), P and B (off), and whether P and B count per day or per hour.

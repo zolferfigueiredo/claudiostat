@@ -68,51 +68,55 @@ extension AppDelegate {
             return entry
         }
 
-        let details = defaults.bool(forKey: "showDetails")
-        action(tr("show_data"), #selector(toggleSetting), on: details).representedObject = "showDetails"
-        if details && !allProfiles.isEmpty {
-            if let alert = warning(usage) { info("⚠ \(alert)") }
-            let rate = pacing(now)
-            // Other languages' words needn't start with the bar's letter (W is "Semana"), so each line starts with it.
-            let letter = { (letter: String, key: String) in Language.current == .en ? tr(key) : "\(letter) · \(tr(key))" }
-            limit(letter("S", "session"), usage?.session, rate.session)
-            limit(letter("W", "week"), usage?.week, rate.week)
-            limit(letter("F", "fable"), usage?.fable)
-            let hourly = rate.week.unit == 3600
-            let speed = percent(rate.week.speed)
-            info("\(letter("P", "pace_experimental")) · " + (rate.week.speed == nil ? speed : tr(hourly ? "rate_hour" : "rate_day", ["n": speed])))
-            let budgetName = letter("B", hourly ? "budget_hour" : "budget_day")
-            if let week = usage?.week, let reset = week.resetsAt, rate.week.needed != nil {
-                let left = reset.timeIntervalSince(now)
-                // Hourly, the budget divides over working hours only, so show those rather than the wall-clock countdown.
-                let over = hourly ? plural("working_hours", Int((left * Double(defaults.integer(forKey: "workHours")) / 24 / 3600).rounded(.up)))
-                                  : span(left)
-                info("\(budgetName) \(percent(rate.week.needed)) · " + tr("left_over", ["left": max(0, 100 - week.percent), "time": over]))
-            } else {
-                info("\(budgetName) \(percent(rate.week.needed))")
+        if allProfiles.isEmpty {
+            // Nothing to show or refresh yet, so the menu starts with the one thing to do.
+            action(tr("add_profile"), #selector(addProfile)).image = NSImage(systemSymbolName: "person.crop.circle.badge.plus", accessibilityDescription: nil)
+        } else {
+            let details = defaults.bool(forKey: "showDetails")
+            action(tr("show_data"), #selector(toggleSetting), on: details).representedObject = "showDetails"
+            if details {
+                if let alert = warning(usage) { info("⚠ \(alert)") }
+                let rate = pacing(now)
+                // Other languages' words needn't start with the bar's letter (W is "Semana"), so each line starts with it.
+                let letter = { (letter: String, key: String) in Language.current == .en ? tr(key) : "\(letter) · \(tr(key))" }
+                limit(letter("S", "session"), usage?.session, rate.session)
+                limit(letter("W", "week"), usage?.week, rate.week)
+                limit(letter("F", "fable"), usage?.fable)
+                let hourly = rate.week.unit == 3600
+                let speed = percent(rate.week.speed)
+                info("\(letter("P", "pace_experimental")) · " + (rate.week.speed == nil ? speed : tr(hourly ? "rate_hour" : "rate_day", ["n": speed])))
+                let budgetName = letter("B", hourly ? "budget_hour" : "budget_day")
+                if let week = usage?.week, let reset = week.resetsAt, rate.week.needed != nil {
+                    let left = reset.timeIntervalSince(now)
+                    // Hourly, the budget divides over working hours only, so show those rather than the wall-clock countdown.
+                    let over = hourly ? plural("working_hours", Int((left * Double(defaults.integer(forKey: "workHours")) / 24 / 3600).rounded(.up)))
+                                      : span(left)
+                    info("\(budgetName) \(percent(rate.week.needed)) · " + tr("left_over", ["left": max(0, 100 - week.percent), "time": over]))
+                } else {
+                    info("\(budgetName) \(percent(rate.week.needed))")
+                }
             }
+            menu.addItem(.separator())
+
+            let time = { (date: Date) in date.formatted(date: .omitted, time: .shortened) }
+            let status: String
+            var fix: Selector?  // a signed-out or missing Claude Code opens the setup
+            if paused { status = updated.map { tr("paused_updated", ["time": time($0)]) } ?? tr("paused") }
+            else if let problem { status = tr(problem); fix = #selector(reconnect) }
+            else if let failedAt { status = tr("failed", ["time": time(failedAt)]) }
+            else { status = updated.map { tr("updated", ["time": time($0)]) } ?? tr("updating") }
+            let statusLine = NSMenuItem(title: status, action: fix, keyEquivalent: "")
+            statusLine.target = self
+            statusLine.isEnabled = fix != nil
+            menu.addItem(statusLine)
+
+            action(tr("refresh"), #selector(tick), key: "r", enabled: !paused && !busy)
+
+            submenu(tr("every"), [("interval", [1, 3, 5, 10].map { ($0 * 60, plural("minutes", $0)) })])
+            action(tr("only"), #selector(toggleSetting), on: defaults.bool(forKey: "onlyWhileClaude"), enabled: claudeInstalled)
+                .representedObject = "onlyWhileClaude"
+            action(tr("status"), #selector(openStatus))
         }
-        menu.addItem(.separator())
-
-        let time = { (date: Date) in date.formatted(date: .omitted, time: .shortened) }
-        let status: String
-        var fix: Selector?  // opens the setup, when that's the way out
-        if allProfiles.isEmpty { status = tr("add_profile"); fix = #selector(addProfile) }
-        else if paused { status = updated.map { tr("paused_updated", ["time": time($0)]) } ?? tr("paused") }
-        else if let problem { status = tr(problem); fix = #selector(reconnect) }
-        else if let failedAt { status = tr("failed", ["time": time(failedAt)]) }
-        else { status = updated.map { tr("updated", ["time": time($0)]) } ?? tr("updating") }
-        let statusLine = NSMenuItem(title: status, action: fix, keyEquivalent: "")
-        statusLine.target = self
-        statusLine.isEnabled = fix != nil
-        menu.addItem(statusLine)
-
-        action(tr("refresh"), #selector(tick), key: "r", enabled: !paused && !busy)
-
-        submenu(tr("every"), [("interval", [1, 3, 5, 10].map { ($0 * 60, plural("minutes", $0)) })])
-        action(tr("only"), #selector(toggleSetting), on: defaults.bool(forKey: "onlyWhileClaude"), enabled: claudeInstalled)
-            .representedObject = "onlyWhileClaude"
-        action(tr("status"), #selector(openStatus))
         menu.addItem(.separator())
 
         // Each profile is a Claude Code folder with its own login. The checked one fills the bar and this menu.
@@ -229,11 +233,16 @@ extension AppDelegate {
 
     @objc func reconnect() { showSetup(profile) }
 
-    // Only forgets it here: the folder and its login stay.
+    // Signs it out of Claude Code too, so no login is left behind. The folder stays.
     @objc func removeProfile() {
         guard !allProfiles.isEmpty, alert(tr("remove_question", ["name": profileName(profile)]), tr("remove_info"), tr("remove"), tr("cancel"))
         else { return }
         let path = profile
+        if let logout = claude(["auth", "logout"], configDir: path.isEmpty ? nil : path) {
+            Task {
+                do { try await run(logout) } catch { log.error("sign out \(folderName(path), privacy: .public): \(error.localizedDescription, privacy: .public)") }
+            }
+        }
         defaults.set(allProfiles.filter { $0 != path }, forKey: "profileList")
         defaults.removeObject(forKey: historyKey(path))
         var names = defaults.dictionary(forKey: "names") ?? [:]

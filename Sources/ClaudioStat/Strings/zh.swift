@@ -2,6 +2,7 @@
 extension Strings {
     nonisolated static let zh: [String: String] = [
         "about": "关于 ClaudioStat",
+        "add_a_profile": "添加个人资料",
         "add_profile": "添加个人资料…",
         "app_icon": "应用图标",
         "applications_only": "ClaudioStat 仅在从“应用程序”文件夹运行时才会自行更新。",
@@ -76,7 +77,7 @@ extension Strings {
         "reason": "用量{speed}，要撑到重置需{needed}",
         "refresh": "立即刷新",
         "remove": "移除",
-        "remove_info": "ClaudioStat 将不再显示它。文件夹及其登录保持不变。",
+        "remove_info": "ClaudioStat 将不再显示它，并在 Claude Code 中退出它的登录，终端里也一样。要再次使用，需要重新登录。",
         "remove_profile": "移除个人资料",
         "remove_question": "移除个人资料 {name}？",
         "reopen": "重新打开",

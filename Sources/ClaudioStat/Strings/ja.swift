@@ -2,6 +2,7 @@
 extension Strings {
     nonisolated static let ja: [String: String] = [
         "about": "ClaudioStat について",
+        "add_a_profile": "プロファイルを追加",
         "add_profile": "プロファイルを追加…",
         "app_icon": "アプリアイコン",
         "applications_only": "ClaudioStat は「アプリケーション」フォルダから実行しているときだけ自動でアップデートします。",
@@ -76,7 +77,7 @@ extension Strings {
         "reason": "使用は {speed}、リセットまで持つのは {needed}",
         "refresh": "今すぐ更新",
         "remove": "削除",
-        "remove_info": "ClaudioStat に表示されなくなります。フォルダとそのサインインはそのまま残ります。",
+        "remove_info": "ClaudioStat に表示されなくなり、Claude Code でもサインアウトします（ターミナルでも同様です）。再び使うには、もう一度サインインが必要です。",
         "remove_profile": "プロファイルを削除",
         "remove_question": "プロファイル {name} を削除しますか？",
         "reopen": "開き直す",

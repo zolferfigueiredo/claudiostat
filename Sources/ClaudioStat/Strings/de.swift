@@ -2,6 +2,7 @@
 extension Strings {
     nonisolated static let de: [String: String] = [
         "about": "Über ClaudioStat",
+        "add_a_profile": "Profil hinzufügen",
         "add_profile": "Profil hinzufügen…",
         "app_icon": "App-Symbol",
         "applications_only": "ClaudioStat aktualisiert sich nur, wenn es aus dem Ordner „Programme“ läuft.",
@@ -67,7 +68,7 @@ extension Strings {
         "pace_experimental": "Tempo (experimentell)",
         "paused": "Pausiert · Claude ist nicht geöffnet",
         "paused_updated": "Pausiert · Claude ist nicht geöffnet · aktualisiert {time}",
-        "profile": "Profil",
+        "profile": "Profile",
         "profile_name": "Profilname",
         "quit": "ClaudioStat beenden",
         "rate_day": "{n} pro Tag",
@@ -78,7 +79,7 @@ extension Strings {
         "reason": "Verbrauch {speed}, bis zum Reset reichen {needed}",
         "refresh": "Jetzt aktualisieren",
         "remove": "Entfernen",
-        "remove_info": "ClaudioStat zeigt es nicht mehr an. Der Ordner und seine Anmeldung bleiben, wie sie sind.",
+        "remove_info": "ClaudioStat zeigt es nicht mehr an und meldet es bei Claude Code ab, auch im Terminal. Danach brauchst du eine neue Anmeldung.",
         "remove_profile": "Profil entfernen",
         "remove_question": "Profil {name} entfernen?",
         "reopen": "Neu öffnen",

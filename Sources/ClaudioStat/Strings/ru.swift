@@ -2,6 +2,7 @@
 extension Strings {
     nonisolated static let ru: [String: String] = [
         "about": "О программе ClaudioStat",
+        "add_a_profile": "Добавьте профиль",
         "add_profile": "Добавить профиль…",
         "app_icon": "Значок приложения",
         "applications_only": "ClaudioStat обновляется сам, только если запущен из папки «Программы».",
@@ -71,7 +72,7 @@ extension Strings {
         "pace_experimental": "Темп (эксперимент)",
         "paused": "Пауза · Claude не открыт",
         "paused_updated": "Пауза · Claude не открыт · обновлено в {time}",
-        "profile": "Профиль",
+        "profile": "Профили",
         "profile_name": "Имя профиля",
         "quit": "Завершить ClaudioStat",
         "rate_day": "{n} в день",
@@ -82,7 +83,7 @@ extension Strings {
         "reason": "Расход {speed}, до сброса хватит при {needed}",
         "refresh": "Обновить сейчас",
         "remove": "Удалить",
-        "remove_info": "ClaudioStat перестанет его показывать. Папка и вход в ней останутся как есть.",
+        "remove_info": "ClaudioStat перестанет его показывать и выйдет из него в Claude Code, в Терминале тоже. Чтобы снова им пользоваться, войдите заново.",
         "remove_profile": "Удалить профиль",
         "remove_question": "Удалить профиль {name}?",
         "reopen": "Открыть снова",
