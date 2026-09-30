@@ -29,12 +29,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     var lastBar = ""
     var checking = false     // an update check or install is running
 
-    var paused: Bool { defaults.bool(forKey: "onlyWhileClaude") && !claudeRunning }
-    /// The checked Claude Code folder. "" is ~/.claude.
-    var profile: String { defaults.string(forKey: "profile") ?? "" }
-    var allProfiles: [String] { [""] + (defaults.stringArray(forKey: "profiles") ?? []) }
+    // Without the Claude app there is nothing to wait for.
+    var paused: Bool { defaults.bool(forKey: "onlyWhileClaude") && claudeInstalled && !claudeRunning }
+    lazy var claudeInstalled = NSWorkspace.shared.urlForApplication(withBundleIdentifier: claudeID) != nil
+    /// The checked Claude Code folder, else the first. "" is ~/.claude.
+    var profile: String {
+        let checked = defaults.string(forKey: "profile") ?? ""
+        return allProfiles.contains(checked) ? checked : allProfiles.first ?? ""
+    }
+    var allProfiles: [String] { defaults.stringArray(forKey: "profileList") ?? [] }
     /// The profiles in the bar: every one with Multiple users, else the checked one.
-    var shown: [String] { defaults.string(forKey: "users") == "multiple" ? allProfiles : [profile] }
+    var shown: [String] { defaults.string(forKey: "users") == "multiple" ? allProfiles : allProfiles.filter { $0 == profile } }
     // The menu shows the checked profile's readings.
     var usage: Usage? { accounts[profile]?.usage }
     var updated: Date? { accounts[profile]?.updated }
@@ -49,6 +54,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         // 150 seconds and pace warnings off are no longer options.
         if defaults.integer(forKey: "interval") == 150 { defaults.removeObject(forKey: "interval") }
         if defaults.string(forKey: "speedColors") == "off" { defaults.removeObject(forKey: "speedColors") }
+        // Before 0.4.1 ~/.claude was always a profile and "profiles" held the others. It stays once it had numbers.
+        if defaults.object(forKey: "profileList") == nil {
+            defaults.set((defaults.object(forKey: "history") == nil ? [] : [""]) + (defaults.stringArray(forKey: "profiles") ?? []),
+                         forKey: "profileList")
+        }
         allProfiles.forEach(load)
         let menu = NSMenu()
         menu.delegate = self
@@ -64,6 +74,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         reschedule()
         watchSessions()
         render()
+        if allProfiles.isEmpty { addProfile() }
+        Task {
+            for path in allProfiles { await refreshName(path) }
+            render()
+        }
 
         // The countdowns on the line move between refreshes, and while paused.
         let minute = Timer(timeInterval: 60, target: self, selector: #selector(render), userInfo: nil, repeats: true)
@@ -96,7 +111,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
     /// After the checked profile, Multiple users or the list changed.
     func profilesChanged() {
-        log.notice("shown: \(self.shown.map(profileName), privacy: .public)")
+        log.notice("shown: \(self.shown.map(folderName), privacy: .public)")
         watchSessions()
         reschedule()
         render()
@@ -150,7 +165,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         case .signedOut: account.problem = "signed_out"
         case .failed: account.failedAt = .now
         }
-        if let problem = account.problem { log.notice("\(profileName(profile), privacy: .public): \(problem, privacy: .public)") }
+        if let problem = account.problem { log.notice("\(folderName(profile), privacy: .public): \(problem, privacy: .public)") }
         accounts[profile] = account
     }
 
@@ -198,10 +213,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         }
         let appIcon = NSApp.applicationIconImage.copy() as? NSImage
         appIcon?.size = NSSize(width: 18, height: 18)
+        // With no profile the bar keeps its icon and asks for one, whatever Display says.
         let image = alert != nil ? warningIcon()
-            : mode == "numbers" ? nil
+            : mode == "numbers" && !shown.isEmpty ? nil
             : defaults.string(forKey: "icon") == "app" ? appIcon : star(tint)
-        let title = mode == "icon" ? NSAttributedString() : bar
+        let title = shown.isEmpty ? joined([NSAttributedString(string: tr("add_a_profile"))]) : mode == "icon" ? NSAttributedString() : bar
         // While Claude Code writes a reply: 100% to 40% opacity and back every 1.5 seconds.
         // A session quiet for 10 minutes has stopped, however its transcript ends.
         let thinking = midReply.values.contains { now.timeIntervalSince($0) < 600 }
@@ -210,7 +226,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         let alpha = 0.7 + 0.3 * cos(now.timeIntervalSinceReferenceDate * 2 * .pi / 1.5)
         button.image = fadeIcon ? redrawn(image, alpha: alpha) : image
         button.attributedTitle = fadeText ? faded(title, alpha) : title
-        button.imagePosition = mode == "icon" ? .imageOnly : .imageLeading
+        button.imagePosition = mode == "icon" && !shown.isEmpty ? .imageOnly : .imageLeading
         button.appearsDisabled = paused
         if (fadeIcon || fadeText) != (pulse != nil) {
             pulse?.invalidate()
