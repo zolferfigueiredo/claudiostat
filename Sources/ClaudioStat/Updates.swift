@@ -63,12 +63,16 @@ final class UpdateProgress: NSObject {
     private let status = NSTextField(labelWithString: "")
     private let bar = NSProgressIndicator()
     private let reopen = NSButton(title: "Reopen", target: nil, action: nil)
+    /// The window outlives the code that started the update, and its Reopen button needs this object
+    /// alive: held only by a local variable, it was gone by the time Reopen was clicked.
+    private static var open: UpdateProgress?
 
     init(_ title: String) {
         super.init()
         let heading = NSTextField(labelWithString: title)
         heading.font = .boldSystemFont(ofSize: NSFont.systemFontSize)
         status.textColor = .secondaryLabelColor
+        status.lineBreakMode = .byTruncatingTail  // one line, never wider than the bar
         bar.style = .bar
         bar.isIndeterminate = true
         bar.widthAnchor.constraint(equalToConstant: 300).isActive = true
@@ -83,13 +87,17 @@ final class UpdateProgress: NSObject {
         text.alignment = .leading
         text.setCustomSpacing(16, after: bar)
         buttons.widthAnchor.constraint(equalTo: bar.widthAnchor).isActive = true
+        status.widthAnchor.constraint(equalTo: bar.widthAnchor).isActive = true
         let icon = NSImageView(image: NSApp.applicationIconImage)
+        icon.imageScaling = .scaleProportionallyUpOrDown  // fill the 64 pt box whatever size the image says it is
         icon.widthAnchor.constraint(equalToConstant: 64).isActive = true
         icon.heightAnchor.constraint(equalToConstant: 64).isActive = true
         let row = NSStackView(views: [icon, text])
         row.alignment = .top
         row.spacing = 16
         row.edgeInsets = NSEdgeInsets(top: 20, left: 20, bottom: 20, right: 20)
+        /// The stack only applies its inset on the edge it aligns (the top), so the bottom margin is pinned here.
+        row.bottomAnchor.constraint(greaterThanOrEqualTo: text.bottomAnchor, constant: 20).isActive = true
         window.contentView = row
         window.setContentSize(row.fittingSize)
         window.isReleasedWhenClosed = false
@@ -98,6 +106,7 @@ final class UpdateProgress: NSObject {
     }
 
     func show() {
+        Self.open = self
         NSApp.activate()
         window.makeKeyAndOrderFront(nil)
     }
@@ -113,7 +122,10 @@ final class UpdateProgress: NSObject {
         reopen.isEnabled = true
     }
 
-    func close() { window.close() }
+    func close() {
+        window.close()
+        Self.open = nil
+    }
 
     @objc private func relaunch() {
         do {
@@ -245,7 +257,7 @@ extension AppDelegate {
                 progress.show()
                 try await install(latest) { progress.step($0) }
                 defaults.set(latest, forKey: "updatedTo")
-                progress.done("Version \(latest) is installed. Reopen ClaudioStat to start using it.")
+                progress.done("Version \(latest) is installed.")
             } catch {
                 progress.close()
                 log.error("update: \(error.localizedDescription, privacy: .public)")
