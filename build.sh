@@ -3,8 +3,9 @@
 # Every intermediate (SwiftPM build, caches, module cache, TMPDIR) lives in one /tmp dir deleted on exit.
 set -euo pipefail
 cd "$(dirname "$0")"
-# Finder finds the volume to lay out by name, so no other ClaudioStat volume (or "ClaudioStat 1"...) may be mounted.
-! mount | grep -qi ' on /Volumes/ClaudioStat' || { echo "Eject every mounted ClaudioStat volume first" >&2; exit 1; }
+# Finder finds the volume to lay out by name, so every mounted ClaudioStat volume ("ClaudioStat 1"...) is ejected first.
+mount | { grep -i " on /Volumes/ClaudioStat" || true; } | sed 's|^.* on \(/Volumes/[^(]*\) (.*|\1|' |
+    while IFS= read -r volume; do hdiutil detach -quiet -force "$volume"; done
 
 VERSION=$(/usr/libexec/PlistBuddy -c 'Print CFBundleShortVersionString' Info.plist)
 DMG="dist/ClaudioStat-$VERSION.dmg"
