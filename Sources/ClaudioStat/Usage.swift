@@ -218,8 +218,9 @@ nonisolated func percent(_ value: Double?) -> String {
 }
 
 /// P and B are W's speed and budget. With `resetsFrom`, S, W and F add the time to their reset: "S 54% (1h13)".
-nonisolated func barText(_ usage: Usage?, rates: (session: Rate, week: Rate)? = nil,
-                         showFable: Bool, showPace: Bool = false, showBudget: Bool, resetsFrom now: Date? = nil) -> NSAttributedString {
+/// A `profile` name goes first.
+nonisolated func barText(_ usage: Usage?, rates: (session: Rate, week: Rate)? = nil, showFable: Bool, showPace: Bool = false,
+                         showBudget: Bool, resetsFrom now: Date? = nil, profile: String? = nil) -> NSAttributedString {
     func stat(_ letter: String, _ limit: Limit?) -> String {
         guard let now, let reset = limit?.resetsAt else { return "\(letter) \(percent(limit?.percent))" }
         return "\(letter) \(percent(limit?.percent)) (\(span(reset.timeIntervalSince(now), short: true)))"
@@ -229,6 +230,7 @@ nonisolated func barText(_ usage: Usage?, rates: (session: Rate, week: Rate)? = 
     if showFable { parts.append((stat("F", usage?.fable), .ok)) }
     if showPace { parts.append(("P \(percent(rates?.week.speed))", .ok)) }
     if showBudget { parts.append(("B \(percent(rates?.week.needed))", .ok)) }
+    if let profile { parts.insert((profile, .ok), at: 0) }
     let bar = NSMutableAttributedString()
     for (text, pace) in parts {
         if bar.length > 0 { bar.append(NSAttributedString(string: " · ")) }

@@ -20,20 +20,25 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     var timer: Timer?
     var pulse: Timer?        // redraws the icon or numbers while they fade
     var midReply: [String: Date] = [:]  // Claude Code transcripts mid-reply, by when they were last written
+    var sessions: FSEventStreamRef?  // watches the profile's transcripts
     var lastBar = ""
     var checking = false     // an update check or install is running
 
     var paused: Bool { defaults.bool(forKey: "onlyWhileClaude") && !claudeRunning }
+    /// The checked Claude Code folder. "" is ~/.claude.
+    var profile: String { defaults.string(forKey: "profile") ?? "" }
+    // One history per profile, so pace and notices never compare two accounts. ~/.claude keeps the key it always had.
+    var historyKey: String { profile.isEmpty ? "history" : "history-\(profile)" }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         defaults.register(defaults: ["interval": 180, "showFable": true, "showPace": false, "showBudget": false, "showResets": false, "onlyWhileClaude": true,
                                      "menuBar": "both", "icon": "app", "speedColors": "day", "workHours": 8, "updateEvery": 604800,
                                      "notifyReached": true, "notifyReset": true, "notifyWeek": true,
-                                     "loadingIcon": true, "loadingText": false, "showDetails": true])
+                                     "loadingIcon": true, "loadingText": false, "showDetails": true, "showProfile": false])
         // 150 seconds and pace warnings off are no longer options.
         if defaults.integer(forKey: "interval") == 150 { defaults.removeObject(forKey: "interval") }
         if defaults.string(forKey: "speedColors") == "off" { defaults.removeObject(forKey: "speedColors") }
-        samples = (try? JSONDecoder().decode([Sample].self, from: defaults.data(forKey: "history") ?? Data())) ?? []
+        loadSamples()
         let menu = NSMenu()
         menu.delegate = self
         menu.autoenablesItems = false
@@ -71,6 +76,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         render()
     }
 
+    func loadSamples() {
+        samples = (try? JSONDecoder().decode([Sample].self, from: defaults.data(forKey: historyKey) ?? Data())) ?? []
+    }
+
+    func switchProfile() {
+        log.notice("profile \(self.profile, privacy: .public)")
+        usage = nil; updated = nil; failedAt = nil; problem = nil
+        midReply = [:]
+        loadSamples()
+        watchSessions()
+        reschedule()
+        render()
+    }
+
     /// Refresh now, then every interval. While paused there is no timer, so no requests.
     func reschedule() {
         timer?.invalidate()
@@ -87,8 +106,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     @objc func tick() {
         guard !busy, !paused else { return }
         busy = true
+        let asked = profile
         Task {
-            let result = await fetchUsage()
+            let result = await fetchUsage(configDir: asked.isEmpty ? nil : asked)
+            busy = false
+            // The profile changed while it asked: this answer is the old account's.
+            guard profile == asked else { return tick() }
             usage = nil
             problem = nil
             switch result {
@@ -99,13 +122,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
                 samples.append(Sample(at: .now, usage: fresh))
                 // speed() needs the newest reading from before its window, so keep one older than a day.
                 while samples.count > 1, samples[1].at <= Date.now.addingTimeInterval(-86400) { samples.removeFirst() }
-                defaults.set(try? JSONEncoder().encode(samples), forKey: "history")
+                defaults.set(try? JSONEncoder().encode(samples), forKey: historyKey)
             case .notFound: problem = "not_found"
             case .signedOut: problem = "signed_out"
             case .failed: failedAt = .now
             }
             if let problem { log.notice("\(problem, privacy: .public)") }
-            busy = false
             render()
         }
     }
@@ -120,7 +142,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         let pace = (session: rate.session.pace, week: rate.week.pace)
         let bar = barText(usage, rates: rate, showFable: defaults.bool(forKey: "showFable"),
                           showPace: defaults.bool(forKey: "showPace"), showBudget: defaults.bool(forKey: "showBudget"),
-                          resetsFrom: defaults.bool(forKey: "showResets") ? now : nil)
+                          resetsFrom: defaults.bool(forKey: "showResets") ? now : nil,
+                          profile: defaults.bool(forKey: "showProfile") ? profileName(profile) : nil)
         guard let button = item.button else { return }
         let tint = mode == "icon" ? max(pace.session, pace.week).color : nil
         func warningIcon() -> NSImage? {

@@ -108,10 +108,20 @@ extension AppDelegate {
         action(tr("status"), #selector(openStatus))
         menu.addItem(.separator())
 
-        let display = submenu(tr("display"), [("menuBar", [("both", tr("both")), ("icon", tr("icon_only")), ("numbers", tr("numbers_only"))]),
+        // Each profile is a Claude Code folder with its own login. The checked one fills the bar and this menu.
+        let profiles = submenu(tr("profile"), [("profile", ([""] + (defaults.stringArray(forKey: "profiles") ?? [])).map { ($0, profileName($0)) })])
+        let add = NSMenuItem(title: tr("add_profile"), action: #selector(addProfile), keyEquivalent: "")
+        add.target = self
+        let remove = NSMenuItem(title: tr("remove_profile"), action: #selector(removeProfile), keyEquivalent: "")
+        remove.target = self
+        remove.isEnabled = !profile.isEmpty
+        for entry in [.separator(), add, remove] { profiles.submenu?.addItem(entry) }
+
+        // "numbers" stays the stored value from before the label became Text only.
+        let display = submenu(tr("display"), [("menuBar", [("both", tr("both")), ("icon", tr("icon_only")), ("numbers", tr("text_only"))]),
                                               ("icon", [("app", tr("app_icon")), ("star", tr("star_icon"))])],
                               disabled: mode == "numbers" ? "icon" : nil)
-        // They pulse while tokens are being spent. Numbers only has no icon, Icon only no numbers.
+        // They pulse while tokens are being spent. Text only has no icon, Icon only no text.
         display.submenu?.addItem(.separator())
         display.submenu?.addItem(toggle(tr("loading_icon"), "loadingIcon", enabled: mode != "numbers"))
         display.submenu?.addItem(toggle(tr("loading_text"), "loadingText", enabled: mode != "icon"))
@@ -135,6 +145,8 @@ extension AppDelegate {
         }
         data.submenu?.addItem(.separator())
         data.submenu?.addItem(toggle(tr("resets_in"), "showResets"))
+        data.submenu?.insertItem(toggle(tr("profile_name"), "showProfile"), at: 0)
+        data.submenu?.insertItem(.separator(), at: 1)
         // Hours a day spent using Claude, so the pace ignores the rest of the day.
         submenu(tr("work"), [("workHours", [24, 16, 12, 8, 6, 4].map { ($0, plural("hours", $0)) })])
         toggles(tr("notify"), [(tr("notify_reached"), NoticeKind.reached.setting), (tr("notify_reset"), NoticeKind.reset.setting),
@@ -180,9 +192,11 @@ extension AppDelegate {
 
     @objc func choose(_ sender: NSMenuItem) {
         guard let pick = (sender.representedObject as? [String: Any])?.first else { return }
+        let before = profile
         defaults.set(pick.value, forKey: pick.key)
         log.notice("\(pick.key, privacy: .public) = \(String(describing: pick.value), privacy: .public)")
         if pick.key == "interval" { reschedule() }
+        if profile != before { switchProfile() }
         render()
     }
 
@@ -201,6 +215,32 @@ extension AppDelegate {
         aboutWindow?.close()  // it was built in the old language
         aboutWindow = nil
         render()
+    }
+
+    @objc func addProfile() {
+        let panel = NSOpenPanel()
+        panel.canChooseDirectories = true
+        panel.canChooseFiles = false
+        panel.showsHiddenFiles = true
+        panel.directoryURL = FileManager.default.homeDirectoryForCurrentUser
+        panel.message = tr("choose_folder")
+        NSApp.activate()
+        guard panel.runModal() == .OK, let url = panel.url else { return }
+        let path = url.path == FileManager.default.homeDirectoryForCurrentUser.appending(path: ".claude").path ? "" : url.path
+        let list = defaults.stringArray(forKey: "profiles") ?? []
+        if !path.isEmpty, !list.contains(path) { defaults.set(list + [path], forKey: "profiles") }
+        defaults.set(path, forKey: "profile")
+        switchProfile()
+    }
+
+    // Only forgets it here: the folder and its login stay.
+    @objc func removeProfile() {
+        guard !profile.isEmpty, alert(tr("remove_question", ["name": profileName(profile)]), tr("remove_info"), tr("remove"), tr("cancel"))
+        else { return }
+        defaults.set((defaults.stringArray(forKey: "profiles") ?? []).filter { $0 != profile }, forKey: "profiles")
+        defaults.removeObject(forKey: historyKey)
+        defaults.removeObject(forKey: "profile")
+        switchProfile()
     }
 
     @objc func toggleDock() { toggleDockTile() }
