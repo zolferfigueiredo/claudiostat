@@ -10,7 +10,7 @@ Your Claude plan limits, live in the macOS menu bar.
 - **W**: this week, all models
 - **F**: this week, Fable
 - **P** (off by default, experimental): pace. How fast W is rising over the last hour, per day (times the working time, 8 hours by default) or per hour, following the pace warning mode. Shows "-" until there's a reading from an hour ago. After a pause, the rise is spread over the whole gap.
-- **D** (off by default): budget, **H** when pace warning mode is per hour. What's left of the week split over the days (or working hours) until the weekly reset, a partial last one counting in full, rounded down: 35% left with 1d 17h to go is 17% a day, or 0.8% an hour with a 24-hour working time. The menu shows P and the budget too, and per hour says how many working hours it is spread over.
+- **D** (off by default): budget. What's left of the week split over the days (or working hours) until the weekly reset, a partial last one counting in full, rounded down: 35% left with 1d 17h to go is 17% a day, or 0.8% an hour with a 24-hour working time. The menu shows P and the budget too, and per hour says how many working hours it is spread over.
 
 S and W change color when you're using them too fast.
 

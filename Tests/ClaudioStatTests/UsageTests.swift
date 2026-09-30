@@ -69,7 +69,7 @@ func dailyBudgetTable(now: String, week: Int, reset: String, hours: Double, expe
     #expect(barText(usage, showFable: true, showPace: true, showBudget: true).string == "S 42% · W - · F - · P - · D -")
     #expect(barText(nil, showFable: false, showBudget: false).string == "S - · W -")
     let rates = (Rate(unit: 3600, margin: 5), Rate(speed: 1, needed: 0.8, unit: 3600, margin: 10))
-    #expect(barText(nil, rates: rates, showFable: false, showPace: true, showBudget: true).string == local("S - · W - · P 1% · H 0.8%"))
+    #expect(barText(nil, rates: rates, showFable: false, showPace: true, showBudget: true).string == local("S - · W - · P 1% · D 0.8%"))
     let daily = (Rate(unit: 86400, margin: 5), Rate(speed: 16, needed: 13, unit: 86400, margin: 10))
     #expect(barText(nil, rates: daily, showFable: false, showBudget: true).string == "S - · W - · D 13%")
 }

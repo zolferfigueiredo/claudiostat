@@ -130,7 +130,7 @@ nonisolated func evenPace(_ limit: Limit?, unit: TimeInterval, now: Date) -> Dou
 }
 
 /// S per hour over the last 30 minutes against what's left spread evenly.
-/// W over the last hour against the budget, per day, or per hour when `colors` is "hour": these are P and D (H per hour).
+/// W over the last hour against the budget, per day, or per hour when `colors` is "hour": these are P and D.
 /// Only `workHours` of each day are spent using Claude: P per day is the hourly rise times that,
 /// and the budget per hour splits what's left over the working hours until the reset.
 nonisolated func paces(_ usage: Usage?, samples: [Sample], colors: String, workHours: Double = 24,
@@ -197,7 +197,7 @@ nonisolated func parseDate(_ value: Any?) -> Date? {
     return ISO8601DateFormatter().date(from: text.replacingOccurrences(of: #"\.\d+"#, with: "", options: .regularExpression))
 }
 
-/// D (H per hour): what's left of the weekly limit split over the whole days (or hours) until the reset, a partial
+/// D: what's left of the weekly limit split over the whole days (or hours) until the reset, a partial
 /// last one counting in full, rounded down to whole percents a day or tenths an hour.
 /// 35% left over 1d 17h is 17% a day, or 0.8% an hour. Per hour only `workHours` of each day count.
 nonisolated func budget(week: Int, resetsAt: Date?, unit: TimeInterval, workHours: Double = 24, now: Date) -> Double? {
@@ -217,14 +217,14 @@ nonisolated func percent(_ value: Double?) -> String {
     value.map { "\($0.formatted(.number.precision(.fractionLength(0...1))))%" } ?? "-"
 }
 
-/// P and D are W's speed and budget. The budget reads H when it is per hour.
+/// P and D are W's speed and budget.
 nonisolated func barText(_ usage: Usage?, rates: (session: Rate, week: Rate)? = nil,
                          showFable: Bool, showPace: Bool = false, showBudget: Bool) -> NSAttributedString {
     var parts = [("S \(percent(usage?.session?.percent))", rates?.session.pace ?? .ok),
                  ("W \(percent(usage?.week?.percent))", rates?.week.pace ?? .ok)]
     if showFable { parts.append(("F \(percent(usage?.fable?.percent))", .ok)) }
     if showPace { parts.append(("P \(percent(rates?.week.speed))", .ok)) }
-    if showBudget { parts.append(("\(rates?.week.unit == 3600 ? "H" : "D") \(percent(rates?.week.needed))", .ok)) }
+    if showBudget { parts.append(("D \(percent(rates?.week.needed))", .ok)) }
     let bar = NSMutableAttributedString()
     for (text, pace) in parts {
         if bar.length > 0 { bar.append(NSAttributedString(string: " · ")) }
