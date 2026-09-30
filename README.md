@@ -115,6 +115,8 @@ It runs the tests, builds a universal app and writes `dist/ClaudioStat-<version>
 
 To try a change, run `./run.sh`. It builds a debug copy in `/tmp/claudiostat-run`, quits any running ClaudioStat and opens the new one.
 
+`./run.sh -testNotifications YES` also shows every notification, to check how they read: the update notice, offering the next version, then Week at 80% and 90% and each limit reached, 8 seconds apart. The installed app does the same with `open -a ClaudioStat --args -testNotifications YES` once quit.
+
 ## Disclaimer
 
 Unofficial. Not affiliated with or endorsed by Anthropic. It relies on an experimental Claude Code API that may change or stop working at any time.

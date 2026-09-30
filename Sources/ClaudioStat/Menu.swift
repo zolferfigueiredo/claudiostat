@@ -160,8 +160,10 @@ extension AppDelegate {
         menu.addItem(.separator())
         action(tr("about"), #selector(showAbout)).image = NSImage(systemSymbolName: "info.circle", accessibilityDescription: nil)
         menu.addItem(.separator())
-        let check = action(tr("check"), #selector(checkNow), enabled: !checking)
-        if let version = availableUpdate {
+        // While an update installs, and until Reopen, its step stands in, in plain text that greys out:
+        // the bold "Update available!" still looked clickable.
+        let check = action(UpdateProgress.underway ?? tr("check"), #selector(checkNow), enabled: !checking && UpdateProgress.underway == nil)
+        if let version = availableUpdate, UpdateProgress.underway == nil {
             check.attributedTitle = updateAvailableTitle(version)
             check.image = updateAvailableIcon()
         } else {
