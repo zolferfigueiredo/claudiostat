@@ -43,7 +43,7 @@ While "Only refresh while Claude is open" is on and the Claude desktop app is cl
 
 ## Updates
 
-**Check for updates…** in the menu asks claudiostat.zolfer.com for `latest.json`, a plain download that sends nothing about you. **Check automatically** does the same daily, weekly (the default) or never. When there is a newer version, **Update Now** downloads it, replaces the copy in Applications and relaunches.
+**Check for updates…** in the menu asks claudiostat.zolfer.com for `latest.json`, a plain download that sends nothing about you. **Check automatically** does the same daily, weekly (the default) or never. When there is a newer version, **Update Now** downloads it, checks it is signed by you and replaces the copy in Applications, showing each step and a loading bar; **Reopen** then starts the new version.
 
 ## Install
 
