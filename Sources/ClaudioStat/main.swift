@@ -45,6 +45,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         updates.tolerance = 600
         RunLoop.main.add(updates, forMode: .common)
         autoCheck()
+        Task { showUpdateComplete() }  // after launch finishes, not in the middle of it
     }
 
     @objc func appsChanged(_ note: Notification) {

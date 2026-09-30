@@ -2,6 +2,13 @@ import AppKit
 import ServiceManagement
 
 extension AppDelegate {
+    // Opening the app again (its Dock shortcut, Spotlight, Finder) shows the menu at the pointer.
+    // That also reaches it when the notch hides the menu bar icon.
+    func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
+        item.menu?.popUp(positioning: nil, at: NSEvent.mouseLocation, in: nil)
+        return false
+    }
+
     // Rebuilt on every open, so countdowns and the login item state are always current.
     func menuNeedsUpdate(_ menu: NSMenu) {
         menu.removeAllItems()
@@ -112,7 +119,13 @@ extension AppDelegate {
         menu.addItem(.separator())
         action("About ClaudioStat", #selector(showAbout)).image = NSImage(systemSymbolName: "info.circle", accessibilityDescription: nil)
         menu.addItem(.separator())
-        action("Check for updates…", #selector(checkNow), enabled: !checking).image = NSImage(systemSymbolName: "arrow.down.circle", accessibilityDescription: nil)
+        let check = action("Check for updates…", #selector(checkNow), enabled: !checking)
+        if let version = availableUpdate {
+            check.attributedTitle = updateAvailableTitle(version)
+            check.image = updateAvailableIcon()
+        } else {
+            check.image = NSImage(systemSymbolName: "arrow.down.circle", accessibilityDescription: nil)
+        }
         // A blank image lines the title up with the icon rows.
         submenu("Check automatically", [("updateEvery", [(86400, "Daily"), (604800, "Weekly"), (0, "Never")])]).image = NSImage(size: NSSize(width: 16, height: 16))
         menu.addItem(.separator())
