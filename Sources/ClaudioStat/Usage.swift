@@ -234,14 +234,19 @@ nonisolated func barText(_ usage: Usage?, rates: (session: Rate, week: Rate)? = 
     return joined(parts.map { text, pace in NSAttributedString(string: text, attributes: pace.color.map { [.foregroundColor: $0] } ?? [:]) })
 }
 
-/// The parts with " · " between them, in the menu bar's font.
+/// The parts with " · " between them, in the menu bar's font, and in labelColor where a part has no color of its own:
+/// text without one is dimmed like a template on the menu bars of the displays not in use, see `redrawn`.
 nonisolated func joined(_ parts: [NSAttributedString]) -> NSAttributedString {
     let line = NSMutableAttributedString()
     for part in parts {
         if line.length > 0 { line.append(NSAttributedString(string: " · ")) }
         line.append(part)
     }
-    line.addAttribute(.font, value: NSFont.monospacedDigitSystemFont(ofSize: 0, weight: .regular), range: NSRange(location: 0, length: line.length))
+    let all = NSRange(location: 0, length: line.length)
+    line.addAttribute(.font, value: NSFont.monospacedDigitSystemFont(ofSize: 0, weight: .regular), range: all)
+    line.enumerateAttribute(.foregroundColor, in: all) { color, range, _ in
+        if color == nil { line.addAttribute(.foregroundColor, value: NSColor.labelColor, range: range) }
+    }
     return line
 }
 

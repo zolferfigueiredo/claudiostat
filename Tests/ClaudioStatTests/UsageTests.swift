@@ -216,7 +216,8 @@ private func sample(_ time: String, s: Int, sReset: Date = reset, w: Int = 60) -
     #expect(bar.string == "S 30% · W 60% · F -")
     #expect(color("S 30%") == .systemOrange)
     #expect(color("W 60%") == .systemRed)
-    #expect(color("F -") == nil)
+    #expect(color("F -") == .labelColor)  // else dimmed like a template on the displays not in use
+    #expect(color(" · ") == .labelColor)
 }
 
 // Trimmed from a real reply: locked_reason on each window, severity in the limits list.
