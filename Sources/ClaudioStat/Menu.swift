@@ -132,7 +132,7 @@ extension AppDelegate {
             data.submenu?.addItem(choice(name, "speedColors", value, enabled: defaults.bool(forKey: "showBudget")))
         }
         data.submenu?.addItem(.separator())
-        data.submenu?.addItem(toggle("Line + Resets in", "showResets"))
+        data.submenu?.addItem(toggle("Resets in", "showResets"))
         // Hours a day spent using Claude, so the pace ignores the rest of the day.
         submenu("Daily working time", [("workHours", [24, 16, 12, 8, 6, 4].map { ($0, "\($0) hours") })])
         toggles("Notifications", [("Limit reached", NoticeKind.reached.setting), ("Limit reset", NoticeKind.reset.setting),
