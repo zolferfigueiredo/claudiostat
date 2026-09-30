@@ -48,6 +48,8 @@ You need:
 | **P** | Pace | How fast W rose over the last hour, per day. Off by default, experimental |
 | **B** | Budget | What's left of the week per day, or per working hour, until the reset. Off by default |
 
+Turn on **Line + Resets in** under Data to add the time to each reset on the line: `S 54% (1h13) · W 6% (1d2h) · F 0% (1d2h)`.
+
 S and W turn orange when you're using them faster than they last until the reset, and red when it's well past that. A warning triangle takes the icon's place when Claude flags a limit.
 
 ## Features
