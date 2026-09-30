@@ -3,6 +3,8 @@ import Testing
 @testable import ClaudioStat
 
 private func date(_ text: String) -> Date { ISO8601DateFormatter().date(from: text)! }
+// The strings expected below are English, whatever language this Mac uses.
+private let english: Void = UserDefaults.standard.set("en", forKey: "language")
 /// Decimals follow the Mac's locale: "0.8" reads "0,8" in Portuguese.
 private func local(_ text: String) -> String { text.replacingOccurrences(of: ".", with: Locale.current.decimalSeparator ?? ".") }
 
@@ -75,6 +77,7 @@ func dailyBudgetTable(now: String, week: Int, reset: String, hours: Double, expe
 }
 
 @Test func resetsOnTheLine() {
+    _ = english
     #expect(span(93600, short: true) == "1d2h")
     #expect(span(3900, short: true) == "1h05")
     #expect(span(420, short: true) == "7m")
@@ -150,6 +153,7 @@ private func sample(_ time: String, s: Int, sReset: Date = reset, w: Int = 60) -
 }
 
 @Test func weekPaceAgainstTheBudget() {
+    _ = english
     // The last reading at least an hour old is 10:30, so the 1 point spreads over 1.5 hours.
     let samples = [sample("2026-09-28T10:30:00Z", s: 0, w: 59), sample("2026-09-28T12:00:00Z", s: 0, w: 60)]
     let usage = samples.last!.usage, now = date("2026-09-28T12:00:00Z")  // 40% left over 71h
@@ -213,6 +217,7 @@ private func sample(_ time: String, s: Int, sReset: Date = reset, w: Int = 60) -
 
 // Trimmed from a real reply: locked_reason on each window, severity in the limits list.
 @Test func parsesWarnings() {
+    _ = english
     let usage = parseUsage([
         "five_hour": ["utilization": 97, "resets_at": "2026-09-28T23:00:00.881496+00:00", "locked_reason": NSNull()],
         "seven_day": ["utilization": 100, "resets_at": "2026-10-01T11:00:00+00:00", "locked_reason": "weekly_limit"],
@@ -238,6 +243,7 @@ private func sample(_ time: String, s: Int, sReset: Date = reset, w: Int = 60) -
 }
 
 @Test func spans() {
+    _ = english
     #expect(span(2 * 3600 + 13 * 60) == "2h 13m")
     #expect(span(3 * 86400 + 18 * 3600 + 59) == "3d 18h")
     #expect(span(7 * 60) == "7m")
@@ -245,6 +251,7 @@ private func sample(_ time: String, s: Int, sReset: Date = reset, w: Int = 60) -
 }
 
 @Test func noticesWhenALimitIsReached() {
+    _ = english
     let now = date("2026-09-28T12:00:00Z"), reset = date("2026-09-28T14:13:00Z")
     let before = Usage(session: Limit(percent: 97, resetsAt: reset), week: Limit(percent: 50))
     let after = Usage(session: Limit(percent: 100, resetsAt: reset, locked: true), week: Limit(percent: 50))
@@ -256,6 +263,7 @@ private func sample(_ time: String, s: Int, sReset: Date = reset, w: Int = 60) -
 }
 
 @Test func noticesWhenTheWeekCrossesAMark() {
+    _ = english
     let now = date("2026-09-28T12:00:00Z"), reset = date("2026-10-01T16:00:00Z")  // 3d 4h away
     func week(_ percent: Int) -> Usage { Usage(week: Limit(percent: percent, resetsAt: reset)) }
     #expect(notices(from: week(79), to: week(80), now: now).map(\.title) == ["Week at 80%"])

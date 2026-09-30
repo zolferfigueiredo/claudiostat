@@ -64,11 +64,12 @@ nonisolated func keepSeverity(_ new: Usage, from old: Usage?) -> Usage {
 
 /// The first limit Claude flags: locked out, or any severity other than normal.
 nonisolated func warning(_ usage: Usage?) -> String? {
-    for (name, limit) in [("Session", usage?.session), ("Week", usage?.week), ("Fable", usage?.fable)] {
+    for (id, limit) in [("session", usage?.session), ("week", usage?.week), ("fable", usage?.fable)] {
         guard let limit else { continue }
-        if limit.locked { return "\(name) limit reached" }
+        if limit.locked { return tr("reached.\(id)") }
         if let severity = limit.severity, severity != "normal" {
-            return "\(name) limit: \(severity.replacingOccurrences(of: "_", with: " "))"
+            // Claude's own word for it, which only comes in English.
+            return tr("flagged_as", ["limit": tr("limit.\(id)"), "severity": severity.replacingOccurrences(of: "_", with: " ")])
         }
     }
     return nil
@@ -117,8 +118,8 @@ nonisolated struct Rate {
     /// Why it's colored: "Using 24% a day, 17% a day lasts until reset".
     var reason: String? {
         guard pace != .ok else { return nil }
-        let per = unit == 3600 ? "an hour" : "a day"
-        return "Using \(percent(speed)) \(per), \(percent(needed)) \(per) lasts until reset"
+        let rate = unit == 3600 ? "rate_hour" : "rate_day"
+        return tr("reason", ["speed": tr(rate, ["n": percent(speed)]), "needed": tr(rate, ["n": percent(needed)])])
     }
 }
 
@@ -167,23 +168,23 @@ nonisolated struct Notice: Equatable {
 /// the notice that it's usable again for its reset time, or the week crossing 80% or 90% in one window.
 nonisolated func notices(from old: Usage?, to new: Usage, now: Date) -> [Notice] {
     var found: [Notice] = []
-    for (name, before, after) in [("Session", old?.session, new.session), ("Week", old?.week, new.week),
-                                  ("Fable", old?.fable, new.fable)] {
+    for (id, before, after) in [("session", old?.session, new.session), ("week", old?.week, new.week),
+                                ("fable", old?.fable, new.fable)] {
         guard let after, after.locked, before?.locked != true else { continue }
-        let id = name.lowercased()
-        found.append(Notice(kind: .reached, id: "reached-\(id)", title: "\(name) limit reached",
-                            body: after.resetsAt.map { "Resets in \(span($0.timeIntervalSince(now)))." } ?? ""))
+        found.append(Notice(kind: .reached, id: "reached-\(id)", title: tr("reached.\(id)"),
+                            body: after.resetsAt.map { tr("notice_resets", ["time": span($0.timeIntervalSince(now))]) } ?? ""))
         if let reset = after.resetsAt, reset > now {
-            found.append(Notice(kind: .reset, id: "reset-\(id)", title: "\(name) limit reset",
-                                body: "You can use \(name == "Fable" ? "Fable" : "Claude") again.", at: reset))
+            found.append(Notice(kind: .reset, id: "reset-\(id)", title: tr("reset_done.\(id)"),
+                                body: tr("use_again", ["name": id == "fable" ? "Fable" : "Claude"]), at: reset))
         }
     }
     // Only the highest mark crossed, and not when the week just ran out: that has its own notice.
     if let before = old?.week, let after = new.week, !after.locked, sameWindow(before, after),
        let mark = [90, 80].first(where: { before.percent < $0 && after.percent >= $0 }) {
-        let left = "\(max(0, 100 - after.percent))% left"
-        found.append(Notice(kind: .week, id: "week", title: "Week at \(mark)%",
-                            body: left + (after.resetsAt.map { ", resets in \(span($0.timeIntervalSince(now)))." } ?? ".")))
+        let left = max(0, 100 - after.percent)
+        found.append(Notice(kind: .week, id: "week", title: tr("week_at", ["n": mark]),
+                            body: after.resetsAt.map { tr("left_resets", ["n": left, "time": span($0.timeIntervalSince(now))]) }
+                                ?? tr("left", ["n": left])))
     }
     return found
 }
@@ -293,9 +294,10 @@ nonisolated func faded(_ text: NSAttributedString, _ alpha: CGFloat) -> NSAttrib
     return copy
 }
 
-/// "3d 18h", "2h 13m", "7m", or short for the menu bar: "3d18h", "2h13", "7m"
+/// "3d 18h", "2h 13m", "7m", or short for the menu bar: "3d18h", "2h13", "7m". Each language has its own units.
 nonisolated func span(_ seconds: TimeInterval, short: Bool = false) -> String {
     let minutes = max(0, Int(seconds / 60)), days = minutes / 1440, hours = minutes / 60 % 24
-    if short { return days > 0 ? "\(days)d\(hours)h" : hours > 0 ? "\(hours)h\(String(format: "%02d", minutes % 60))" : "\(minutes)m" }
-    return days > 0 ? "\(days)d \(hours)h" : hours > 0 ? "\(hours)h \(minutes % 60)m" : "\(minutes)m"
+    let form = days > 0 ? "dh" : hours > 0 ? "hm" : "m"
+    return tr("span.\(form)\(short ? "_short" : "")",
+              ["d": days, "h": hours, "m": minutes % 60, "mm": String(format: "%02d", minutes % 60)])
 }
