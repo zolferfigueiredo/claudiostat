@@ -11,6 +11,26 @@ func claudePath() -> String? {
         .first(where: FileManager.default.isExecutableFile(atPath:))
 }
 
+/// Whether Claude Code runs on this Mac, in a terminal or in the Claude app. The copies this app starts don't count.
+// ponytail: by process name, so an npm install (a node process) isn't seen; read argv with KERN_PROCARGS2 if that matters.
+nonisolated func claudeCodeRunning() -> Bool {
+    // The native install runs under its version's name: ~/.local/share/claude/versions/2.1.283.
+    let versions = FileManager.default.homeDirectoryForCurrentUser.appending(path: ".local/share/claude/versions").path
+    let names = Set(["claude"] + ((try? FileManager.default.contentsOfDirectory(atPath: versions)) ?? []))
+    var mib = [CTL_KERN, KERN_PROC, KERN_PROC_UID, Int32(getuid())]
+    var size = 0
+    guard sysctl(&mib, 4, nil, &size, nil, 0) == 0 else { return false }
+    // Room for a few more processes started between the two calls.
+    var processes = [kinfo_proc](repeating: kinfo_proc(), count: size / MemoryLayout<kinfo_proc>.stride + 16)
+    size = processes.count * MemoryLayout<kinfo_proc>.stride
+    guard sysctl(&mib, 4, &processes, &size, nil, 0) == 0 else { return false }
+    return processes.prefix(size / MemoryLayout<kinfo_proc>.stride).contains { process in
+        var name = process.kp_proc.p_comm
+        let command = withUnsafeBytes(of: &name) { String(decoding: $0.prefix { $0 != 0 }, as: UTF8.self) }
+        return names.contains(command) && process.kp_eproc.e_ppid != getpid()
+    }
+}
+
 /// Claude Code with `arguments` for a profile's folder (nil for ~/.claude), its output discarded. Nil when not installed.
 func claude(_ arguments: [String], configDir: String?) -> Process? {
     guard let path = claudePath() else { return nil }

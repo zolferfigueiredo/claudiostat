@@ -20,7 +20,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     lazy var claudeID = defaults.string(forKey: "watchBundleID") ?? "com.anthropic.claudefordesktop"
 
     var accounts: [String: Account] = [:]  // by profile
-    var claudeRunning = false
+    var claudeRunning = false   // the Claude app
+    var codeRunning = false     // Claude Code, in a terminal or in the Claude app
     var busy = false
     var timer: Timer?
     var pulse: Timer?        // redraws the icon or numbers while they fade
@@ -29,9 +30,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     var lastBar = ""
     var checking = false     // an update check or install is running
 
-    // Without the Claude app there is nothing to wait for.
-    var paused: Bool { defaults.bool(forKey: "onlyWhileClaude") && claudeInstalled && !claudeRunning }
-    lazy var claudeInstalled = NSWorkspace.shared.urlForApplication(withBundleIdentifier: claudeID) != nil
+    // Without the Claude app or Claude Code there is nothing to wait for.
+    var paused: Bool { defaults.bool(forKey: "onlyWhileClaude") && claudeInstalled && !claudeRunning && !codeRunning }
+    lazy var claudeInstalled = NSWorkspace.shared.urlForApplication(withBundleIdentifier: claudeID) != nil || claudePath() != nil
     /// The checked Claude Code folder, else the first. "" is ~/.claude.
     var profile: String {
         let checked = defaults.string(forKey: "profile") ?? ""
@@ -70,7 +71,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         workspace.addObserver(self, selector: #selector(appsChanged), name: NSWorkspace.didLaunchApplicationNotification, object: nil)
         workspace.addObserver(self, selector: #selector(appsChanged), name: NSWorkspace.didTerminateApplicationNotification, object: nil)
         claudeRunning = !NSRunningApplication.runningApplications(withBundleIdentifier: claudeID).isEmpty
-        log.notice("start, watching \(self.claudeID, privacy: .public), running: \(self.claudeRunning, privacy: .public)")
+        codeRunning = claudeCodeRunning()
+        log.notice("start, watching \(self.claudeID, privacy: .public), running: \(self.claudeRunning, privacy: .public), Claude Code: \(self.codeRunning, privacy: .public)")
         reschedule()
         watchSessions()
         render()
@@ -81,7 +83,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         }
 
         // The countdowns on the line move between refreshes, and while paused.
-        let minute = Timer(timeInterval: 60, target: self, selector: #selector(render), userInfo: nil, repeats: true)
+        let minute = Timer(timeInterval: 60, target: self, selector: #selector(everyMinute), userInfo: nil, repeats: true)
         minute.tolerance = 10
         RunLoop.main.add(minute, forMode: .common)
 
@@ -99,6 +101,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         claudeRunning = note.name == NSWorkspace.didLaunchApplicationNotification
         log.notice("claude \(self.claudeRunning ? "launched" : "quit", privacy: .public)")
         if paused != wasPaused { reschedule() }
+        render()
+    }
+
+    /// Claude Code in a terminal starts and quits without a notification, so it is looked for every minute and when the menu opens.
+    func lookForClaudeCode() {
+        let wasPaused = paused
+        codeRunning = claudeCodeRunning()
+        guard paused != wasPaused else { return }
+        log.notice("claude code \(self.codeRunning ? "running" : "closed", privacy: .public)")
+        reschedule()
+    }
+
+    @objc func everyMinute() {
+        lookForClaudeCode()
         render()
     }
 
@@ -240,6 +256,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         if line != lastBar { log.notice("bar: \(line, privacy: .public)") }
         lastBar = line
     }
+}
+
+// One copy at a time: the one just opened (the DMG's, a build) takes over from any other.
+for other in NSRunningApplication.runningApplications(withBundleIdentifier: Bundle.main.bundleIdentifier ?? "") where other != .current {
+    other.terminate()
 }
 
 let app = NSApplication.shared
