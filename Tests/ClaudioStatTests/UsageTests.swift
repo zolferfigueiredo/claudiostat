@@ -75,9 +75,13 @@ func dailyBudgetTable(now: String, week: Int, reset: String, hours: Double, expe
     #expect(joined([barText(usage, showFable: false, showBudget: false, profile: "claude"),
                     barText(nil, showFable: false, showBudget: false, profile: "claude-work")]).string == "claude · S 42%")
     let rates = (Rate(unit: 3600, margin: 5), Rate(speed: 1, needed: 0.8, unit: 3600, margin: 10))
-    #expect(barText(nil, rates: rates, showFable: false, showPace: true, showBudget: true).string == local("P 1% · B 0.8%"))
+    // P comes from the saved history: never on its own, before a reading or without W.
+    #expect(barText(nil, rates: rates, showFable: false, showPace: true, showBudget: true).string == "")
+    #expect(barText(usage, rates: rates, showFable: false, showPace: true, showBudget: false).string == "S 42%")
+    let week = Usage(week: Limit(percent: 18))
+    #expect(barText(week, rates: rates, showFable: false, showPace: true, showBudget: true).string == local("W 18% · P 1% · B 0.8%"))
     let daily = (Rate(unit: 86400, margin: 5), Rate(speed: 16, needed: 13, unit: 86400, margin: 10))
-    #expect(barText(nil, rates: daily, showFable: false, showBudget: true).string == "B 13%")
+    #expect(barText(week, rates: daily, showFable: false, showBudget: true).string == "W 18% · B 13%")
 }
 
 @Test func resetsOnTheLine() {
