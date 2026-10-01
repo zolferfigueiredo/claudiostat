@@ -12,6 +12,7 @@ extension AppDelegate {
     // Rebuilt on every open, so countdowns and the login item state are always current.
     func menuNeedsUpdate(_ menu: NSMenu) {
         menu.removeAllItems()
+        lookForClaudeCode()
         // choice() checks the stored value, which can still name a removed profile.
         defaults.set(profile, forKey: "profile")
         let now = Date.now, mode = defaults.string(forKey: "menuBar")

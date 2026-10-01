@@ -59,7 +59,7 @@ S and W turn orange when you're using them faster than they last until the reset
 - **Never sees your login.** Signing in runs Claude Code's own `claude auth login` in your browser. ClaudioStat never sees or stores a credential.
 - **Shows when tokens are going.** The icon pulses while Claude Code is writing a reply on this Mac.
 - **Tells you in time.** Notifications when a limit is reached, when it resets, and when the week hits 80% and 90%.
-- **Sleeps when Claude does.** While the Claude app is closed it stops asking, and the last numbers dim so you can tell they're old. Without the Claude desktop app, it never pauses.
+- **Sleeps when Claude does.** While neither the Claude app nor Claude Code in a terminal is running, it stops asking, and the last numbers dim so you can tell they're old.
 - **Speaks 12 languages.** Deutsch, English, Español, Français, Italiano, Polski, Português, Русский, Українська, 中文, 日本語 and 한국어. It starts in your Mac's language, and **Language** in the menu changes it.
 - **Native and tiny.** A small Swift app with no Dock icon. It can launch at login and installs updates in one click.
 
@@ -72,13 +72,14 @@ Every refresh, ClaudioStat runs your installed Claude Code once, headless, and s
 - Hooks, plugins and MCP servers are off for that run, and no session is saved.
 - To know when Claude Code is writing a reply, it watches the session files in `~/.claude/projects` and reads the end of the one that changed. It keeps and sends nothing.
 - **Check for updates…** downloads `latest.json` from claudiostat.zolfer.com and sends nothing about you. An update installs only if it's signed by the same developer, and only into the copy in Applications. While it installs, a window shows each step under a loading bar; **Reopen** then starts the new version. When an automatic check finds a new version, a notification says so once; clicking it offers Update Now.
+- Only one copy runs at a time: opening another one, say from the DMG, quits the copy already running.
 
 <details>
 <summary><b>Every setting</b></summary>
 
 - **Show data below** (on): every limit with its reset countdown, then pace and the budget.
 - **Refresh now** (⌘R), and **Refresh every** 1, 3 (default), 5 or 10 minutes.
-- **Pause when Claude is closed** (on): while the Claude desktop app is closed, nothing refreshes and the last numbers dim. Greyed out when the Claude desktop app isn't installed, and then it never pauses.
+- **Pause when Claude is closed** (on): while neither the Claude desktop app nor Claude Code in a terminal is running, nothing refreshes and the last numbers dim. It looks for a running `claude` every minute and when you open the menu. Greyed out when neither is installed.
 - **Claude Status** opens status.claude.com.
 - **Profiles**: one per Claude account, each in its own Claude Code folder and named by its email. The checked one fills the bar and the menu. With none, the menu bar says **Add a profile** and the menu starts with **Add profile…**.
   - **Add profile…** signs in to another account through your browser, into a new folder: `~/.claude-2`, `~/.claude-3` and so on. With no profile left, it signs `~/.claude` in instead.

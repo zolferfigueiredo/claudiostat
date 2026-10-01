@@ -207,6 +207,25 @@ private func sample(_ time: String, s: Int, sReset: Date = reset, w: Int = 60) -
     #expect(!thinking("{\"cut off"))
 }
 
+// A terminal's claude, started by a shell, counts. One started by this app itself doesn't.
+@Test func seesClaudeCodeStartedElsewhere() throws {
+    let folder = FileManager.default.temporaryDirectory.appending(path: UUID().uuidString)
+    try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+    defer { try? FileManager.default.removeItem(at: folder) }
+    let fake = folder.appending(path: "claude")
+    // A copy, not a symlink: a process is named after the file a symlink points to.
+    try FileManager.default.copyItem(at: URL(fileURLWithPath: "/bin/sleep"), to: fake)
+    let before = claudeCodeRunning()  // a real one may be open on this Mac
+    let own = try Process.run(fake, arguments: ["2"])
+    defer { own.terminate() }
+    #expect(claudeCodeRunning() == before)
+    // "; :" keeps the shell from exec'ing it, so the shell is its parent.
+    let shell = try Process.run(URL(fileURLWithPath: "/bin/sh"), arguments: ["-c", #""$0" 2; :"#, fake.path])
+    defer { shell.terminate() }
+    Thread.sleep(forTimeInterval: 0.3)
+    #expect(claudeCodeRunning())
+}
+
 @Test func barColorsSessionAndWeekOnly() {
     let rates = (Rate(speed: 22, needed: 20, unit: 3600, margin: 5), Rate(speed: 30, needed: 13, unit: 86400, margin: 10))
     let bar = barText(Usage(session: Limit(percent: 30), week: Limit(percent: 60)), rates: rates, showFable: true, showBudget: false)
@@ -216,7 +235,8 @@ private func sample(_ time: String, s: Int, sReset: Date = reset, w: Int = 60) -
     #expect(bar.string == "S 30% · W 60% · F -")
     #expect(color("S 30%") == .systemOrange)
     #expect(color("W 60%") == .systemRed)
-    #expect(color("F -") == nil)
+    #expect(color("F -") == .labelColor)  // else dimmed like a template on the displays not in use
+    #expect(color(" · ") == .labelColor)
 }
 
 // Trimmed from a real reply: locked_reason on each window, severity in the limits list.

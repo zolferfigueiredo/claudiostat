@@ -234,18 +234,24 @@ nonisolated func barText(_ usage: Usage?, rates: (session: Rate, week: Rate)? = 
     return joined(parts.map { text, pace in NSAttributedString(string: text, attributes: pace.color.map { [.foregroundColor: $0] } ?? [:]) })
 }
 
-/// The parts with " · " between them, in the menu bar's font.
+/// The parts with " · " between them, in the menu bar's font, and in labelColor where a part has no color of its own:
+/// text without one is dimmed like a template on the menu bars of the displays not in use, see `redrawn`.
 nonisolated func joined(_ parts: [NSAttributedString]) -> NSAttributedString {
     let line = NSMutableAttributedString()
     for part in parts {
         if line.length > 0 { line.append(NSAttributedString(string: " · ")) }
         line.append(part)
     }
-    line.addAttribute(.font, value: NSFont.monospacedDigitSystemFont(ofSize: 0, weight: .regular), range: NSRange(location: 0, length: line.length))
+    let all = NSRange(location: 0, length: line.length)
+    line.addAttribute(.font, value: NSFont.monospacedDigitSystemFont(ofSize: 0, weight: .regular), range: all)
+    line.enumerateAttribute(.foregroundColor, in: all) { color, range, _ in
+        if color == nil { line.addAttribute(.foregroundColor, value: NSColor.labelColor, range: range) }
+    }
     return line
 }
 
-/// The app icon's tilted five-ray star, one color. A template in the menu bar's own color unless tinted.
+/// The app icon's tilted five-ray star in `tint`, or else in labelColor as it is drawn: white on a dark menu bar,
+/// black on a light one. Not a template, for the reason in `redrawn`.
 nonisolated func star(_ tint: NSColor?) -> NSImage {
     let image = NSImage(size: NSSize(width: 16, height: 16), flipped: false) { rect in
         // Same construction as Icon/make-icon.swift: each ray is the hull of a hub circle and a tip circle.
@@ -269,24 +275,28 @@ nonisolated func star(_ tint: NSColor?) -> NSImage {
         path.transform(using: AffineTransform(translationByX: -box.midX, byY: -box.midY))
         path.transform(using: AffineTransform(scale: min(rect.width / box.width, rect.height / box.height)))
         path.transform(using: AffineTransform(translationByX: rect.midX, byY: rect.midY))
-        (tint ?? .black).setFill()
+        (tint ?? .labelColor).setFill()
         path.fill()
         return true
     }
-    image.isTemplate = tint == nil
     image.accessibilityDescription = "ClaudioStat"
     return image
 }
 
 /// The image at `alpha` opacity, `lift` points higher over added transparent space.
-/// A template stays one, so the menu bar still draws it in its own color.
+/// A template comes out in labelColor as it is drawn, so it still follows a light or dark menu bar, and is no longer one:
+/// on the menu bars of the displays not in use macOS shows a template's copy at about 15% opacity, and anything else at
+/// about 60%, like its own icons.
 nonisolated func redrawn(_ image: NSImage?, alpha: CGFloat = 1, lift: CGFloat = 0) -> NSImage? {
     guard let image else { return nil }
-    let copy = NSImage(size: NSSize(width: image.size.width, height: image.size.height + 2 * lift), flipped: false) { _ in
+    let copy = NSImage(size: NSSize(width: image.size.width, height: image.size.height + 2 * lift), flipped: false) { rect in
         image.draw(in: NSRect(origin: NSPoint(x: 0, y: 2 * lift), size: image.size), from: .zero, operation: .sourceOver, fraction: alpha)
+        if image.isTemplate {
+            NSColor.labelColor.set()
+            rect.fill(using: .sourceIn)
+        }
         return true
     }
-    copy.isTemplate = image.isTemplate
     copy.accessibilityDescription = image.accessibilityDescription
     return copy
 }
