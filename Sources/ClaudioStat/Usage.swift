@@ -226,10 +226,12 @@ nonisolated func barText(_ usage: Usage?, rates: (session: Rate, week: Rate)? = 
         guard let now, let reset = limit.resetsAt else { return "\(letter) \(percent(limit.percent))" }
         return "\(letter) \(percent(limit.percent)) (\(span(reset.timeIntervalSince(now), short: true)))"
     }
-    var found = [(stat("S", usage?.session), rates?.session.pace ?? .ok),
-                 (stat("W", usage?.week), rates?.week.pace ?? .ok)]
-    if showFable { found.append((stat("F", usage?.fable), .ok)) }
-    if showPace { found.append((rates?.week.speed.map { "P \(percent($0))" }, .ok)) }
+    // P comes from the saved history, so without a reading it would stand alone.
+    guard let usage else { return NSAttributedString() }
+    var found = [(stat("S", usage.session), rates?.session.pace ?? .ok),
+                 (stat("W", usage.week), rates?.week.pace ?? .ok)]
+    if showFable { found.append((stat("F", usage.fable), .ok)) }
+    if showPace, usage.week != nil { found.append((rates?.week.speed.map { "P \(percent($0))" }, .ok)) }
     if showBudget { found.append((rates?.week.needed.map { "B \(percent($0))" }, .ok)) }
     // A letter without a value is left out, and a profile without any is left out whole.
     var parts = found.compactMap { text, pace in text.map { ($0, pace) } }
