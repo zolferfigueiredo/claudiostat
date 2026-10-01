@@ -221,15 +221,19 @@ nonisolated func percent(_ value: Double?) -> String {
 /// A `profile` name goes first.
 nonisolated func barText(_ usage: Usage?, rates: (session: Rate, week: Rate)? = nil, showFable: Bool, showPace: Bool = false,
                          showBudget: Bool, resetsFrom now: Date? = nil, profile: String? = nil) -> NSAttributedString {
-    func stat(_ letter: String, _ limit: Limit?) -> String {
-        guard let now, let reset = limit?.resetsAt else { return "\(letter) \(percent(limit?.percent))" }
-        return "\(letter) \(percent(limit?.percent)) (\(span(reset.timeIntervalSince(now), short: true)))"
+    func stat(_ letter: String, _ limit: Limit?) -> String? {
+        guard let limit else { return nil }
+        guard let now, let reset = limit.resetsAt else { return "\(letter) \(percent(limit.percent))" }
+        return "\(letter) \(percent(limit.percent)) (\(span(reset.timeIntervalSince(now), short: true)))"
     }
-    var parts = [(stat("S", usage?.session), rates?.session.pace ?? .ok),
+    var found = [(stat("S", usage?.session), rates?.session.pace ?? .ok),
                  (stat("W", usage?.week), rates?.week.pace ?? .ok)]
-    if showFable { parts.append((stat("F", usage?.fable), .ok)) }
-    if showPace { parts.append(("P \(percent(rates?.week.speed))", .ok)) }
-    if showBudget { parts.append(("B \(percent(rates?.week.needed))", .ok)) }
+    if showFable { found.append((stat("F", usage?.fable), .ok)) }
+    if showPace { found.append((rates?.week.speed.map { "P \(percent($0))" }, .ok)) }
+    if showBudget { found.append((rates?.week.needed.map { "B \(percent($0))" }, .ok)) }
+    // A letter without a value is left out, and a profile without any is left out whole.
+    var parts = found.compactMap { text, pace in text.map { ($0, pace) } }
+    guard !parts.isEmpty else { return NSAttributedString() }
     if let profile { parts.insert((profile, .ok), at: 0) }
     return joined(parts.map { text, pace in NSAttributedString(string: text, attributes: pace.color.map { [.foregroundColor: $0] } ?? [:]) })
 }
@@ -238,7 +242,7 @@ nonisolated func barText(_ usage: Usage?, rates: (session: Rate, week: Rate)? = 
 /// text without one is dimmed like a template on the menu bars of the displays not in use, see `redrawn`.
 nonisolated func joined(_ parts: [NSAttributedString]) -> NSAttributedString {
     let line = NSMutableAttributedString()
-    for part in parts {
+    for part in parts where part.length > 0 {
         if line.length > 0 { line.append(NSAttributedString(string: " · ")) }
         line.append(part)
     }

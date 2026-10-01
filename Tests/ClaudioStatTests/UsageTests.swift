@@ -66,18 +66,18 @@ func dailyBudgetTable(now: String, week: Int, reset: String, hours: Double, expe
     #expect(parseReply(#"{"type":"control_response","response":{"subtype":"success","response":{"rate_limits_available":true,"rate_limits":null}}}"#) == .failed)
 }
 
-@Test func missingRowsShowDash() {
+@Test func missingValuesAreLeftOut() {
     let usage = parseUsage(["five_hour": ["utilization": 42, "resets_at": NSNull()], "model_scoped": []])
-    #expect(barText(usage, showFable: true, showPace: true, showBudget: true).string == "S 42% · W - · F - · P - · B -")
-    #expect(barText(nil, showFable: false, showBudget: false).string == "S - · W -")
-    #expect(barText(nil, showFable: false, showBudget: false, profile: "claude-work").string == "claude-work · S - · W -")
-    // Multiple users: each profile in turn.
-    #expect(joined(["claude", "claude-work"].map { barText(nil, showFable: false, showBudget: false, profile: $0) }).string
-            == "claude · S - · W - · claude-work · S - · W -")
+    #expect(barText(usage, showFable: true, showPace: true, showBudget: true).string == "S 42%")
+    #expect(barText(nil, showFable: true, showPace: true, showBudget: true).string == "")
+    #expect(barText(nil, showFable: false, showBudget: false, profile: "claude-work").string == "")
+    // Multiple users: each profile in turn, one without numbers left out whole.
+    #expect(joined([barText(usage, showFable: false, showBudget: false, profile: "claude"),
+                    barText(nil, showFable: false, showBudget: false, profile: "claude-work")]).string == "claude · S 42%")
     let rates = (Rate(unit: 3600, margin: 5), Rate(speed: 1, needed: 0.8, unit: 3600, margin: 10))
-    #expect(barText(nil, rates: rates, showFable: false, showPace: true, showBudget: true).string == local("S - · W - · P 1% · B 0.8%"))
+    #expect(barText(nil, rates: rates, showFable: false, showPace: true, showBudget: true).string == local("P 1% · B 0.8%"))
     let daily = (Rate(unit: 86400, margin: 5), Rate(speed: 16, needed: 13, unit: 86400, margin: 10))
-    #expect(barText(nil, rates: daily, showFable: false, showBudget: true).string == "S - · W - · B 13%")
+    #expect(barText(nil, rates: daily, showFable: false, showBudget: true).string == "B 13%")
 }
 
 @Test func resetsOnTheLine() {
@@ -88,7 +88,7 @@ func dailyBudgetTable(now: String, week: Int, reset: String, hours: Double, expe
     let now = date("2026-09-28T12:00:00Z")
     let usage = Usage(session: Limit(percent: 54, resetsAt: now.addingTimeInterval(4380)),
                       week: Limit(percent: 6, resetsAt: now.addingTimeInterval(93600)), fable: Limit(percent: 0))
-    #expect(barText(usage, showFable: true, showBudget: true, resetsFrom: now).string == "S 54% (1h13) · W 6% (1d2h) · F 0% · B -")
+    #expect(barText(usage, showFable: true, showBudget: true, resetsFrom: now).string == "S 54% (1h13) · W 6% (1d2h) · F 0%")
     #expect(barText(usage, showFable: true, showBudget: false).string == "S 54% · W 6% · F 0%")
 }
 
@@ -228,14 +228,14 @@ private func sample(_ time: String, s: Int, sReset: Date = reset, w: Int = 60) -
 
 @Test func barColorsSessionAndWeekOnly() {
     let rates = (Rate(speed: 22, needed: 20, unit: 3600, margin: 5), Rate(speed: 30, needed: 13, unit: 86400, margin: 10))
-    let bar = barText(Usage(session: Limit(percent: 30), week: Limit(percent: 60)), rates: rates, showFable: true, showBudget: false)
+    let bar = barText(Usage(session: Limit(percent: 30), week: Limit(percent: 60), fable: Limit(percent: 7)), rates: rates, showFable: true, showBudget: false)
     func color(_ text: String) -> NSColor? {
         bar.attribute(.foregroundColor, at: (bar.string as NSString).range(of: text).location, effectiveRange: nil) as? NSColor
     }
-    #expect(bar.string == "S 30% · W 60% · F -")
+    #expect(bar.string == "S 30% · W 60% · F 7%")
     #expect(color("S 30%") == .systemOrange)
     #expect(color("W 60%") == .systemRed)
-    #expect(color("F -") == .labelColor)  // else dimmed like a template on the displays not in use
+    #expect(color("F 7%") == .labelColor)  // else dimmed like a template on the displays not in use
     #expect(color(" · ") == .labelColor)
 }
 
