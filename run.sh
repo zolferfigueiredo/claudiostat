@@ -22,8 +22,8 @@ iconutil -c icns "$WORK/AppIcon.iconset" -o "$APP/Contents/Resources/AppIcon.icn
 codesign --force --sign - "$APP"
 
 # Same bundle id as the installed copy: while it runs, open would just bring that one forward.
-# -i: builds before 0.2.0 run as Claudiostat.
-pkill -ix claudiostat || true
-while pgrep -ix claudiostat >/dev/null; do sleep 0.2; done
+# -i: builds before 0.2.0 run as Claudiostat. -U: another user's copy is theirs, and can't be quit from here.
+pkill -ix -U "$(id -u)" claudiostat || true
+while pgrep -ix -U "$(id -u)" claudiostat >/dev/null; do sleep 0.2; done
 open "$APP" --args "$@"
 echo "Running $APP"
