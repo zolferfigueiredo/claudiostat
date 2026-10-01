@@ -79,7 +79,7 @@ Every refresh, ClaudioStat runs your installed Claude Code once, headless, and s
 
 - **Show data below** (on): every limit with its reset countdown, then pace and the budget.
 - **Refresh now** (⌘R), and **Refresh every** 1, 3 (default), 5 or 10 minutes.
-- **Pause when Claude is closed** (on): while neither the Claude desktop app nor Claude Code in a terminal is running, nothing refreshes and the last numbers dim. It looks for a running `claude` every minute and when you open the menu. Greyed out when neither is installed.
+- **Pause when Claude is closed** (off): while neither the Claude desktop app nor Claude Code in a terminal is running, nothing refreshes and the last numbers dim. It looks for a running `claude` every minute and when you open the menu. Hidden when neither is installed.
 - **Claude Status** opens status.claude.com.
 - **Profiles**: one per Claude account, each in its own Claude Code folder and named by its email. The checked one fills the bar and the menu. With none, the menu bar says **Add a profile** and the menu starts with **Add profile…**.
   - **Add profile…** signs in to another account through your browser, into a new folder: `~/.claude-2`, `~/.claude-3` and so on. With no profile left, it signs `~/.claude` in instead.

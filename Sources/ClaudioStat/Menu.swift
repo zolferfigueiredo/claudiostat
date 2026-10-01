@@ -152,8 +152,9 @@ extension AppDelegate {
             action(tr("refresh"), #selector(tick), key: "r", enabled: !paused && !busy)
 
             submenu(tr("every"), [("interval", [1, 3, 5, 10].map { ($0 * 60, plural("minutes", $0)) })])
-            action(tr("only"), #selector(toggleSetting), on: defaults.bool(forKey: "onlyWhileClaude"), enabled: claudeInstalled)
-                .representedObject = "onlyWhileClaude"
+            if claudeInstalled {
+                action(tr("only"), #selector(toggleSetting), on: defaults.bool(forKey: "onlyWhileClaude")).representedObject = "onlyWhileClaude"
+            }
             action(tr("status"), #selector(openStatus))
         }
         menu.addItem(.separator())

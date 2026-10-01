@@ -48,7 +48,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     var problem: String? { accounts[profile]?.problem }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
-        defaults.register(defaults: ["interval": 180, "showFable": true, "showPace": false, "showBudget": false, "showResets": false, "onlyWhileClaude": true,
+        defaults.register(defaults: ["interval": 180, "showFable": true, "showPace": false, "showBudget": false, "showResets": false, "onlyWhileClaude": false,
                                      "menuBar": "both", "icon": "app", "speedColors": "day", "workHours": 8, "updateEvery": 604800,
                                      "notifyReached": true, "notifyReset": true, "notifyWeek": true,
                                      "loadingIcon": true, "loadingText": false, "showDetails": true, "showProfile": false, "users": "single",
