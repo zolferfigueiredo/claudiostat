@@ -205,7 +205,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     }
 
     @objc func render() {
-        let now = Date.now, shown = shown, rates = shown.map { pacing(now, $0) }, mode = defaults.string(forKey: "menuBar")
+        let now = Date.now, shown = shown, rates = shown.map { pacing(now, $0) }
         let alert = shown.lazy.compactMap { warning(self.accounts[$0]?.usage) }.first
         let pace = (session: rates.map(\.session.pace).max() ?? .ok, week: rates.map(\.week.pace).max() ?? .ok)
         // Multiple users: each profile's numbers in turn.
@@ -216,6 +216,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
                     profile: defaults.bool(forKey: "showProfile") ? profileName(profile) : nil)
         })
         guard let button = item.button else { return }
+        // Nothing to show yet: the icon alone, whatever Display says.
+        let mode = bar.length == 0 && !shown.isEmpty ? "icon" : defaults.string(forKey: "menuBar")
         let tint = mode == "icon" ? max(pace.session, pace.week).color : nil
         func warningIcon() -> NSImage? {
             var image = NSImage(systemSymbolName: "exclamationmark.triangle.fill", accessibilityDescription: alert)
