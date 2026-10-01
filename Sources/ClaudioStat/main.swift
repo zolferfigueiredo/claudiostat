@@ -51,7 +51,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         defaults.register(defaults: ["interval": 180, "showFable": true, "showPace": false, "showBudget": false, "showResets": false, "onlyWhileClaude": true,
                                      "menuBar": "both", "icon": "app", "speedColors": "day", "workHours": 8, "updateEvery": 604800,
                                      "notifyReached": true, "notifyReset": true, "notifyWeek": true,
-                                     "loadingIcon": true, "loadingText": false, "showDetails": true, "showProfile": false, "users": "single"])
+                                     "loadingIcon": true, "loadingText": false, "showDetails": true, "showProfile": false, "users": "single",
+                                     "detailsLayout": "blocks"])
         // 150 seconds and pace warnings off are no longer options.
         if defaults.integer(forKey: "interval") == 150 { defaults.removeObject(forKey: "interval") }
         if defaults.string(forKey: "speedColors") == "off" { defaults.removeObject(forKey: "speedColors") }

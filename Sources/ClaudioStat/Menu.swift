@@ -16,18 +16,6 @@ extension AppDelegate {
         // choice() checks the stored value, which can still name a removed profile.
         defaults.set(profile, forKey: "profile")
         let now = Date.now, mode = defaults.string(forKey: "menuBar")
-        func info(_ text: String, _ color: NSColor? = nil) {
-            let line = NSMenuItem()
-            line.attributedTitle = NSAttributedString(string: text, attributes: [.font: NSFont.menuFont(ofSize: 0), .foregroundColor: color ?? NSColor.labelColor])
-            line.isEnabled = false
-            menu.addItem(line)
-        }
-        func limit(_ name: String, _ value: Limit?, _ rate: Rate? = nil) {
-            let color = rate?.pace.color
-            let used = "\(name) \(percent(value?.percent))"
-            info(value?.resetsAt.map { tr("resets", ["limit": used, "time": span($0.timeIntervalSince(now))]) } ?? used, color)
-            if let reason = rate?.reason { info(reason, color) }
-        }
         @discardableResult
         func action(_ title: String, _ selector: Selector, key: String = "", on: Bool = false, enabled: Bool = true) -> NSMenuItem {
             let entry = NSMenuItem(title: title, action: selector, keyEquivalent: key)
@@ -73,11 +61,23 @@ extension AppDelegate {
             // Nothing to show or refresh yet, so the menu starts with the one thing to do.
             action(tr("add_profile"), #selector(addProfile)).image = NSImage(systemSymbolName: "person.crop.circle.badge.plus", accessibilityDescription: nil)
         } else {
-            let details = defaults.bool(forKey: "showDetails")
-            action(tr("show_data"), #selector(toggleSetting), on: details).representedObject = "showDetails"
-            if details {
+            // One profile's lines, into this menu or an account's submenu.
+            func readings(_ path: String, into target: NSMenu) {
+                func info(_ text: String, _ color: NSColor? = nil) {
+                    let line = NSMenuItem()
+                    line.attributedTitle = NSAttributedString(string: text, attributes: [.font: NSFont.menuFont(ofSize: 0), .foregroundColor: color ?? NSColor.labelColor])
+                    line.isEnabled = false
+                    target.addItem(line)
+                }
+                func limit(_ name: String, _ value: Limit?, _ rate: Rate? = nil) {
+                    let color = rate?.pace.color
+                    let used = "\(name) \(percent(value?.percent))"
+                    info(value?.resetsAt.map { tr("resets", ["limit": used, "time": span($0.timeIntervalSince(now))]) } ?? used, color)
+                    if let reason = rate?.reason { info(reason, color) }
+                }
+                let usage = accounts[path]?.usage
                 if let alert = warning(usage) { info("⚠ \(alert)") }
-                let rate = pacing(now)
+                let rate = pacing(now, path)
                 // Other languages' words needn't start with the bar's letter (W is "Semana"), so each line starts with it.
                 let letter = { (letter: String, key: String) in Language.current == .en ? tr(key) : "\(letter) · \(tr(key))" }
                 limit(letter("S", "session"), usage?.session, rate.session)
@@ -95,6 +95,44 @@ extension AppDelegate {
                     info("\(budgetName) \(percent(rate.week.needed)) · " + tr("left_over", ["left": max(0, 100 - week.percent), "time": over]))
                 } else {
                     info("\(budgetName) \(percent(rate.week.needed))")
+                }
+            }
+            let details = defaults.bool(forKey: "showDetails"), layout = defaults.string(forKey: "detailsLayout")
+            if shown.count == 1 {
+                action(tr("show_data"), #selector(toggleSetting), on: details).representedObject = "showDetails"
+                if details { readings(shown[0], into: menu) }
+            } else {
+                // Several accounts shown: Show data below picks how, each under its name. Off is showDetails unchecked.
+                let ways = NSMenu()
+                ways.autoenablesItems = false
+                let options: [(title: String, picks: [String: Any], on: Bool)] = [
+                    (tr("profile_per_block"), ["showDetails": true, "detailsLayout": "blocks"], details && layout == "blocks"),
+                    (tr("profile_per_submenu"), ["showDetails": true, "detailsLayout": "submenus"], details && layout == "submenus"),
+                    (tr("off"), ["showDetails": false], !details)]
+                for (title, picks, on) in options {
+                    let entry = NSMenuItem(title: title, action: #selector(choose), keyEquivalent: "")
+                    entry.target = self
+                    entry.representedObject = picks
+                    entry.state = on ? .on : .off
+                    ways.addItem(entry)
+                }
+                let entry = NSMenuItem(title: tr("show_data"), action: nil, keyEquivalent: "")
+                entry.submenu = ways
+                menu.addItem(entry)
+            }
+            if details, shown.count > 1 {
+                for path in shown {
+                    if layout == "submenus" {
+                        let lines = NSMenu()
+                        lines.autoenablesItems = false
+                        readings(path, into: lines)
+                        let entry = NSMenuItem(title: profileName(path), action: nil, keyEquivalent: "")
+                        entry.submenu = lines
+                        menu.addItem(entry)
+                    } else {
+                        menu.addItem(.sectionHeader(title: profileName(path)))
+                        readings(path, into: menu)
+                    }
                 }
             }
             menu.addItem(.separator())
@@ -204,11 +242,13 @@ extension AppDelegate {
     }
 
     @objc func choose(_ sender: NSMenuItem) {
-        guard let pick = (sender.representedObject as? [String: Any])?.first else { return }
+        guard let picks = sender.representedObject as? [String: Any] else { return }
         let before = shown
-        defaults.set(pick.value, forKey: pick.key)
-        log.notice("\(pick.key, privacy: .public) = \(String(describing: pick.value), privacy: .public)")
-        if pick.key == "interval" { reschedule() }
+        for (key, value) in picks {
+            defaults.set(value, forKey: key)
+            log.notice("\(key, privacy: .public) = \(String(describing: value), privacy: .public)")
+        }
+        if picks["interval"] != nil { reschedule() }
         if shown != before { profilesChanged() }
         render()
     }
