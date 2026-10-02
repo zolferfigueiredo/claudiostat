@@ -10,7 +10,6 @@ cask "claudiostat" do
   desc "Menu bar meter for Claude Code usage limits"
   homepage "https://claudiostat.zolfer.com/"
 
-  auto_updates true
   depends_on macos: :sequoia
 
   app "ClaudioStat.app"
