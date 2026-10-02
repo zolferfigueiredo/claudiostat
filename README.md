@@ -31,6 +31,12 @@
 2. Open ClaudioStat. It's signed and notarized by Apple, so macOS only asks you to confirm the first time.
 3. A setup window finds Claude Code and, if it isn't signed in yet, signs you in through your browser. Your numbers then show up in the menu bar.
 
+Or install it with [Homebrew](https://brew.sh/):
+
+```bash
+brew install --cask zolferfigueiredo/tap/claudiostat
+```
+
 You need:
 
 - macOS 15 or later, on Apple silicon or Intel
