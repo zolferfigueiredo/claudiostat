@@ -34,7 +34,8 @@
 Or install it with [Homebrew](https://brew.sh/):
 
 ```bash
-brew install --cask zolferfigueiredo/app/claudiostat
+brew tap zolferfigueiredo/claudiostat https://github.com/zolferfigueiredo/claudiostat
+brew install --cask claudiostat
 ```
 
 You need:
