@@ -20,5 +20,7 @@ echo "Release ready: $(pwd)/$DMG"
   loc=$(curl -fsS -o /dev/null -w '%{redirect_url}' --data-urlencode "url=https://claudiostat.zolfer.com/$NAME-$VERSION.dmg" https://url.zolfer.com/dmg)
   echo "Download link: https://url.zolfer.com/${loc##*c=}"
 }
+# Casks/claudiostat.rb always installs releases/latest/download/ClaudioStat.dmg, so every release carries a copy under that name.
+cp "$DMG" "dist/$NAME.dmg"
 gh release view "v$VERSION" -R zolferfigueiredo/claudiostat >/dev/null 2>&1 ||
-  gh release create "v$VERSION" "$DMG" -R zolferfigueiredo/claudiostat --target "$(git rev-parse HEAD)" --title "$NAME $VERSION" --generate-notes
+  gh release create "v$VERSION" "$DMG" "dist/$NAME.dmg" -R zolferfigueiredo/claudiostat --target "$(git rev-parse HEAD)" --title "$NAME $VERSION" --generate-notes
