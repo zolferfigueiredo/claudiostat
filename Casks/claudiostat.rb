@@ -4,8 +4,7 @@ cask "claudiostat" do
   version :latest
   sha256 :no_check
 
-  url "https://github.com/zolferfigueiredo/claudiostat/releases/latest/download/ClaudioStat.dmg",
-      verified: "github.com/zolferfigueiredo/claudiostat/"
+  url "https://github.com/zolferfigueiredo/claudiostat/releases/latest/download/ClaudioStat.dmg"
   name "ClaudioStat"
   desc "Menu bar meter for Claude Code usage limits"
   homepage "https://claudiostat.zolfer.com/"
