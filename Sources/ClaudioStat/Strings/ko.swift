@@ -67,7 +67,7 @@ extension Strings {
         "off": "끔",
         "ok": "확인",
         "only": "Claude가 닫혀 있으면 일시 정지",
-        "pace_experimental": "속도(실험적)",
+        "pace": "속도",
         "paused": "일시 정지됨 · Claude가 열려 있지 않음",
         "paused_updated": "일시 정지됨 · Claude가 열려 있지 않음 · {time}에 새로 고침",
         "profile": "프로필",

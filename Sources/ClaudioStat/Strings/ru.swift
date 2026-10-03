@@ -73,7 +73,7 @@ extension Strings {
         "off": "Выкл.",
         "ok": "OK",
         "only": "Пауза, когда Claude закрыт",
-        "pace_experimental": "Темп (эксперимент)",
+        "pace": "Темп",
         "paused": "Пауза · Claude не открыт",
         "paused_updated": "Пауза · Claude не открыт · обновлено в {time}",
         "profile": "Профили",

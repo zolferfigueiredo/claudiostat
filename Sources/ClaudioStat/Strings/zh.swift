@@ -67,7 +67,7 @@ extension Strings {
         "off": "关闭",
         "ok": "好",
         "only": "Claude 关闭时暂停",
-        "pace_experimental": "速度（实验性）",
+        "pace": "速度",
         "paused": "已暂停 · Claude 未打开",
         "paused_updated": "已暂停 · Claude 未打开 · 刷新于 {time}",
         "profile": "个人资料",

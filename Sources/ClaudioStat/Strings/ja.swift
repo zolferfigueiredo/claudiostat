@@ -67,7 +67,7 @@ extension Strings {
         "off": "オフ",
         "ok": "OK",
         "only": "Claude を閉じているときは一時停止",
-        "pace_experimental": "ペース（試験的）",
+        "pace": "ペース",
         "paused": "一時停止中 · Claude が開いていません",
         "paused_updated": "一時停止中 · Claude が開いていません · {time} に更新",
         "profile": "プロファイル",

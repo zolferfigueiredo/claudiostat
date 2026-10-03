@@ -69,7 +69,7 @@ extension Strings {
         "off": "Disattivato",
         "ok": "OK",
         "only": "Pausa con Claude chiuso",
-        "pace_experimental": "Ritmo (sperimentale)",
+        "pace": "Ritmo",
         "paused": "In pausa · Claude non è aperto",
         "paused_updated": "In pausa · Claude non è aperto · aggiornato alle {time}",
         "profile": "Profili",
