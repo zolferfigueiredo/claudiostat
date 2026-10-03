@@ -295,7 +295,11 @@ extension AppDelegate {
         profilesChanged()
     }
 
-    @objc func toggleDock() { toggleDockTile() }
+    // The restart blinks the screen and the menu bar, so it's asked first. Cancel changes nothing.
+    @objc func toggleDock() {
+        guard alert(tr("dock_restart_title"), tr("dock_restart_text"), tr("dock_restart"), tr("cancel")) else { return }
+        toggleDockTile()
+    }
 
     @objc func openStatus() {
         NSWorkspace.shared.open(URL(string: "https://status.claude.com/")!)
