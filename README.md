@@ -28,6 +28,7 @@
 <p align="center">
   <img src="docs/screenshots/claudiostat-menu.png" width="572" alt="The ClaudioStat menu: each limit with its reset, pace and budget, the settings, and the Language list open">
 </p>
+<p align="center"><a href="#screenshots"><b>More screenshots</b></a></p>
 
 ## Install
 
@@ -51,11 +52,6 @@ You need:
 
 ## What the letters mean
 
-<p align="center">
-  <img src="docs/screenshots/claudiostat-menubar-app.png" width="326" alt="The menu bar line with the app icon: S, W, P and B">
-  <img src="docs/screenshots/claudiostat-menubar-star.png" width="371" alt="The menu bar line with the plain star: S, W, F and B">
-</p>
-
 | | Limit | What it counts |
 |:-:|---|---|
 | **S** | Session | Your current 5-hour window |
@@ -78,6 +74,15 @@ S and W turn orange when you're using them faster than they last until the reset
 - **Sleeps when Claude does.** While neither the Claude app nor Claude Code in a terminal is running, it stops asking, and the last numbers dim so you can tell they're old.
 - **Speaks 12 languages.** Deutsch, English, Español, Français, Italiano, Polski, Português, Русский, Українська, 中文, 日本語 and 한국어. It starts in your Mac's language, and **Language** in the menu changes it.
 - **Native and tiny.** A small Swift app with no Dock icon. It can launch at login and installs updates in one click.
+
+## Screenshots
+
+<p align="center">
+  <img src="docs/screenshots/claudiostat-menubar-app.png" width="317" alt="The menu bar line with the app icon: S, W, P and B">
+  &nbsp;&nbsp;&nbsp;
+  <img src="docs/screenshots/claudiostat-menubar-star.png" width="369" alt="The menu bar line with the plain star: S, W, F and B">
+</p>
+<p align="center"><sub>The menu bar line, with the app icon (S, W, P and B) or the plain star (S, W, F and B)</sub></p>
 
 ## How it works
 
