@@ -161,6 +161,7 @@ extension AppDelegate {
 
         // Each profile is a Claude Code folder with its own login. The checked one fills the bar and this menu.
         let profiles = submenu(tr("profile"), [("profile", allProfiles.map { ($0, profileName($0)) })])
+        profiles.image = NSImage(systemSymbolName: "person.2", accessibilityDescription: nil)
         let add = NSMenuItem(title: tr("add_profile"), action: #selector(addProfile), keyEquivalent: "")
         add.target = self
         let remove = NSMenuItem(title: tr("remove_profile"), action: #selector(removeProfile), keyEquivalent: "")
@@ -172,6 +173,7 @@ extension AppDelegate {
         let display = submenu(tr("display"), [("menuBar", [("both", tr("both")), ("icon", tr("icon_only")), ("numbers", tr("text_only"))]),
                                               ("icon", [("app", tr("app_icon")), ("star", tr("star_icon"))])],
                               disabled: mode == "numbers" ? "icon" : nil)
+        display.image = NSImage(systemSymbolName: "menubar.rectangle", accessibilityDescription: nil)
         // They pulse while tokens are being spent. Text only has no icon, Icon only no text.
         display.submenu?.addItem(.separator())
         display.submenu?.addItem(toggle(tr("loading_icon"), "loadingIcon", enabled: mode != "numbers"))
@@ -190,6 +192,7 @@ extension AppDelegate {
 
         // What the menu bar shows after S and W. speedColors is the unit of P and B, which W's color compares.
         let data = toggles(tr("data"), [(tr("fable"), "showFable"), (tr("pace_experimental"), "showPace"), (tr("budget"), "showBudget")])
+        data.image = NSImage(systemSymbolName: "chart.bar", accessibilityDescription: nil)
         data.submenu?.addItem(.separator())
         for (value, name) in [("day", tr("budget_day")), ("hour", tr("budget_hour"))] {
             data.submenu?.addItem(choice(name, "speedColors", value, enabled: defaults.bool(forKey: "showBudget")))
@@ -201,8 +204,10 @@ extension AppDelegate {
         for (index, entry) in head.enumerated() { data.submenu?.insertItem(entry, at: index) }
         // Hours a day spent using Claude, so the pace ignores the rest of the day.
         submenu(tr("work"), [("workHours", [24, 16, 12, 8, 6, 4].map { ($0, plural("hours", $0)) })])
+            .image = NSImage(systemSymbolName: "briefcase", accessibilityDescription: nil)
         toggles(tr("notify"), [(tr("notify_reached"), NoticeKind.reached.setting), (tr("notify_reset"), NoticeKind.reset.setting),
                                (tr("notify_marks"), NoticeKind.week.setting)])
+            .image = NSImage(systemSymbolName: "bell", accessibilityDescription: nil)
         // The globe is the website's language picker. Each language is named in itself, so it can always be found.
         let languages = NSMenu()
         for language in Language.allCases {
@@ -295,7 +300,11 @@ extension AppDelegate {
         profilesChanged()
     }
 
-    @objc func toggleDock() { toggleDockTile() }
+    // The restart blinks the screen and the menu bar, so it's asked first. Cancel changes nothing.
+    @objc func toggleDock() {
+        guard alert(tr("dock_restart_title"), tr("dock_restart_text"), tr("dock_restart"), tr("cancel")) else { return }
+        toggleDockTile()
+    }
 
     @objc func openStatus() {
         NSWorkspace.shared.open(URL(string: "https://status.claude.com/")!)
