@@ -79,6 +79,7 @@ S and W turn orange when you're using them faster than they last until the reset
 
 <p align="center">
   <img src="docs/screenshots/claudiostat-menubar-app.png" width="317" alt="The menu bar line with the app icon: S, W, P and B">
+  &nbsp;&nbsp;&nbsp;
   <img src="docs/screenshots/claudiostat-menubar-star.png" width="369" alt="The menu bar line with the plain star: S, W, F and B">
 </p>
 <p align="center"><sub>The menu bar line, with the app icon (S, W, P and B) or the plain star (S, W, F and B)</sub></p>
