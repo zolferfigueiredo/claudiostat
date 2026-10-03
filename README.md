@@ -52,7 +52,7 @@ You need:
 | **S** | Session | Your current 5-hour window |
 | **W** | Week | All models, this week |
 | **F** | Fable | Fable only, this week |
-| **P** | Pace | How fast W rose over the last hour, per day. Off by default, experimental |
+| **P** | Pace | How fast W rose over the last hour, per day. Off by default |
 | **B** | Budget | What's left of the week per day, or per working hour, until the reset. Off by default |
 
 Turn on **Resets in** under Data to add the time to each reset on the line: `S 54% (1h13) · W 6% (1d2h) · F 0% (1d2h)`.

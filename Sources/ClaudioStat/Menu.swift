@@ -85,7 +85,7 @@ extension AppDelegate {
                 limit(letter("F", "fable"), usage?.fable)
                 let hourly = rate.week.unit == 3600
                 let speed = percent(rate.week.speed)
-                info("\(letter("P", "pace_experimental")) · " + (rate.week.speed == nil ? speed : tr(hourly ? "rate_hour" : "rate_day", ["n": speed])))
+                info("\(letter("P", "pace")) · " + (rate.week.speed == nil ? speed : tr(hourly ? "rate_hour" : "rate_day", ["n": speed])))
                 let budgetName = letter("B", hourly ? "budget_hour" : "budget_day")
                 if let week = usage?.week, let reset = week.resetsAt, rate.week.needed != nil {
                     let left = reset.timeIntervalSince(now)
@@ -191,7 +191,7 @@ extension AppDelegate {
         }
 
         // What the menu bar shows after S and W. speedColors is the unit of P and B, which W's color compares.
-        let data = toggles(tr("data"), [(tr("fable"), "showFable"), (tr("pace_experimental"), "showPace"), (tr("budget"), "showBudget")])
+        let data = toggles(tr("data"), [(tr("fable"), "showFable"), (tr("pace"), "showPace"), (tr("budget"), "showBudget")])
         data.image = NSImage(systemSymbolName: "chart.bar", accessibilityDescription: nil)
         data.submenu?.addItem(.separator())
         for (value, name) in [("day", tr("budget_day")), ("hour", tr("budget_hour"))] {

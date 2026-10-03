@@ -73,7 +73,7 @@ extension Strings {
         "off": "Вимк.",
         "ok": "OK",
         "only": "Пауза, коли Claude закрито",
-        "pace_experimental": "Темп (експеримент)",
+        "pace": "Темп",
         "paused": "Пауза · Claude не відкрито",
         "paused_updated": "Пауза · Claude не відкрито · оновлено о {time}",
         "profile": "Профілі",
