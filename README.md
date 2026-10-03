@@ -25,6 +25,10 @@
   <a href="https://claudiostat.zolfer.com">Try the menu in your browser</a>
 </p>
 
+<p align="center">
+  <img src="docs/screenshots/claudiostat-menu.png" width="572" alt="The ClaudioStat menu: each limit with its reset, pace and budget, the settings, and the Language list open">
+</p>
+
 ## Install
 
 1. [Download the DMG](https://github.com/zolferfigueiredo/claudiostat/releases/latest), open it and drag ClaudioStat to Applications.
@@ -46,6 +50,11 @@ You need:
 - ClaudioStat in Applications, for launch at login and updates
 
 ## What the letters mean
+
+<p align="center">
+  <img src="docs/screenshots/claudiostat-menubar-app.png" width="326" alt="The menu bar line with the app icon: S, W, P and B">
+  <img src="docs/screenshots/claudiostat-menubar-star.png" width="371" alt="The menu bar line with the plain star: S, W, F and B">
+</p>
 
 | | Limit | What it counts |
 |:-:|---|---|
