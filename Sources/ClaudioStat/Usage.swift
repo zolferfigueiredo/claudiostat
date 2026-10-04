@@ -82,14 +82,17 @@ nonisolated struct Sample: Codable, Equatable {
 }
 
 /// How fast a limit rose since the last reading at least `window` old, in percent per `unit`.
-/// A limit window lasts `length`. Nil without such a reading in the same limit window.
+/// A limit window lasts `length`. Until there is such a reading, the oldest one at least 10 minutes old in the same
+/// limit window stands in, so a new profile gets a first guess that firms up as the readings cover the window.
 nonisolated func speed(_ samples: [Sample], _ limit: KeyPath<Usage, Limit?>,
                        length: TimeInterval, window: TimeInterval, unit: TimeInterval) -> Double? {
     guard let latest = samples.last, let now = latest.usage[keyPath: limit], let reset = now.resetsAt else { return nil }
     let start = latest.at.addingTimeInterval(-window)
     var base = 0, elapsed = window  // the limit started over inside the window, from 0
     if reset.addingTimeInterval(-length) < start {
-        guard let before = samples.last(where: { $0.at <= start && sameWindow($0.usage[keyPath: limit], now) }) else { return nil }
+        let same = samples.filter { sameWindow($0.usage[keyPath: limit], now) }
+        guard let before = same.last(where: { $0.at <= start }) ?? same.first(where: { $0.at <= latest.at.addingTimeInterval(-600) })
+        else { return nil }
         base = before.usage[keyPath: limit]?.percent ?? 0
         // After a pause that reading can be hours old: spread the rise over all of it.
         elapsed = latest.at.timeIntervalSince(before.at)

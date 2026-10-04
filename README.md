@@ -118,13 +118,13 @@ Every refresh, ClaudioStat runs your installed Claude Code once, headless, and s
 <details>
 <summary><b>How pace, budget and the colors are worked out</b></summary>
 
-**P** is how fast W is rising over the last hour, per day (times the working time, 8 hours by default) or per hour, following Budget per day or Budget per hour under Data. It shows "-" in the menu, and stays out of the menu bar, until there's a reading from an hour ago. After a pause, the rise is spread over the whole gap.
+**P** is how fast W is rising over the last hour, per day (times the working time, 8 hours by default) or per hour, following Budget per day or Budget per hour under Data. It shows "-" in the menu, and stays out of the menu bar, until there's a reading from 10 minutes ago. Until the readings cover the hour, it's measured over what they cover. After a pause, the rise is spread over the whole gap.
 
 **B** is what's left of the week split over the days (or working hours) until the weekly reset, a partial last one counting in full, rounded down: 35% left with 1d 17h to go is 17% a day, or 0.8% an hour with a 24-hour working time. Per hour, the menu says how many working hours it is spread over.
 
 S and W change color when you're using them too fast:
 
-- **S**: its rise over the last 30 minutes against what's left spread evenly until the reset: S 50% with 2 hours left needs 25% per hour.
+- **S**: its rise over the last 30 minutes (from 10 minutes of readings, like P) against what's left spread evenly until the reset: S 50% with 2 hours left needs 25% per hour.
 - **W**: P against B, so it turns orange once P is over B.
 - **Orange**: faster than needed. **Red**: 5 points per hour past it for S, 10 points past it for W.
 
