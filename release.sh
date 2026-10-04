@@ -22,5 +22,7 @@ echo "Release ready: $(pwd)/$DMG"
 }
 # Casks/claudiostat.rb always installs releases/latest/download/ClaudioStat.dmg, so every release carries a copy under that name.
 cp "$DMG" "dist/$NAME.dmg"
+# The apps learn the newest version from releases/latest/download/latest.json, the same file the website serves.
+printf '{"version": "%s"}\n' "$VERSION" > dist/latest.json
 gh release view "v$VERSION" -R zolferfigueiredo/claudiostat >/dev/null 2>&1 ||
-  gh release create "v$VERSION" "$DMG" "dist/$NAME.dmg" -R zolferfigueiredo/claudiostat --target "$(git rev-parse HEAD)" --title "$NAME $VERSION" --generate-notes
+  gh release create "v$VERSION" "$DMG" "dist/$NAME.dmg" dist/latest.json -R zolferfigueiredo/claudiostat --target "$(git rev-parse HEAD)" --title "$NAME $VERSION" --generate-notes
