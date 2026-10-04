@@ -142,9 +142,15 @@ private func sample(_ time: String, s: Int, sReset: Date = reset, w: Int = 60) -
 }
 
 @Test func speedNeedsAnOlderReading() {
-    #expect(speed([sample("2026-09-28T11:45:00Z", s: 18), sample("2026-09-28T12:00:00Z", s: 30)],
+    #expect(speed([sample("2026-09-28T11:55:00Z", s: 18), sample("2026-09-28T12:00:00Z", s: 30)],
                   \.session, length: 5 * 3600, window: 1800, unit: 3600) == nil)
     #expect(speed([], \.session, length: 5 * 3600, window: 1800, unit: 3600) == nil)
+}
+
+@Test func speedFromTenMinutesUntilTheWindowFills() {
+    // No reading from 11:30 yet: the oldest, 15 minutes back, stands in. 12 points in 15 minutes.
+    let samples = [sample("2026-09-28T11:45:00Z", s: 18), sample("2026-09-28T11:52:00Z", s: 24), sample("2026-09-28T12:00:00Z", s: 30)]
+    #expect(speed(samples, \.session, length: 5 * 3600, window: 1800, unit: 3600) == 48)
 }
 
 @Test func speedIgnoresThePreviousWindow() {
@@ -190,7 +196,7 @@ private func sample(_ time: String, s: Int, sReset: Date = reset, w: Int = 60) -
     let usage = samples.last!.usage, now = date("2026-09-28T12:00:00Z")
     #expect(paces(usage, samples: samples, colors: "hour", now: now).week.speed == 2)  // 60 to 62 since 11:00
     #expect(paces(usage, samples: samples, colors: "day", now: now).week.speed == 48)
-    #expect(paces(usage, samples: Array(samples.suffix(2)), colors: "day", now: now).week.speed == nil)
+    #expect(paces(usage, samples: Array(samples.suffix(2)), colors: "day", now: now).week.speed == 48)  // 1 point in half an hour
 }
 
 // Trimmed from real Claude Code transcripts: one line per entry, newest last.

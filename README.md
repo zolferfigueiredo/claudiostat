@@ -60,7 +60,7 @@ You need:
 | **P** | Pace | How fast W rose over the last hour, per day. Off by default |
 | **B** | Budget | What's left of the week per day, or per working hour, until the reset. Off by default |
 
-Turn on **Resets in** under Data to add the time to each reset on the line: `S 54% (1h13) · W 6% (1d2h) · F 0% (1d2h)`.
+Turn on **Resets in …** under Data to add the time to each reset on the line: `S 54% (1h13) · W 6% (1d2h) · F 0% (1d2h)`.
 
 S and W turn orange when you're using them faster than they last until the reset, and red when it's well past that. A warning triangle takes the icon's place when Claude flags a limit.
 
@@ -99,7 +99,7 @@ Every refresh, ClaudioStat runs your installed Claude Code once, headless, and s
 <summary><b>Every setting</b></summary>
 
 - **Show data below** (on): every limit with its reset countdown, then pace and the budget.
-- **Refresh now** (⌘R), and **Refresh every** 1, 3 (default), 5 or 10 minutes.
+- **Refresh** (⌘R), and **Refresh rate** 30 seconds, or 1, 3 (default), 5 or 10 minutes.
 - **Pause when Claude is closed** (off): while neither the Claude desktop app nor Claude Code in a terminal is running, nothing refreshes and the last numbers dim. It looks for a running `claude` every minute and when you open the menu. Hidden when neither is installed.
 - **Claude Status** opens status.claude.com.
 - **Profiles**: one per Claude account, each in its own Claude Code folder and named by its email. The checked one fills the bar and the menu. With none, the menu bar says **Add a profile** and the menu starts with **Add profile…**.
@@ -118,13 +118,13 @@ Every refresh, ClaudioStat runs your installed Claude Code once, headless, and s
 <details>
 <summary><b>How pace, budget and the colors are worked out</b></summary>
 
-**P** is how fast W is rising over the last hour, per day (times the working time, 8 hours by default) or per hour, following Budget per day or Budget per hour under Data. It shows "-" in the menu, and stays out of the menu bar, until there's a reading from an hour ago. After a pause, the rise is spread over the whole gap.
+**P** is how fast W is rising over the last hour, per day (times the working time, 8 hours by default) or per hour, following Budget per day or Budget per hour under Data. It shows "-" in the menu, and stays out of the menu bar, until there's a reading from 10 minutes ago. Until the readings cover the hour, it's measured over what they cover. After a pause, the rise is spread over the whole gap.
 
 **B** is what's left of the week split over the days (or working hours) until the weekly reset, a partial last one counting in full, rounded down: 35% left with 1d 17h to go is 17% a day, or 0.8% an hour with a 24-hour working time. Per hour, the menu says how many working hours it is spread over.
 
 S and W change color when you're using them too fast:
 
-- **S**: its rise over the last 30 minutes against what's left spread evenly until the reset: S 50% with 2 hours left needs 25% per hour.
+- **S**: its rise over the last 30 minutes (from 10 minutes of readings, like P) against what's left spread evenly until the reset: S 50% with 2 hours left needs 25% per hour.
 - **W**: P against B, so it turns orange once P is over B.
 - **Orange**: faster than needed. **Red**: 5 points per hour past it for S, 10 points past it for W.
 
