@@ -130,6 +130,7 @@ extension AppDelegate {
                         entry.submenu = lines
                         menu.addItem(entry)
                     } else {
+                        menu.addItem(.separator())
                         menu.addItem(.sectionHeader(title: profileName(path)))
                         readings(path, into: menu)
                     }
@@ -151,7 +152,7 @@ extension AppDelegate {
 
             action(tr("refresh"), #selector(tick), key: "r", enabled: !paused && !busy)
 
-            submenu(tr("every"), [("interval", [1, 3, 5, 10].map { ($0 * 60, plural("minutes", $0)) })])
+            submenu(tr("every"), [("interval", [30, 60, 180, 300, 600].map { ($0, $0 < 60 ? plural("seconds", $0) : plural("minutes", $0 / 60)) })])
             if claudeInstalled {
                 action(tr("only"), #selector(toggleSetting), on: defaults.bool(forKey: "onlyWhileClaude")).representedObject = "onlyWhileClaude"
             }
