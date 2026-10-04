@@ -2,24 +2,35 @@ import AppKit
 import UserNotifications
 
 let appVersion = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "-"
-// Launch argument `-updateSite http://localhost:8022/` tests against the website's run.sh.
-let site = URL(string: UserDefaults.standard.string(forKey: "updateSite") ?? "https://claudiostat.zolfer.com/")!
+/// Updates come from the GitHub releases that release.sh publishes. Launch argument `-updateSite http://localhost:8022/`
+/// tests against the website's run.sh instead, which serves latest.json and the DMG.
+let testSite = UserDefaults.standard.string(forKey: "updateSite").flatMap(URL.init(string:))
+let releases = URL(string: "https://github.com/zolferfigueiredo/claudiostat/releases")!
 
-/// The site names the DMG after the version, the same rule its deploy.sh uses.
-func dmgURL(_ version: String) -> URL { site.appending(path: "ClaudioStat-\(version).dmg") }
+/// release.sh uploads the DMG under its version: ClaudioStat-1.2.3.dmg in release v1.2.3.
+func dmgURL(_ version: String) -> URL {
+    testSite?.appending(path: "ClaudioStat-\(version).dmg")
+        ?? releases.appending(path: "download/v\(version)/ClaudioStat-\(version).dmg")
+}
 
-/// The version the site offers, or nil when it can't be reached.
+/// The newest release's version, or nil when it can't be reached. GitHub's API leaves out drafts and pre-releases.
 func latestVersion() async -> String? {
-    let request = URLRequest(url: site.appending(path: "latest.json"), cachePolicy: .reloadIgnoringLocalCacheData, timeoutInterval: 15)
+    let url = testSite?.appending(path: "latest.json")
+        ?? URL(string: "https://api.github.com/repos/zolferfigueiredo/claudiostat/releases/latest")!
+    var request = URLRequest(url: url, cachePolicy: .reloadIgnoringLocalCacheData, timeoutInterval: 15)
+    request.setValue("application/vnd.github+json", forHTTPHeaderField: "Accept")
     guard let (data, response) = try? await URLSession.shared.data(for: request),
           (response as? HTTPURLResponse)?.statusCode == 200,
           let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else { return nil }
-    return json["version"] as? String
+    return (json["tag_name"] as? String).map(releaseVersion) ?? json["version"] as? String
 }
 
 nonisolated func isNewer(_ remote: String, than local: String) -> Bool {
     remote.compare(local, options: .numeric) == .orderedDescending
 }
+
+/// "v1.2.3", a release's tag, gives "1.2.3".
+nonisolated func releaseVersion(_ tag: String) -> String { tag.hasPrefix("v") ? String(tag.dropFirst()) : tag }
 
 /// "0.3.6" gives "0.3.7": the version the test notification offers, so it reads like a real one.
 nonisolated func nextPatch(_ version: String) -> String {
