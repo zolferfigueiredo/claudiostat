@@ -79,6 +79,7 @@ extension AppDelegate {
             let result = await fetchUsage(configDir: configDir)
             switch result {
             case .ok(let usage):
+                app.awaitingReopen = window?.isVisible == true
                 app.connected(path, result)
                 step = .done(barText(usage, showFable: app.defaults.bool(forKey: "showFable"), showBudget: false).string)
                 // Back over the browser after signing in.
@@ -128,7 +129,12 @@ extension AppDelegate {
     // Terminating a process that never launched raises an exception.
     func cancel() { if login?.isRunning == true { login?.terminate() } }
 
-    func windowWillClose(_ notification: Notification) { cancel() }
+    // Closed without Reopen: the numbers show now.
+    func windowWillClose(_ notification: Notification) {
+        cancel()
+        app.awaitingReopen = false
+        app.render()
+    }
 }
 
 struct SetupView: View {

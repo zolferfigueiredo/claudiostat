@@ -19,7 +19,7 @@ extension Strings {
         "check_failed": "アップデートを確認できませんでした",
         "checking_signature": "署名を確認中…",
         "click_to_update": "現在は {version} です。クリックしてアップデート。",
-        "connected": "{name} を接続しました。制限はメニューバーに表示されます。",
+        "connected": "{name} を接続しました。開き直すと、制限がメニューバーに表示されます。",
         "daily": "毎日",
         "data": "データ",
         "display": "表示",

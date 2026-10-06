@@ -19,7 +19,7 @@ extension Strings {
         "check_failed": "업데이트를 확인할 수 없음",
         "checking_signature": "서명 확인 중…",
         "click_to_update": "현재 {version}입니다. 클릭하여 업데이트하세요.",
-        "connected": "{name} 계정이 연결되었습니다. 한도는 메뉴 막대에 표시됩니다.",
+        "connected": "{name} 계정이 연결되었습니다. 다시 열면 한도가 메뉴 막대에 표시됩니다.",
         "daily": "매일",
         "data": "데이터",
         "display": "표시",

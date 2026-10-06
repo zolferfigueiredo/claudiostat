@@ -19,7 +19,7 @@ extension Strings {
         "check_failed": "Nie udało się sprawdzić uaktualnień",
         "checking_signature": "Sprawdzanie podpisu…",
         "click_to_update": "Masz wersję {version}. Kliknij, aby uaktualnić.",
-        "connected": "Konto {name} jest połączone. Twoje limity są na pasku menu.",
+        "connected": "Konto {name} jest połączone. Otwórz ponownie, aby zobaczyć limity na pasku menu.",
         "daily": "Codziennie",
         "data": "Dane",
         "display": "Wyświetlanie",

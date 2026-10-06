@@ -19,7 +19,7 @@ extension Strings {
         "check_failed": "Suche nach Updates fehlgeschlagen",
         "checking_signature": "Signatur wird geprüft…",
         "click_to_update": "Du hast {version}. Zum Aktualisieren klicken.",
-        "connected": "{name} ist verbunden. Deine Limits stehen in der Menüleiste.",
+        "connected": "{name} ist verbunden. Nach Neu öffnen stehen deine Limits in der Menüleiste.",
         "daily": "Täglich",
         "data": "Daten",
         "display": "Anzeige",

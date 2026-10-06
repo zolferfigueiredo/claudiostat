@@ -19,7 +19,7 @@ extension Strings {
         "check_failed": "无法检查更新",
         "checking_signature": "正在检查签名…",
         "click_to_update": "当前版本为 {version}。点按即可更新。",
-        "connected": "{name} 已连接。你的限额显示在菜单栏中。",
+        "connected": "{name} 已连接。重新打开后，限额会显示在菜单栏中。",
         "daily": "每天",
         "data": "数据",
         "display": "显示",
