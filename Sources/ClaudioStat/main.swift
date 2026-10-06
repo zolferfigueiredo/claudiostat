@@ -29,6 +29,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     var sessions: FSEventStreamRef?  // watches the shown profiles' transcripts
     var lastBar = ""
     var checking = false     // an update check or install is running
+    var awaitingReopen = false  // the setup window asks to reopen, so the bar holds back the numbers until then
 
     // Without the Claude app or Claude Code there is nothing to wait for.
     var paused: Bool { defaults.bool(forKey: "onlyWhileClaude") && claudeInstalled && !claudeRunning && !codeRunning }
@@ -205,11 +206,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     }
 
     @objc func render() {
-        let now = Date.now, shown = shown, rates = shown.map { pacing(now, $0) }
-        let alert = shown.lazy.compactMap { warning(self.accounts[$0]?.usage) }.first
+        let now = Date.now, shown = shown
+        // Until Reopen, the icon alone: numbers already there would make Reopen look pointless.
+        let counted = awaitingReopen ? [] : shown, rates = counted.map { pacing(now, $0) }
+        let alert = counted.lazy.compactMap { warning(self.accounts[$0]?.usage) }.first
         let pace = (session: rates.map(\.session.pace).max() ?? .ok, week: rates.map(\.week.pace).max() ?? .ok)
         // Multiple users: each profile's numbers in turn.
-        let bar = joined(zip(shown, rates).map { profile, rate in
+        let bar = joined(zip(counted, rates).map { profile, rate in
             barText(accounts[profile]?.usage, rates: rate, showFable: defaults.bool(forKey: "showFable"),
                     showPace: defaults.bool(forKey: "showPace"), showBudget: defaults.bool(forKey: "showBudget"),
                     resetsFrom: defaults.bool(forKey: "showResets") ? now : nil,

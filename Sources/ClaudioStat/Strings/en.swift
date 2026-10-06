@@ -19,7 +19,7 @@ extension Strings {
         "check_failed": "Couldn’t check for updates",
         "checking_signature": "Checking the signature…",
         "click_to_update": "You have {version}. Click to update.",
-        "connected": "{name} is connected. Your limits are in the menu bar.",
+        "connected": "{name} is connected. Reopen to see your limits in the menu bar.",
         "daily": "Daily",
         "data": "Data",
         "display": "Display",
