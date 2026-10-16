@@ -110,7 +110,6 @@ extension Strings {
         "span.m": "{m}분",
         "span.m_short": "{m}분",
         "star_icon": "단순한 별 아이콘",
-        "status": "Claude 상태",
         "text_only": "텍스트만",
         "tool_failed": "{tool} 실패({code}).",
         "try_again": "다시 시도",

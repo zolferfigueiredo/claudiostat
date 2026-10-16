@@ -119,7 +119,6 @@ extension Strings {
         "span.m": "{m} мин",
         "span.m_short": "{m}мин",
         "star_icon": "Простая звезда",
-        "status": "Статус Claude",
         "text_only": "Только текст",
         "tool_failed": "{tool}: сбой ({code}).",
         "try_again": "Повторить",

@@ -113,7 +113,6 @@ extension Strings {
         "span.m": "{m}m",
         "span.m_short": "{m}m",
         "star_icon": "Plain star icon",
-        "status": "Claude Status",
         "text_only": "Text only",
         "tool_failed": "{tool} failed ({code}).",
         "try_again": "Try Again",

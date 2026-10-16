@@ -113,7 +113,6 @@ extension Strings {
         "span.m": "{m}min",
         "span.m_short": "{m}min",
         "star_icon": "Icono de estrella simple",
-        "status": "Estado de Claude",
         "text_only": "Solo texto",
         "tool_failed": "{tool} falló ({code}).",
         "try_again": "Reintentar",

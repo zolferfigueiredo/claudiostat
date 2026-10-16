@@ -110,7 +110,6 @@ extension Strings {
         "span.m": "{m} 分",
         "span.m_short": "{m}分",
         "star_icon": "シンプルな星アイコン",
-        "status": "Claude のステータス",
         "text_only": "テキストのみ",
         "tool_failed": "{tool} が失敗しました（{code}）。",
         "try_again": "再試行",

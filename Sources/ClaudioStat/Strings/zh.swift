@@ -110,7 +110,6 @@ extension Strings {
         "span.m": "{m} 分钟",
         "span.m_short": "{m}分",
         "star_icon": "简洁星形图标",
-        "status": "Claude 状态",
         "text_only": "仅文字",
         "tool_failed": "{tool} 失败（{code}）。",
         "try_again": "重试",
