@@ -101,7 +101,6 @@ Every refresh, ClaudioStat runs your installed Claude Code once, headless, and s
 - **Show data below** (on): every limit with its reset countdown, then pace and the budget.
 - **Refresh** (⌘R), and **Refresh rate** 30 seconds, or 1, 3 (default), 5 or 10 minutes.
 - **Pause when Claude is closed** (off): while neither the Claude desktop app nor Claude Code in a terminal is running, nothing refreshes and the last numbers dim. It looks for a running `claude` every minute and when you open the menu. Hidden when neither is installed.
-- **Claude Status** opens status.claude.com.
 - **Profiles**: one per Claude account, each in its own Claude Code folder and named by its email. The checked one fills the bar and the menu. With none, the menu bar says **Add a profile** and the menu starts with **Add profile…**.
   - **Add profile…** signs in to another account through your browser, into a new folder: `~/.claude-2`, `~/.claude-3` and so on. With no profile left, it signs `~/.claude` in instead.
   - **Remove profile** removes the checked one after asking, `~/.claude` included, and signs it out of Claude Code with `claude auth logout`. For `~/.claude` that is the login Claude Code uses in Terminal too. The folder stays.
@@ -145,6 +144,17 @@ To try a change, run `./run.sh`. It builds a debug copy in `/tmp/claudiostat-run
 `./run.sh -testNotifications YES` also shows every notification, to check how they read: the update notice, offering the next version, then Week at 80% and 90% and each limit reached, 8 seconds apart. The installed app does the same with `open -a ClaudioStat --args -testNotifications YES` once quit.
 
 CI builds and tests every pull request on macOS, counting any compiler warning as an error. It also runs shellcheck on the scripts, and fails a pull request that changes the app without raising its version in `Info.plist`.
+
+`./release.sh` makes the notarized DMG for sharing, using the version in `Info.plist`, and publishes it as a GitHub release of the current commit, which must be pushed. `./release.sh --url` also makes the permanent url.zolfer.com download link.
+
+Every push to `main` whose version isn't released yet is released by `.github/workflows/release.yml`. GitHub's Mac runs `./release.sh build`, then a self-hosted runner on the Mac that holds the Developer ID key runs `./release.sh sign`, so the key never leaves its keychain. A pull request that changes the release files runs only the build half. The runner, set up once on that Mac:
+
+1. On GitHub, open Settings > Actions > Runners > New self-hosted runner (macOS, ARM64), and download it into `~/www/actions-runner/claudiostat` as that page shows.
+2. From a terminal where `gh` and Homebrew are on the PATH (the runner keeps that PATH), run `./config.sh --url https://github.com/zolferfigueiredo/claudiostat --token <the token on that page> --labels release --name claudiostat-mac --unattended`, then `./svc.sh install`. The runner then starts at login, and `~/www/actions-runner/run.sh` starts every runner in that folder.
+3. Under Settings > Actions > General > Fork pull request workflows, choose "Require approval for all external contributors", so a fork's pull request can't reach the runner.
+4. On the first release, let the runner control Finder, and let `codesign` and `notarytool` use the keychain.
+
+While that Mac is off or logged out, the sign job waits; Re-run failed jobs retries it with the same build.
 
 ## Disclaimer
 

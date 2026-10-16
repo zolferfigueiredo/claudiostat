@@ -156,7 +156,6 @@ extension AppDelegate {
             if claudeInstalled {
                 action(tr("only"), #selector(toggleSetting), on: defaults.bool(forKey: "onlyWhileClaude")).representedObject = "onlyWhileClaude"
             }
-            action(tr("status"), #selector(openStatus))
         }
         menu.addItem(.separator())
 
@@ -305,10 +304,6 @@ extension AppDelegate {
     @objc func toggleDock() {
         guard alert(tr("dock_restart_title"), tr("dock_restart_text"), tr("dock_restart"), tr("cancel")) else { return }
         toggleDockTile()
-    }
-
-    @objc func openStatus() {
-        NSWorkspace.shared.open(URL(string: "https://status.claude.com/")!)
     }
 
     @objc func toggleLogin() {
