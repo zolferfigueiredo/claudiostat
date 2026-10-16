@@ -1,0 +1,55 @@
+name: Release
+# Every push to main whose version isn't released yet becomes a release. GitHub's Mac builds the unsigned app, and
+# the self-hosted runner on z's Mac signs, notarizes and publishes it, since the Developer ID key stays in its keychain.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+  pull_request:  # builds only, so a change to the release can be tried before it merges
+    paths: [release.sh, build.sh, .github/workflows/release.yml]
+permissions:
+  contents: write
+concurrency:
+  group: release-${{ github.ref }}
+jobs:
+  build:
+    name: Build the unsigned app
+    runs-on: macos-26
+    timeout-minutes: 30
+    outputs:
+      built: ${{ steps.app.outputs.built }}
+    steps:
+      - uses: actions/checkout@v5
+      - run: ./release.sh build
+        env:
+          GH_TOKEN: ${{ github.token }}
+      # A tarball, because an artifact loses the binary's execute bit.
+      - id: app
+        run: |
+          [ -d dist/dmg ] || exit 0
+          tar -czf app.tgz -C dist dmg
+          echo built=true >> "$GITHUB_OUTPUT"
+      - if: steps.app.outputs.built
+        uses: actions/upload-artifact@v7
+        with:
+          name: app
+          path: app.tgz
+          retention-days: 7
+  sign:
+    name: Sign, notarize and publish
+    needs: build
+    if: needs.build.outputs.built && github.event_name != 'pull_request'
+    runs-on: [self-hosted, macOS, release]
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/download-artifact@v8
+        with:
+          name: app
+      - run: |
+          rm -rf dist
+          mkdir dist
+          tar -xzf app.tgz -C dist
+          ./release.sh sign
+        env:
+          GH_TOKEN: ${{ github.token }}

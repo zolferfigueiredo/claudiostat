@@ -1,8 +1,10 @@
 #!/bin/bash
 # Runs the tests, builds ClaudioStat.app and writes dist/ClaudioStat-<version>.dmg.
+# `./build.sh app` stops at the unsigned dist/dmg/ClaudioStat.app, and `./build.sh dmg` signs that app and makes the DMG.
 # Every intermediate (SwiftPM build, caches, module cache, TMPDIR) lives in one /tmp dir deleted on exit.
 set -euo pipefail
 cd "$(dirname "$0")"
+MODE=${1:-all}
 # Finder finds the volume to lay out by name, so every mounted ClaudioStat volume ("ClaudioStat 1"...) is ejected first.
 mount | { grep -i " on /Volumes/ClaudioStat" || true; } | sed 's|^.* on \(/Volumes/[^(]*\) (.*|\1|' |
     while IFS= read -r volume; do hdiutil detach -quiet -force "$volume"; done
@@ -17,12 +19,14 @@ mkdir -p "$TMPDIR"
 SWIFT_OPTS=(--scratch-path "$WORK/build" --cache-path "$WORK/cache" --config-path "$WORK/config"
             --security-path "$WORK/security" --manifest-cache none)
 RELEASE_OPTS=(-c release --arch arm64 --arch x86_64)
+APP=dist/dmg/ClaudioStat.app
 
+if [ "$MODE" != dmg ]; then
 swift test "${SWIFT_OPTS[@]}"
 swift build "${RELEASE_OPTS[@]}" "${SWIFT_OPTS[@]}"
 BIN=$(swift build "${RELEASE_OPTS[@]}" "${SWIFT_OPTS[@]}" --show-bin-path)
 
-APP="$WORK/dmg/ClaudioStat.app"
+rm -rf dist/dmg
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
 cp "$BIN/ClaudioStat" "$APP/Contents/MacOS/"
 cp Info.plist "$APP/Contents/"
@@ -32,14 +36,18 @@ iconutil -c icns "$WORK/AppIcon.iconset" -o "$APP/Contents/Resources/AppIcon.icn
 swift -module-cache-path "$WORK/modules" Icon/make-dmg-background.swift "$WORK/bg"
 tiffutil -cathidpicheck "$WORK/bg/background.png" "$WORK/bg/background@2x.png" \
     -out "$APP/Contents/Resources/dmg-background.tiff"
+fi
+[ "$MODE" != app ] || exit 0
+[ -d "$APP" ] || { echo "$APP is missing: run ./build.sh app first." >&2; exit 1; }
+
 # Notarization requires the hardened runtime and a secure timestamp. Without SIGN_ID the app is signed ad hoc.
 codesign --force --options runtime ${SIGN_ID:+--timestamp} --sign "${SIGN_ID:--}" "$APP"
 codesign --verify --strict "$APP"
-ln -s /Applications "$WORK/dmg/Applications"
+ln -sfn /Applications dist/dmg/Applications
 
 # Finder lays out the window (background, icon spots) and saves it in the volume's .DS_Store.
 # Icon positions must match the arrow in Icon/make-dmg-background.swift.
-hdiutil create -quiet -volname ClaudioStat -srcfolder "$WORK/dmg" -format UDRW "$WORK/rw.dmg"
+hdiutil create -quiet -volname ClaudioStat -srcfolder dist/dmg -format UDRW "$WORK/rw.dmg"
 hdiutil attach -quiet -readwrite -noverify -noautoopen "$WORK/rw.dmg"
 MNT=/Volumes/ClaudioStat
 osascript <<'EOF'
@@ -60,12 +68,16 @@ tell application "Finder" to tell disk "ClaudioStat"
     close
 end tell
 EOF
-until [ -f "$MNT/.DS_Store" ]; do sleep 1; done
+# A Finder that can't be scripted would leave this waiting for ever.
+for i in $(seq 61); do
+    [ ! -f "$MNT/.DS_Store" ] || break
+    [ "$i" -le 60 ] || { echo "Finder didn't lay out the DMG within a minute." >&2; exit 1; }
+    sleep 1
+done
 rm -rf "$MNT/.fseventsd" "$MNT/.Trashes"
 sync
 hdiutil detach -quiet "$MNT"
 MNT=
 
-mkdir -p dist
 hdiutil convert -quiet "$WORK/rw.dmg" -format UDZO -ov -o "$DMG"
 echo "Built $(pwd)/$DMG"
