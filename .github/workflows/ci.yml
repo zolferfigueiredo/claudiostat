@@ -38,3 +38,11 @@ jobs:
             exit 1
           fi
           echo "$old -> $new"
+      - name: The cask installs this version
+        run: |
+          app=$(sed -n '/CFBundleShortVersionString/{n;s/.*<string>\(.*\)<\/string>.*/\1/p;}' Info.plist)
+          cask=$(sed -n 's/^  version "\(.*\)"$/\1/p' Casks/claudiostat.rb)
+          if [ "$cask" != "$app" ]; then
+            echo "::error file=Casks/claudiostat.rb::version has to be the app's, $app (it is $cask)."
+            exit 1
+          fi

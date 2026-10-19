@@ -46,10 +46,9 @@ jobs:
       - uses: actions/download-artifact@v8
         with:
           name: app
+      # No GH_TOKEN: gh uses z's own login on this Mac, so the release is zolferfigueiredo's, not github-actions[bot]'s.
       - run: |
           rm -rf dist
           mkdir dist
           tar -xzf app.tgz -C dist
           ./release.sh sign
-        env:
-          GH_TOKEN: ${{ github.token }}

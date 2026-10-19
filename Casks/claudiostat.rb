@@ -1,14 +1,15 @@
-# Always the latest GitHub release: release.sh uploads a copy of each DMG as ClaudioStat.dmg, so this file
-# never changes with a version. The app updates itself, and Gatekeeper checks its notarization.
+# Installs the DMG of release v<version>. CI keeps version equal to the app's, so a version bump bumps it too.
+# The app updates itself, so brew upgrade leaves it alone, and Gatekeeper checks its notarization.
 cask "claudiostat" do
-  version :latest
+  version "0.6.0"
   sha256 :no_check
 
-  url "https://github.com/zolferfigueiredo/claudiostat/releases/latest/download/ClaudioStat.dmg"
+  url "https://github.com/zolferfigueiredo/claudiostat/releases/download/v#{version}/ClaudioStat-#{version}.dmg"
   name "ClaudioStat"
   desc "Menu bar meter for Claude Code usage limits"
   homepage "https://claudiostat.zolfer.com/"
 
+  auto_updates true
   depends_on macos: :sequoia
 
   app "ClaudioStat.app"

@@ -34,8 +34,6 @@ echo "Release ready: $(pwd)/$DMG"
   loc=$(curl -fsS -o /dev/null -w '%{redirect_url}' --data-urlencode "url=https://claudiostat.zolfer.com/$NAME-$VERSION.dmg" https://url.zolfer.com/dmg)
   echo "Download link: https://url.zolfer.com/${loc##*c=}"
 }
-# Casks/claudiostat.rb always installs releases/latest/download/ClaudioStat.dmg, so every release carries a copy under that name.
-cp "$DMG" "dist/$NAME.dmg"
 # The apps learn the newest version from releases/latest/download/latest.json, the same file the website serves.
 printf '{"version": "%s"}\n' "$VERSION" > dist/latest.json
-gh release create "v$VERSION" "$DMG" "dist/$NAME.dmg" dist/latest.json -R zolferfigueiredo/claudiostat --target "$(git rev-parse HEAD)" --title "$NAME $VERSION" --generate-notes
+gh release create "v$VERSION" "$DMG" dist/latest.json -R zolferfigueiredo/claudiostat --target "$(git rev-parse HEAD)" --title "$NAME $VERSION" --generate-notes
