@@ -63,7 +63,8 @@ func dailyBudgetTable(now: String, week: Int, reset: String, hours: Double, expe
     #expect(parseReply("not json") == nil)
     #expect(parseReply(#"{"type":"control_response","response":{"subtype":"error","error":"x"}}"#) == .failed)
     #expect(parseReply(#"{"type":"control_response","response":{"subtype":"success","response":{"rate_limits_available":false,"rate_limits":null}}}"#) == .signedOut)
-    #expect(parseReply(#"{"type":"control_response","response":{"subtype":"success","response":{"rate_limits_available":true,"rate_limits":null}}}"#) == .failed)
+    #expect(parseReply(#"{"type":"control_response","response":{"subtype":"success","response":{"rate_limits_available":true,"rate_limits":null}}}"#) == .rateLimited)
+    #expect(parseReply(#"{"type":"control_response","response":{"subtype":"success","response":{"rate_limits_available":true}}}"#) == .failed)
 }
 
 @Test func missingValuesAreLeftOut() {

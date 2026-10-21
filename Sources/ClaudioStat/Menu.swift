@@ -149,10 +149,13 @@ extension AppDelegate {
             statusLine.target = self
             statusLine.isEnabled = fix != nil
             menu.addItem(statusLine)
+            if !paused, let blockedUntil = accounts[profile]?.blockedUntil {
+                action(tr("next_try", ["time": time(blockedUntil)]), #selector(refreshNow), enabled: false)
+            }
 
-            action(tr("refresh"), #selector(tick), key: "r", enabled: !paused && !busy)
+            action(tr("refresh"), #selector(refreshNow), key: "r", enabled: !paused && !busy)
 
-            submenu(tr("every"), [("interval", [30, 60, 180, 300, 600].map { ($0, $0 < 60 ? plural("seconds", $0) : plural("minutes", $0 / 60)) })])
+            submenu(tr("every"), [("interval", [60, 180, 300, 600].map { ($0, plural("minutes", $0 / 60)) })])
             if claudeInstalled {
                 action(tr("only"), #selector(toggleSetting), on: defaults.bool(forKey: "onlyWhileClaude")).representedObject = "onlyWhileClaude"
             }
