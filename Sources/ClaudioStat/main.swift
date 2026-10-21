@@ -10,7 +10,8 @@ struct Account {
     var samples: [Sample] = []
     var updated: Date?
     var failedAt: Date?
-    var problem: String?     // Claude Code missing or signed out
+    var problem: String?     // Claude Code missing, signed out or turned away
+    var blockedUntil: Date?  // turned away: not asked again before then, unless by Refresh
 }
 
 final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
@@ -54,8 +55,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
                                      "notifyReached": true, "notifyReset": true, "notifyWeek": true,
                                      "loadingIcon": true, "loadingText": false, "showDetails": true, "showProfile": false, "users": "single",
                                      "detailsLayout": "blocks"])
-        // 150 seconds and pace warnings off are no longer options.
-        if defaults.integer(forKey: "interval") == 150 { defaults.removeObject(forKey: "interval") }
+        // 30 and 150 seconds and pace warnings off are no longer options.
+        if [30, 150].contains(defaults.integer(forKey: "interval")) { defaults.removeObject(forKey: "interval") }
         if defaults.string(forKey: "speedColors") == "off" { defaults.removeObject(forKey: "speedColors") }
         // Before 0.4.1 ~/.claude was always a profile and "profiles" held the others. It stays once it had numbers.
         if defaults.object(forKey: "profileList") == nil {
@@ -153,7 +154,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         busy = true
         let asked = shown
         Task {
-            for profile in asked {
+            for profile in asked where accounts[profile]?.blockedUntil ?? .distantPast <= .now {
                 let result = await fetchUsage(configDir: profile.isEmpty ? nil : profile)
                 // Removed or no longer shown while it asked.
                 guard shown.contains(profile) else { continue }
@@ -166,10 +167,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         }
     }
 
+    /// Refresh in the menu asks the profiles Claude turned away too.
+    @objc func refreshNow() {
+        for profile in shown { accounts[profile]?.blockedUntil = nil }
+        tick()
+    }
+
     func apply(_ result: UsageResult, to profile: String) {
         var account = accounts[profile] ?? Account()
+        let last = account.usage
         account.usage = nil
         account.problem = nil
+        account.blockedUntil = nil
         switch result {
         case .ok(let reply):
             let fresh = keepSeverity(reply, from: account.samples.last?.usage)
@@ -181,6 +190,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             defaults.set(try? JSONEncoder().encode(account.samples), forKey: historyKey(profile))
         case .notFound: account.problem = "not_found"
         case .signedOut: account.problem = "signed_out"
+        case .rateLimited:
+            // Claude turns this login away for about 20 minutes: wait that out with the last numbers, faded.
+            // Signing in again gets a new login, which it doesn't turn away.
+            account.usage = last; account.problem = "rate_limited"; account.blockedUntil = .now.addingTimeInterval(25 * 60)
         case .failed: account.failedAt = .now
         }
         if let problem = account.problem { log.notice("\(folderName(profile), privacy: .public): \(problem, privacy: .public)") }
@@ -213,10 +226,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         let pace = (session: rates.map(\.session.pace).max() ?? .ok, week: rates.map(\.week.pace).max() ?? .ok)
         // Multiple users: each profile's numbers in turn.
         let bar = joined(zip(counted, rates).map { profile, rate in
-            barText(accounts[profile]?.usage, rates: rate, showFable: defaults.bool(forKey: "showFable"),
-                    showPace: defaults.bool(forKey: "showPace"), showBudget: defaults.bool(forKey: "showBudget"),
-                    resetsFrom: defaults.bool(forKey: "showResets") ? now : nil,
-                    profile: defaults.bool(forKey: "showProfile") ? profileName(profile) : nil)
+            let text = barText(accounts[profile]?.usage, rates: rate, showFable: defaults.bool(forKey: "showFable"),
+                               showPace: defaults.bool(forKey: "showPace"), showBudget: defaults.bool(forKey: "showBudget"),
+                               resetsFrom: defaults.bool(forKey: "showResets") ? now : nil,
+                               profile: defaults.bool(forKey: "showProfile") ? profileName(profile) : nil)
+            // Turned away by Claude: the last numbers, faded like a pause.
+            return accounts[profile]?.blockedUntil == nil ? text : faded(text, 0.5)
         })
         guard let button = item.button else { return }
         // Nothing to show yet: the icon alone, whatever Display says.

@@ -99,12 +99,13 @@ Every refresh, ClaudioStat runs your installed Claude Code once, headless, and s
 <summary><b>Every setting</b></summary>
 
 - **Show data below** (on): every limit with its reset countdown, then pace and the budget.
-- **Refresh** (⌘R), and **Refresh rate** 30 seconds, or 1, 3 (default), 5 or 10 minutes.
+- **Refresh** (⌘R), and **Refresh rate** 1, 3 (default), 5 or 10 minutes.
 - **Pause when Claude is closed** (off): while neither the Claude desktop app nor Claude Code in a terminal is running, nothing refreshes and the last numbers dim. It looks for a running `claude` every minute and when you open the menu. Hidden when neither is installed.
 - **Profiles**: one per Claude account, each in its own Claude Code folder and named by its email. The checked one fills the bar and the menu. With none, the menu bar says **Add a profile** and the menu starts with **Add profile…**.
   - **Add profile…** signs in to another account through your browser, into a new folder: `~/.claude-2`, `~/.claude-3` and so on. With no profile left, it signs `~/.claude` in instead.
   - **Remove profile** removes the checked one after asking, `~/.claude` included, and signs it out of Claude Code with `claude auth logout`. For `~/.claude` that is the login Claude Code uses in Terminal too. The folder stays.
   - When the checked profile is signed out, the menu says **Sign in to Claude Code…**, which signs it in again.
+  - When Claude turns the profile's usage checks away for a while, the last numbers stay, faded, and ClaudioStat waits 25 minutes before it asks again. The menu says **Claude paused usage checks. Sign in again…**, which signs the same profile in again for a new login that works right away.
 - **Display**: icon and text, icon only or text only, with the app icon or a plain star. A letter without a value yet is left out, and with none the bar shows just the icon. **Loading icon** (on) and **Loading text** (off) pick what pulses while Claude Code writes a reply.
 - **Data**: whether the menu bar starts with the profile's name (off); **Multiple users** to show every profile one after another, or **Single user** (default) for the checked one; whether it shows F (on), P and B (off), and whether P and B count per day or per hour.
 - **Daily working time**: the hours a day you use Claude, 24 down to 4 (8 by default), so P and B leave out the rest of the day.

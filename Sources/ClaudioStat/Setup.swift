@@ -65,7 +65,7 @@ extension AppDelegate {
 
     var configDir: String? { path.isEmpty ? nil : path }
 
-    // ~/.claude is your own Claude Code login, so it is only signed in again when it has none.
+    // ~/.claude is your own Claude Code login, so it is only signed in again when it has none, or Claude turns it away.
     // A new folder always signs in, so it holds the account picked in the browser.
     func start() {
         if claudePath() == nil { step = .notFound }
@@ -87,7 +87,8 @@ extension AppDelegate {
                 email = await app.refreshName(path)
                 app.render()
             case .notFound: step = .notFound
-            case .signedOut: step = .signIn
+            // A new sign-in gets a login Claude doesn't turn away: same folder, same profile.
+            case .signedOut, .rateLimited: step = .signIn
             case .failed: step = .noAnswer
             }
         }
