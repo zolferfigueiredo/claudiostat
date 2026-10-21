@@ -4,8 +4,10 @@ func claudePath() -> String? {
     let home = FileManager.default.homeDirectoryForCurrentUser.path
     // The Claude desktop app keeps its own copy here, one folder per version, for people without the CLI.
     let desktop = "\(home)/Library/Application Support/Claude/claude-code"
-    let versions = ((try? FileManager.default.contentsOfDirectory(atPath: desktop)) ?? [])
-        .sorted { $0.compare($1, options: .numeric) == .orderedDescending }
+    let list = { (path: String) in (try? FileManager.default.contentsOfDirectory(atPath: path)) ?? [] }
+    let versions = list(desktop).sorted { $0.compare($1, options: .numeric) == .orderedDescending }
+        // Newer versions add a folder inside: 2.1.304/6bbba6adc37f/claude.app.
+        .flatMap { version in [version] + list("\(desktop)/\(version)").map { "\(version)/\($0)" } }
     return (["\(home)/.local/bin/claude", "/opt/homebrew/bin/claude", "/usr/local/bin/claude"]
             + versions.map { "\(desktop)/\($0)/claude.app/Contents/MacOS/claude" })
         .first(where: FileManager.default.isExecutableFile(atPath:))
