@@ -13,7 +13,7 @@ nonisolated struct Usage: Equatable, Codable {
     var fable: Limit?
 }
 
-nonisolated enum UsageResult: Equatable { case ok(Usage), notFound, signedOut, failed }
+nonisolated enum UsageResult: Equatable { case ok(Usage), notFound, signedOut, rateLimited, failed }
 
 /// Reads Claude Code's reply to a `get_usage` control request. Returns nil for any other stream line.
 nonisolated func parseReply(_ line: String) -> UsageResult? {
@@ -22,6 +22,8 @@ nonisolated func parseReply(_ line: String) -> UsageResult? {
           let reply = json["response"] as? [String: Any] else { return nil }
     guard reply["subtype"] as? String == "success", let body = reply["response"] as? [String: Any] else { return .failed }
     if body["rate_limits_available"] as? Bool == false { return .signedOut }
+    // Claude's usage endpoint turned this login away (HTTP 429) and Claude Code had no recent answer to fall back on.
+    if body["rate_limits"] is NSNull { return .rateLimited }
     guard let limits = body["rate_limits"] as? [String: Any], let usage = parseUsage(limits) else { return .failed }
     return .ok(usage)
 }
