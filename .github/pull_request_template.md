@@ -2,3 +2,4 @@
 
 - [ ] I tried it with `./run.sh`
 - [ ] If the app changed, I raised the version in `Info.plist`
+- [ ] If the bar looks different, the screenshots cover it (`Tests/ClaudioStatTests/BarScreenshots.swift`)
