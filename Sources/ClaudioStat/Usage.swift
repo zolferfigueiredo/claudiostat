@@ -231,15 +231,15 @@ nonisolated struct Stat {
 }
 
 /// The letters the settings show. P and B are W's speed and budget. A letter without a value is left out.
-nonisolated func barStats(_ usage: Usage?, rates: (session: Rate, week: Rate)?, showFable: Bool, showPace: Bool,
-                          showBudget: Bool) -> [Stat] {
+nonisolated func barStats(_ usage: Usage?, rates: (session: Rate, week: Rate)?, showPace: Bool, showBudget: Bool) -> [Stat] {
     // P comes from the saved history, so without a reading it would stand alone.
     guard let usage else { return [] }
     func stat(_ letter: String, _ limit: Limit?, _ pace: Pace = .ok) -> [Stat] {
         limit.map { [Stat(letter: letter, value: percent($0.percent), pace: pace, resetsAt: $0.resetsAt)] } ?? []
     }
     var found = stat("S", usage.session, rates?.session.pace ?? .ok) + stat("W", usage.week, rates?.week.pace ?? .ok)
-    if showFable { found += stat("F", usage.fable) }
+    // F only once Fable is used this week.
+    if let fable = usage.fable, fable.percent > 0 { found += stat("F", fable) }
     // P takes W's color: orange past B, red well past it.
     if showPace, usage.week != nil, let speed = rates?.week.speed {
         found.append(Stat(letter: "P", value: percent(speed), pace: rates?.week.pace ?? .ok))
@@ -253,9 +253,9 @@ nonisolated func colored(_ text: String, _ color: NSColor?) -> NSAttributedStrin
 }
 
 /// With `resetsFrom`, S, W and F add the time to their reset: "S 54% (1h13)". A `profile` name goes first.
-nonisolated func barText(_ usage: Usage?, rates: (session: Rate, week: Rate)? = nil, showFable: Bool, showPace: Bool = false,
+nonisolated func barText(_ usage: Usage?, rates: (session: Rate, week: Rate)? = nil, showPace: Bool = false,
                          showBudget: Bool, resetsFrom now: Date? = nil, profile: String? = nil) -> NSAttributedString {
-    var parts = barStats(usage, rates: rates, showFable: showFable, showPace: showPace, showBudget: showBudget).map { stat in
+    var parts = barStats(usage, rates: rates, showPace: showPace, showBudget: showBudget).map { stat in
         let reset = now.flatMap { now in stat.resetsAt.map { " (\(span($0.timeIntervalSince(now), short: true)))" } } ?? ""
         return colored("\(stat.letter) \(stat.value)\(reset)", stat.pace.color)
     }
@@ -267,9 +267,9 @@ nonisolated func barText(_ usage: Usage?, rates: (session: Rate, week: Rate)? = 
 
 /// barText on two lines, for a narrower bar: S and its reset over W, F and W's reset, then P over B.
 /// Groups of columns. A column is a top and a bottom cell, or one cell between the lines: P or B alone, and the profile.
-nonisolated func compactText(_ usage: Usage?, rates: (session: Rate, week: Rate)? = nil, showFable: Bool, showPace: Bool = false,
+nonisolated func compactText(_ usage: Usage?, rates: (session: Rate, week: Rate)? = nil, showPace: Bool = false,
                              showBudget: Bool, resetsFrom now: Date? = nil, profile: String? = nil) -> [[[NSAttributedString]]] {
-    let stats = barStats(usage, rates: rates, showFable: showFable, showPace: showPace, showBudget: showBudget)
+    let stats = barStats(usage, rates: rates, showPace: showPace, showBudget: showBudget)
     guard !stats.isEmpty else { return [] }
     func cells(_ letters: [String], resetOf reset: String) -> [NSAttributedString] {
         let found = stats.filter { letters.contains($0.letter) }
