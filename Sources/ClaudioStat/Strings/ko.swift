@@ -20,6 +20,7 @@ extension Strings {
         "checking_signature": "서명 확인 중…",
         "click_to_update": "현재 {version}입니다. 클릭하여 업데이트하세요.",
         "coffee": "커피 한 잔 사 주기",
+        "compact_text": "간결한 텍스트",
         "connected": "{name} 계정이 연결되었습니다. 다시 열면 한도가 메뉴 막대에 표시됩니다.",
         "daily": "매일",
         "data": "데이터",

@@ -97,6 +97,26 @@ func dailyBudgetTable(now: String, week: Int, reset: String, hours: Double, expe
     #expect(barText(usage, showFable: true, showBudget: false).string == "S 54% · W 6% · F 0%")
 }
 
+@Test func compactOnTwoLines() {
+    _ = english
+    let now = date("2026-09-28T12:00:00Z")
+    let usage = Usage(session: Limit(percent: 5, resetsAt: now.addingTimeInterval(15660)),
+                      week: Limit(percent: 9, resetsAt: now.addingTimeInterval(561600)), fable: Limit(percent: 0))
+    let rates = (Rate(unit: 3600, margin: 5), Rate(speed: 1, needed: 1.7, unit: 86400, margin: 10))
+    func cells(_ groups: [[[NSAttributedString]]]) -> [[[String]]] { groups.map { $0.map { $0.map(\.string) } } }
+    // The grid lines up by column, P over B.
+    #expect(cells(compactText(usage, rates: rates, showFable: true, showPace: true, showBudget: true, resetsFrom: now))
+            == [[["S 5%", "W 9%"], ["4h21", "F 0%"], ["", "6d12h"]], [["P 1%", local("B 1.7%")]]])
+    // B alone sits between the lines, like the profile.
+    #expect(cells(compactText(usage, rates: rates, showFable: false, showBudget: true, resetsFrom: now, profile: "work"))
+            == [[["work"]], [["S 5%", "W 9%"], ["4h21", "6d12h"]], [[local("B 1.7%")]]])
+    #expect(cells(compactText(usage, showFable: false, showBudget: false)) == [[["S 5%", "W 9%"]]])
+    // P past B is orange like W, B stays plain.
+    let fast = (rates.0, Rate(speed: 2, needed: 1.7, unit: 86400, margin: 10))
+    #expect(barStats(usage, rates: fast, showFable: false, showPace: true, showBudget: true).map(\.pace) == [.ok, .fast, .fast, .ok])
+    #expect(compactText(nil, showFable: true, showBudget: true, profile: "work").isEmpty)
+}
+
 // Your examples: needed = what's left ÷ time left. Orange past it, red past it + 5 (S) or + 10 (W).
 @Test(arguments: [
     (0, 5.0, 20.0, Pace.ok), (0, 5, 21, .fast), (0, 5, 25, .fast), (0, 5, 26, .tooFast),

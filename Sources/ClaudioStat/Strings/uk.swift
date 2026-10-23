@@ -20,6 +20,7 @@ extension Strings {
         "checking_signature": "Перевірка підпису…",
         "click_to_update": "У вас {version}. Натисніть, щоб оновити.",
         "coffee": "Пригостіть мене кавою",
+        "compact_text": "Компактний текст",
         "connected": "{name} під’єднано. Відкрийте знову, щоб побачити ліміти в рядку меню.",
         "daily": "Щодня",
         "data": "Дані",

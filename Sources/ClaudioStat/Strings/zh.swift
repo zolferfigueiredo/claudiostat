@@ -20,6 +20,7 @@ extension Strings {
         "checking_signature": "正在检查签名…",
         "click_to_update": "当前版本为 {version}。点按即可更新。",
         "coffee": "请我喝杯咖啡",
+        "compact_text": "紧凑文字",
         "connected": "{name} 已连接。重新打开后，限额会显示在菜单栏中。",
         "daily": "每天",
         "data": "数据",

@@ -20,6 +20,7 @@ extension Strings {
         "checking_signature": "Verifica della firma…",
         "click_to_update": "Hai la {version}. Fai clic per aggiornare.",
         "coffee": "Offrimi un caffè",
+        "compact_text": "Testo compatto",
         "connected": "{name} è collegato. Riapri per vedere i tuoi limiti nella barra dei menu.",
         "daily": "Ogni giorno",
         "data": "Dati",
