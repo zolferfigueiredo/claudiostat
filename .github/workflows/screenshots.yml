@@ -1,0 +1,115 @@
+name: Screenshots
+
+# Draws every look of the menu bar (screenshots.sh) and keeps them on the screenshots branch:
+# main/ is main's gallery, pr-<number>/ a PR's, with the looks it changes before and after in a PR comment.
+on:
+  pull_request:
+    paths: [Sources/**, Icon/**, Tests/ClaudioStatTests/BarScreenshots.swift, screenshots.sh, .github/workflows/screenshots.yml]
+  push:
+    branches: [main]
+    paths: [Sources/**, Icon/**, Tests/ClaudioStatTests/BarScreenshots.swift, screenshots.sh, .github/workflows/screenshots.yml]
+
+permissions:
+  contents: write       # the screenshots branch
+  pull-requests: write  # the comment
+
+concurrency:  # a newer push to the same branch replaces the run
+  group: screenshots-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  screenshots:
+    name: Bar screenshots
+    # Package.swift needs Swift 6.2, which ships with Xcode 26.
+    runs-on: macos-26
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+      - name: The gallery so far
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          if git fetch -q origin screenshots; then
+            git worktree add -q --detach gallery FETCH_HEAD
+          else
+            git worktree add -q --detach gallery
+            git -C gallery checkout -q --orphan screenshots
+            git -C gallery rm -rfq .
+            printf '# ClaudioStat bar screenshots\n\n[Every look of main](main/README.md). Each PR has its own folder, pr-<number>.\n' > gallery/README.md
+          fi
+      - name: Draw every look
+        run: ./screenshots.sh "$RUNNER_TEMP/looks" gallery/main
+      - name: Publish main's gallery
+        if: github.event_name == 'push'
+        run: |
+          rm -rf gallery/main
+          cp -R "$RUNNER_TEMP/looks" gallery/main
+          rm gallery/main/changes.tsv
+          git -C gallery add -A
+          git -C gallery diff --cached --quiet || git -C gallery commit -qm "main ${GITHUB_SHA::7}"
+      - name: Publish the PR's gallery
+        if: github.event_name == 'pull_request'
+        env:
+          PR: ${{ github.event.number }}
+        run: |
+          looks=$RUNNER_TEMP/looks dir=gallery/pr-$PR
+          # The whole gallery (git stores a picture main already has only once), and the earlier look of each change.
+          rm -rf "$dir"
+          cp -R "$looks" "$dir"
+          mkdir -p "$dir/before"
+          while IFS=$'\t' read -r status file _; do
+            if [ "$status" != new ]; then cp "gallery/main/$file" "$dir/before/"; fi
+            if [ "$status" = removed ]; then rm -f "$dir/$file"; fi
+          done < "$looks/changes.tsv"
+          { echo "# Looks changed by #$PR"; echo; ./screenshots.sh table "$looks"; } > "$dir/changes.md"
+          git -C gallery add -A
+          git -C gallery diff --cached --quiet || git -C gallery commit -qm "PR $PR"
+      - name: Push the gallery
+        run: |
+          # Other branches' runs push to it too, each to its own folder.
+          for attempt in 1 2 3; do
+            git -C gallery push -q origin HEAD:screenshots && exit 0
+            sleep $((attempt * 5))
+            git -C gallery pull -q --rebase origin screenshots
+          done
+          exit 1
+      - name: Comment on the PR
+        if: github.event_name == 'pull_request'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR: ${{ github.event.number }}
+        run: |
+          looks=$RUNNER_TEMP/looks marker='<!-- bar screenshots -->'
+          # Pinned to the gallery's commit, so a later push never shows a stale picture.
+          sha=$(git -C gallery rev-parse HEAD)
+          url=https://raw.githubusercontent.com/$GITHUB_REPOSITORY/$sha/pr-$PR/
+          page=https://github.com/$GITHUB_REPOSITORY/blob/$sha/pr-$PR
+          changed=$(grep -c . "$looks/changes.tsv" || true)
+          total=$(find "$looks" -name '*.png' | wc -l | tr -d ' ')
+          {
+            echo "$marker"
+            echo "### Bar screenshots"
+            echo
+            if [ ! -f gallery/main/README.md ]; then
+              echo "The first gallery: $total looks, nothing on main to compare with yet."
+            elif [ "$changed" = 0 ]; then
+              echo "No look changed ($total drawn)."
+            else
+              echo "$changed of $total looks changed."
+              echo
+              # Into a file first: head closing a pipe early would fail the step.
+              ./screenshots.sh table "$looks" "$url" > "$RUNNER_TEMP/table.md"
+              head -n 102 "$RUNNER_TEMP/table.md"
+              if [ "$changed" -gt 100 ]; then echo; echo "And $((changed - 100)) more in [the changes]($page/changes.md)."; fi
+            fi
+            echo
+            echo "[Every look of this PR]($page/README.md)"
+          } > "$RUNNER_TEMP/comment.md"
+          id=$(gh api "repos/$GITHUB_REPOSITORY/issues/$PR/comments" --paginate \
+            --jq ".[] | select(.body | startswith(\"$marker\")) | .id")
+          id=${id%%$'\n'*}
+          if [ -n "$id" ]; then
+            gh api -X PATCH "repos/$GITHUB_REPOSITORY/issues/comments/$id" -F body=@"$RUNNER_TEMP/comment.md" >/dev/null
+          else
+            gh pr comment "$PR" --body-file "$RUNNER_TEMP/comment.md"
+          fi

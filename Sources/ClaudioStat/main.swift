@@ -49,12 +49,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     var failedAt: Date? { accounts[profile]?.failedAt }
     var problem: String? { accounts[profile]?.problem }
 
+    /// Every setting with its default. The bar screenshots test checks each one is in them or marked as not on the bar.
+    static let settings: [String: Any] = ["interval": 180, "showPace": false, "showBudget": false, "showResets": false, "onlyWhileClaude": false,
+                                          "menuBar": "both", "icon": "app", "speedColors": "day", "workHours": 8, "updateEvery": 604800,
+                                          "notifyReached": true, "notifyReset": true, "notifyWeek": true,
+                                          "loadingIcon": true, "loadingText": false, "showDetails": true, "showProfile": false, "users": "single",
+                                          "detailsLayout": "blocks", "compactText": true]
+
     func applicationDidFinishLaunching(_ notification: Notification) {
-        defaults.register(defaults: ["interval": 180, "showPace": false, "showBudget": false, "showResets": false, "onlyWhileClaude": false,
-                                     "menuBar": "both", "icon": "app", "speedColors": "day", "workHours": 8, "updateEvery": 604800,
-                                     "notifyReached": true, "notifyReset": true, "notifyWeek": true,
-                                     "loadingIcon": true, "loadingText": false, "showDetails": true, "showProfile": false, "users": "single",
-                                     "detailsLayout": "blocks", "compactText": true])
+        defaults.register(defaults: Self.settings)
         // 30 and 150 seconds and pace warnings off are no longer options.
         if [30, 150].contains(defaults.integer(forKey: "interval")) { defaults.removeObject(forKey: "interval") }
         if defaults.string(forKey: "speedColors") == "off" { defaults.removeObject(forKey: "speedColors") }
@@ -218,8 +221,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
                      workHours: Double(defaults.integer(forKey: "workHours")), now: now)
     }
 
-    @objc func render() {
-        let now = Date.now, shown = shown
+    @objc func render() { render(at: .now) }
+
+    /// The bar at `now`: the bar screenshots pass a fixed time.
+    func render(at now: Date) {
+        let shown = shown
         // Until Reopen, the icon alone: numbers already there would make Reopen look pointless.
         let counted = awaitingReopen ? [] : shown, rates = counted.map { pacing(now, $0) }
         let alert = counted.lazy.compactMap { warning(self.accounts[$0]?.usage) }.first
@@ -285,7 +291,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         button.appearsDisabled = paused
         if (fadeIcon || fadeText) != (pulse != nil) {
             pulse?.invalidate()
-            pulse = fadeIcon || fadeText ? Timer(timeInterval: 0.05, target: self, selector: #selector(render), userInfo: nil, repeats: true) : nil
+            pulse = fadeIcon || fadeText ? Timer(timeInterval: 0.05, target: self, selector: #selector(render as () -> Void), userInfo: nil, repeats: true) : nil
             if let pulse { RunLoop.main.add(pulse, forMode: .common) }
         }
         let line = (alert.map { "⚠ \($0) · " } ?? "") + bar.string + " · pace S \(pace.session) W \(pace.week)"
