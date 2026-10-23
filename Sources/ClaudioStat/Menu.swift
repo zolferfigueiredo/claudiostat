@@ -177,6 +177,9 @@ extension AppDelegate {
                                               ("icon", [("app", tr("app_icon")), ("star", tr("star_icon"))])],
                               disabled: mode == "numbers" ? "icon" : nil)
         display.image = NSImage(systemSymbolName: "menubar.rectangle", accessibilityDescription: nil)
+        // The text on two lines, under the choices above.
+        display.submenu?.insertItem(.separator(), at: 3)
+        display.submenu?.insertItem(toggle(tr("compact_text"), "compactText", enabled: mode != "icon"), at: 4)
         // They pulse while tokens are being spent. Text only has no icon, Icon only no text.
         display.submenu?.addItem(.separator())
         display.submenu?.addItem(toggle(tr("loading_icon"), "loadingIcon", enabled: mode != "numbers"))

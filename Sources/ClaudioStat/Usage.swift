@@ -222,39 +222,117 @@ nonisolated func percent(_ value: Double?) -> String {
     value.map { "\($0.formatted(.number.precision(.fractionLength(0...1))))%" } ?? "-"
 }
 
-/// P and B are W's speed and budget. With `resetsFrom`, S, W and F add the time to their reset: "S 54% (1h13)".
-/// A `profile` name goes first.
-nonisolated func barText(_ usage: Usage?, rates: (session: Rate, week: Rate)? = nil, showFable: Bool, showPace: Bool = false,
-                         showBudget: Bool, resetsFrom now: Date? = nil, profile: String? = nil) -> NSAttributedString {
-    func stat(_ letter: String, _ limit: Limit?) -> String? {
-        guard let limit else { return nil }
-        guard let now, let reset = limit.resetsAt else { return "\(letter) \(percent(limit.percent))" }
-        return "\(letter) \(percent(limit.percent)) (\(span(reset.timeIntervalSince(now), short: true)))"
-    }
-    // P comes from the saved history, so without a reading it would stand alone.
-    guard let usage else { return NSAttributedString() }
-    var found = [(stat("S", usage.session), rates?.session.pace ?? .ok),
-                 (stat("W", usage.week), rates?.week.pace ?? .ok)]
-    if showFable { found.append((stat("F", usage.fable), .ok)) }
-    if showPace, usage.week != nil { found.append((rates?.week.speed.map { "P \(percent($0))" }, .ok)) }
-    if showBudget { found.append((rates?.week.needed.map { "B \(percent($0))" }, .ok)) }
-    // A letter without a value is left out, and a profile without any is left out whole.
-    var parts = found.compactMap { text, pace in text.map { ($0, pace) } }
-    guard !parts.isEmpty else { return NSAttributedString() }
-    if let profile { parts.insert((profile, .ok), at: 0) }
-    return joined(parts.map { text, pace in NSAttributedString(string: text, attributes: pace.color.map { [.foregroundColor: $0] } ?? [:]) })
+/// One letter on the bar: "S 54%", with the time to its limit's reset.
+nonisolated struct Stat {
+    var letter: String
+    var value: String
+    var pace = Pace.ok
+    var resetsAt: Date? = nil
 }
 
-/// The parts with " · " between them, in the menu bar's font, and in labelColor where a part has no color of its own:
-/// text without one is dimmed like a template on the menu bars of the displays not in use, see `redrawn`.
-nonisolated func joined(_ parts: [NSAttributedString]) -> NSAttributedString {
+/// The letters the settings show. P and B are W's speed and budget. A letter without a value is left out.
+nonisolated func barStats(_ usage: Usage?, rates: (session: Rate, week: Rate)?, showFable: Bool, showPace: Bool,
+                          showBudget: Bool) -> [Stat] {
+    // P comes from the saved history, so without a reading it would stand alone.
+    guard let usage else { return [] }
+    func stat(_ letter: String, _ limit: Limit?, _ pace: Pace = .ok) -> [Stat] {
+        limit.map { [Stat(letter: letter, value: percent($0.percent), pace: pace, resetsAt: $0.resetsAt)] } ?? []
+    }
+    var found = stat("S", usage.session, rates?.session.pace ?? .ok) + stat("W", usage.week, rates?.week.pace ?? .ok)
+    if showFable { found += stat("F", usage.fable) }
+    // P takes W's color: orange past B, red well past it.
+    if showPace, usage.week != nil, let speed = rates?.week.speed {
+        found.append(Stat(letter: "P", value: percent(speed), pace: rates?.week.pace ?? .ok))
+    }
+    if showBudget, let needed = rates?.week.needed { found.append(Stat(letter: "B", value: percent(needed))) }
+    return found
+}
+
+nonisolated func colored(_ text: String, _ color: NSColor?) -> NSAttributedString {
+    NSAttributedString(string: text, attributes: color.map { [.foregroundColor: $0] } ?? [:])
+}
+
+/// With `resetsFrom`, S, W and F add the time to their reset: "S 54% (1h13)". A `profile` name goes first.
+nonisolated func barText(_ usage: Usage?, rates: (session: Rate, week: Rate)? = nil, showFable: Bool, showPace: Bool = false,
+                         showBudget: Bool, resetsFrom now: Date? = nil, profile: String? = nil) -> NSAttributedString {
+    var parts = barStats(usage, rates: rates, showFable: showFable, showPace: showPace, showBudget: showBudget).map { stat in
+        let reset = now.flatMap { now in stat.resetsAt.map { " (\(span($0.timeIntervalSince(now), short: true)))" } } ?? ""
+        return colored("\(stat.letter) \(stat.value)\(reset)", stat.pace.color)
+    }
+    // A profile without any letter is left out whole.
+    guard !parts.isEmpty else { return NSAttributedString() }
+    if let profile { parts.insert(NSAttributedString(string: profile), at: 0) }
+    return joined(parts)
+}
+
+/// barText on two lines, for a narrower bar: S and its reset over W, F and W's reset, then P over B.
+/// Groups of columns. A column is a top and a bottom cell, or one cell between the lines: P or B alone, and the profile.
+nonisolated func compactText(_ usage: Usage?, rates: (session: Rate, week: Rate)? = nil, showFable: Bool, showPace: Bool = false,
+                             showBudget: Bool, resetsFrom now: Date? = nil, profile: String? = nil) -> [[[NSAttributedString]]] {
+    let stats = barStats(usage, rates: rates, showFable: showFable, showPace: showPace, showBudget: showBudget)
+    guard !stats.isEmpty else { return [] }
+    func cells(_ letters: [String], resetOf reset: String) -> [NSAttributedString] {
+        let found = stats.filter { letters.contains($0.letter) }
+        let time = now.flatMap { now in found.first { $0.letter == reset }?.resetsAt.map { span($0.timeIntervalSince(now), short: true) } }
+        return found.map { colored("\($0.letter) \($0.value)", $0.pace.color) } + (time.map { [colored($0, .secondaryLabelColor)] } ?? [])
+    }
+    let top = cells(["S"], resetOf: "S"), bottom = cells(["W", "F"], resetOf: "W"), side = cells(["P", "B"], resetOf: "")
+    // The grid's cells line up by column: S's reset over F.
+    let grid = (0..<max(top.count, bottom.count)).map { column in
+        [top, bottom].map { $0.indices.contains(column) ? $0[column] : NSAttributedString() }
+    }
+    return (profile.map { [[[NSAttributedString(string: $0)]]] } ?? []) + [grid, side.isEmpty ? [] : [side]].filter { !$0.isEmpty }
+}
+
+/// compactText's groups drawn on the menu bar's two lines, as a title has only one. Text in labelColor follows a light
+/// or dark menu bar as it is drawn, like `star`.
+func twoLines(_ groups: [[[NSAttributedString]]]) -> NSImage {
+    let font = NSFont.monospacedDigitSystemFont(ofSize: 10, weight: .medium), columnGap: CGFloat = 4, groupGap: CGFloat = 9
+    let cells = groups.map { $0.map { $0.map { joined([$0], font: font) } } }
+    let widths = cells.map { $0.map { ceil($0.map { $0.size().width }.max() ?? 0) } }
+    let columns = widths.joined()
+    let width = columns.reduce(0, +) + columnGap * CGFloat(columns.count - widths.count) + groupGap * CGFloat(widths.count - 1)
+    return NSImage(size: NSSize(width: max(0, width), height: NSStatusBar.system.thickness), flipped: false) { rect in
+        // Baselines: the two lines' capitals 3 points apart and centred as a pair, a lone cell centred on its own.
+        let cap = font.capHeight, bottom = rect.midY - cap - 1.5, top = bottom + cap + 3, middle = rect.midY - cap / 2
+        var x: CGFloat = 0
+        for (group, columns) in cells.enumerated() {
+            if group > 0 { x += groupGap - columnGap }
+            for (index, column) in columns.enumerated() {
+                for (line, cell) in column.enumerated() {
+                    let y = column.count == 1 ? middle : line == 0 ? top : bottom
+                    // Without .usesLineFragmentOrigin the origin is the baseline.
+                    cell.draw(with: NSRect(x: x, y: y, width: widths[group][index], height: font.ascender), options: [])
+                }
+                x += widths[group][index] + columnGap
+            }
+        }
+        return true
+    }
+}
+
+/// The two images side by side, `gap` points apart and centred on each other.
+nonisolated func beside(_ left: NSImage?, _ right: NSImage, gap: CGFloat = 4) -> NSImage {
+    guard let left else { return right }
+    let size = NSSize(width: left.size.width + gap + right.size.width, height: max(left.size.height, right.size.height))
+    return NSImage(size: size, flipped: false) { rect in
+        left.draw(in: NSRect(origin: NSPoint(x: 0, y: (rect.height - left.size.height) / 2), size: left.size))
+        right.draw(in: NSRect(origin: NSPoint(x: left.size.width + gap, y: (rect.height - right.size.height) / 2), size: right.size))
+        return true
+    }
+}
+
+/// The parts with " · " between them, in the menu bar's font unless given another, and in labelColor where a part has no
+/// color of its own: text without one is dimmed like a template on the menu bars of the displays not in use, see `redrawn`.
+nonisolated func joined(_ parts: [NSAttributedString],
+                        font: NSFont = .monospacedDigitSystemFont(ofSize: 0, weight: .regular)) -> NSAttributedString {
     let line = NSMutableAttributedString()
     for part in parts where part.length > 0 {
         if line.length > 0 { line.append(NSAttributedString(string: " · ")) }
         line.append(part)
     }
     let all = NSRange(location: 0, length: line.length)
-    line.addAttribute(.font, value: NSFont.monospacedDigitSystemFont(ofSize: 0, weight: .regular), range: all)
+    line.addAttribute(.font, value: font, range: all)
     line.enumerateAttribute(.foregroundColor, in: all) { color, range, _ in
         if color == nil { line.addAttribute(.foregroundColor, value: NSColor.labelColor, range: range) }
     }

@@ -54,7 +54,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
                                      "menuBar": "both", "icon": "app", "speedColors": "day", "workHours": 8, "updateEvery": 604800,
                                      "notifyReached": true, "notifyReset": true, "notifyWeek": true,
                                      "loadingIcon": true, "loadingText": false, "showDetails": true, "showProfile": false, "users": "single",
-                                     "detailsLayout": "blocks"])
+                                     "detailsLayout": "blocks", "compactText": true])
         // 30 and 150 seconds and pace warnings off are no longer options.
         if [30, 150].contains(defaults.integer(forKey: "interval")) { defaults.removeObject(forKey: "interval") }
         if defaults.string(forKey: "speedColors") == "off" { defaults.removeObject(forKey: "speedColors") }
@@ -224,15 +224,21 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         let counted = awaitingReopen ? [] : shown, rates = counted.map { pacing(now, $0) }
         let alert = counted.lazy.compactMap { warning(self.accounts[$0]?.usage) }.first
         let pace = (session: rates.map(\.session.pace).max() ?? .ok, week: rates.map(\.week.pace).max() ?? .ok)
+        let fable = defaults.bool(forKey: "showFable"), speed = defaults.bool(forKey: "showPace"), budget = defaults.bool(forKey: "showBudget")
+        let resets = defaults.bool(forKey: "showResets") ? now : nil, names = defaults.bool(forKey: "showProfile")
+        // Turned away by Claude: the last numbers, faded like a pause.
+        func last(_ profile: String, _ text: NSAttributedString) -> NSAttributedString {
+            accounts[profile]?.blockedUntil == nil ? text : faded(text, 0.5)
+        }
         // Multiple users: each profile's numbers in turn.
         let bar = joined(zip(counted, rates).map { profile, rate in
-            let text = barText(accounts[profile]?.usage, rates: rate, showFable: defaults.bool(forKey: "showFable"),
-                               showPace: defaults.bool(forKey: "showPace"), showBudget: defaults.bool(forKey: "showBudget"),
-                               resetsFrom: defaults.bool(forKey: "showResets") ? now : nil,
-                               profile: defaults.bool(forKey: "showProfile") ? profileName(profile) : nil)
-            // Turned away by Claude: the last numbers, faded like a pause.
-            return accounts[profile]?.blockedUntil == nil ? text : faded(text, 0.5)
+            last(profile, barText(accounts[profile]?.usage, rates: rate, showFable: fable, showPace: speed, showBudget: budget,
+                                  resetsFrom: resets, profile: names ? profileName(profile) : nil))
         })
+        let compact = !defaults.bool(forKey: "compactText") ? [] : zip(counted, rates).flatMap { profile, rate in
+            compactText(accounts[profile]?.usage, rates: rate, showFable: fable, showPace: speed, showBudget: budget,
+                        resetsFrom: resets, profile: names ? profileName(profile) : nil).map { $0.map { $0.map { last(profile, $0) } } }
+        }
         guard let button = item.button else { return }
         // Nothing to show yet: the icon alone, whatever Display says.
         let mode = bar.length == 0 && !shown.isEmpty ? "icon" : defaults.string(forKey: "menuBar")
@@ -261,11 +267,21 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         let fadeIcon = thinking && mode != "numbers" && defaults.bool(forKey: "loadingIcon")
         let fadeText = thinking && mode != "icon" && defaults.bool(forKey: "loadingText")
         let alpha = 0.7 + 0.3 * cos(now.timeIntervalSinceReferenceDate * 2 * .pi / 1.5)
-        button.image = fadeIcon ? redrawn(image, alpha: alpha) : image
-        // appearsDisabled leaves colored text alone, so paused text is faded to half here.
-        let textAlpha = (fadeText ? alpha : 1) * (paused ? 0.5 : 1)
-        button.attributedTitle = textAlpha < 1 ? faded(title, textAlpha) : title
-        button.imagePosition = mode == "icon" && !shown.isEmpty ? .imageOnly : .imageLeading
+        let icon = fadeIcon ? redrawn(image, alpha: alpha) : image
+        if !compact.isEmpty, mode != "icon" {
+            // A title has one line, so the two go beside the icon in its image, which appearsDisabled dims whole.
+            let lines = twoLines(compact), both = beside(icon, fadeText ? redrawn(lines, alpha: alpha) ?? lines : lines)
+            both.accessibilityDescription = (alert.map { "\($0) · " } ?? "") + bar.string
+            button.image = both
+            button.attributedTitle = NSAttributedString()
+            button.imagePosition = .imageOnly
+        } else {
+            button.image = icon
+            // appearsDisabled leaves colored text alone, so paused text is faded to half here.
+            let textAlpha = (fadeText ? alpha : 1) * (paused ? 0.5 : 1)
+            button.attributedTitle = textAlpha < 1 ? faded(title, textAlpha) : title
+            button.imagePosition = mode == "icon" && !shown.isEmpty ? .imageOnly : .imageLeading
+        }
         button.appearsDisabled = paused
         if (fadeIcon || fadeText) != (pulse != nil) {
             pulse?.invalidate()

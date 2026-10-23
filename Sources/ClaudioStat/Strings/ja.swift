@@ -20,6 +20,7 @@ extension Strings {
         "checking_signature": "署名を確認中…",
         "click_to_update": "現在は {version} です。クリックしてアップデート。",
         "coffee": "コーヒーをおごる",
+        "compact_text": "コンパクトなテキスト",
         "connected": "{name} を接続しました。開き直すと、制限がメニューバーに表示されます。",
         "daily": "毎日",
         "data": "データ",
