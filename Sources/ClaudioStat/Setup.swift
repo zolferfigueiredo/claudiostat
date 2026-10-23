@@ -81,7 +81,7 @@ extension AppDelegate {
             case .ok(let usage):
                 app.awaitingReopen = window?.isVisible == true
                 app.connected(path, result)
-                step = .done(barText(usage, showFable: app.defaults.bool(forKey: "showFable"), showBudget: false).string)
+                step = .done(barText(usage, showBudget: false).string)
                 // Back over the browser after signing in.
                 if window?.isVisible == true { window?.orderFrontRegardless() }
                 email = await app.refreshName(path)

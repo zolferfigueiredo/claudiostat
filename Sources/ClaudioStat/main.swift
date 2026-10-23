@@ -50,7 +50,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     var problem: String? { accounts[profile]?.problem }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
-        defaults.register(defaults: ["interval": 180, "showFable": true, "showPace": false, "showBudget": false, "showResets": false, "onlyWhileClaude": false,
+        defaults.register(defaults: ["interval": 180, "showPace": false, "showBudget": false, "showResets": false, "onlyWhileClaude": false,
                                      "menuBar": "both", "icon": "app", "speedColors": "day", "workHours": 8, "updateEvery": 604800,
                                      "notifyReached": true, "notifyReset": true, "notifyWeek": true,
                                      "loadingIcon": true, "loadingText": false, "showDetails": true, "showProfile": false, "users": "single",
@@ -224,7 +224,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         let counted = awaitingReopen ? [] : shown, rates = counted.map { pacing(now, $0) }
         let alert = counted.lazy.compactMap { warning(self.accounts[$0]?.usage) }.first
         let pace = (session: rates.map(\.session.pace).max() ?? .ok, week: rates.map(\.week.pace).max() ?? .ok)
-        let fable = defaults.bool(forKey: "showFable"), speed = defaults.bool(forKey: "showPace"), budget = defaults.bool(forKey: "showBudget")
+        let speed = defaults.bool(forKey: "showPace"), budget = defaults.bool(forKey: "showBudget")
         let resets = defaults.bool(forKey: "showResets") ? now : nil, names = defaults.bool(forKey: "showProfile")
         // Turned away by Claude: the last numbers, faded like a pause.
         func last(_ profile: String, _ text: NSAttributedString) -> NSAttributedString {
@@ -232,11 +232,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         }
         // Multiple users: each profile's numbers in turn.
         let bar = joined(zip(counted, rates).map { profile, rate in
-            last(profile, barText(accounts[profile]?.usage, rates: rate, showFable: fable, showPace: speed, showBudget: budget,
+            last(profile, barText(accounts[profile]?.usage, rates: rate, showPace: speed, showBudget: budget,
                                   resetsFrom: resets, profile: names ? profileName(profile) : nil))
         })
         let compact = !defaults.bool(forKey: "compactText") ? [] : zip(counted, rates).flatMap { profile, rate in
-            compactText(accounts[profile]?.usage, rates: rate, showFable: fable, showPace: speed, showBudget: budget,
+            compactText(accounts[profile]?.usage, rates: rate, showPace: speed, showBudget: budget,
                         resetsFrom: resets, profile: names ? profileName(profile) : nil).map { $0.map { $0.map { last(profile, $0) } } }
         }
         guard let button = item.button else { return }

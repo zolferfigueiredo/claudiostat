@@ -69,20 +69,20 @@ func dailyBudgetTable(now: String, week: Int, reset: String, hours: Double, expe
 
 @Test func missingValuesAreLeftOut() {
     let usage = parseUsage(["five_hour": ["utilization": 42, "resets_at": NSNull()], "model_scoped": []])
-    #expect(barText(usage, showFable: true, showPace: true, showBudget: true).string == "S 42%")
-    #expect(barText(nil, showFable: true, showPace: true, showBudget: true).string == "")
-    #expect(barText(nil, showFable: false, showBudget: false, profile: "claude-work").string == "")
+    #expect(barText(usage, showPace: true, showBudget: true).string == "S 42%")
+    #expect(barText(nil, showPace: true, showBudget: true).string == "")
+    #expect(barText(nil, showBudget: false, profile: "claude-work").string == "")
     // Multiple users: each profile in turn, one without numbers left out whole.
-    #expect(joined([barText(usage, showFable: false, showBudget: false, profile: "claude"),
-                    barText(nil, showFable: false, showBudget: false, profile: "claude-work")]).string == "claude · S 42%")
+    #expect(joined([barText(usage, showBudget: false, profile: "claude"),
+                    barText(nil, showBudget: false, profile: "claude-work")]).string == "claude · S 42%")
     let rates = (Rate(unit: 3600, margin: 5), Rate(speed: 1, needed: 0.8, unit: 3600, margin: 10))
     // P comes from the saved history: never on its own, before a reading or without W.
-    #expect(barText(nil, rates: rates, showFable: false, showPace: true, showBudget: true).string == "")
-    #expect(barText(usage, rates: rates, showFable: false, showPace: true, showBudget: false).string == "S 42%")
+    #expect(barText(nil, rates: rates, showPace: true, showBudget: true).string == "")
+    #expect(barText(usage, rates: rates, showPace: true, showBudget: false).string == "S 42%")
     let week = Usage(week: Limit(percent: 18))
-    #expect(barText(week, rates: rates, showFable: false, showPace: true, showBudget: true).string == local("W 18% · P 1% · B 0.8%"))
+    #expect(barText(week, rates: rates, showPace: true, showBudget: true).string == local("W 18% · P 1% · B 0.8%"))
     let daily = (Rate(unit: 86400, margin: 5), Rate(speed: 16, needed: 13, unit: 86400, margin: 10))
-    #expect(barText(week, rates: daily, showFable: false, showBudget: true).string == "W 18% · B 13%")
+    #expect(barText(week, rates: daily, showBudget: true).string == "W 18% · B 13%")
 }
 
 @Test func resetsOnTheLine() {
@@ -93,8 +93,11 @@ func dailyBudgetTable(now: String, week: Int, reset: String, hours: Double, expe
     let now = date("2026-09-28T12:00:00Z")
     let usage = Usage(session: Limit(percent: 54, resetsAt: now.addingTimeInterval(4380)),
                       week: Limit(percent: 6, resetsAt: now.addingTimeInterval(93600)), fable: Limit(percent: 0))
-    #expect(barText(usage, showFable: true, showBudget: true, resetsFrom: now).string == "S 54% (1h13) · W 6% (1d2h) · F 0%")
-    #expect(barText(usage, showFable: true, showBudget: false).string == "S 54% · W 6% · F 0%")
+    #expect(barText(usage, showBudget: true, resetsFrom: now).string == "S 54% (1h13) · W 6% (1d2h)")
+    // F once Fable is used, not at 0%.
+    var used = usage
+    used.fable?.percent = 7
+    #expect(barText(used, showBudget: false).string == "S 54% · W 6% · F 7%")
 }
 
 @Test func compactOnTwoLines() {
@@ -105,16 +108,18 @@ func dailyBudgetTable(now: String, week: Int, reset: String, hours: Double, expe
     let rates = (Rate(unit: 3600, margin: 5), Rate(speed: 1, needed: 1.7, unit: 86400, margin: 10))
     func cells(_ groups: [[[NSAttributedString]]]) -> [[[String]]] { groups.map { $0.map { $0.map(\.string) } } }
     // The grid lines up by column, P over B.
-    #expect(cells(compactText(usage, rates: rates, showFable: true, showPace: true, showBudget: true, resetsFrom: now))
-            == [[["S 5%", "W 9%"], ["4h21", "F 0%"], ["", "6d12h"]], [["P 1%", local("B 1.7%")]]])
+    var used = usage
+    used.fable?.percent = 7
+    #expect(cells(compactText(used, rates: rates, showPace: true, showBudget: true, resetsFrom: now))
+            == [[["S 5%", "W 9%"], ["4h21", "F 7%"], ["", "6d12h"]], [["P 1%", local("B 1.7%")]]])
     // B alone sits between the lines, like the profile.
-    #expect(cells(compactText(usage, rates: rates, showFable: false, showBudget: true, resetsFrom: now, profile: "work"))
+    #expect(cells(compactText(usage, rates: rates, showBudget: true, resetsFrom: now, profile: "work"))
             == [[["work"]], [["S 5%", "W 9%"], ["4h21", "6d12h"]], [[local("B 1.7%")]]])
-    #expect(cells(compactText(usage, showFable: false, showBudget: false)) == [[["S 5%", "W 9%"]]])
+    #expect(cells(compactText(usage, showBudget: false)) == [[["S 5%", "W 9%"]]])
     // P past B is orange like W, B stays plain.
     let fast = (rates.0, Rate(speed: 2, needed: 1.7, unit: 86400, margin: 10))
-    #expect(barStats(usage, rates: fast, showFable: false, showPace: true, showBudget: true).map(\.pace) == [.ok, .fast, .fast, .ok])
-    #expect(compactText(nil, showFable: true, showBudget: true, profile: "work").isEmpty)
+    #expect(barStats(usage, rates: fast, showPace: true, showBudget: true).map(\.pace) == [.ok, .fast, .fast, .ok])
+    #expect(compactText(nil, showBudget: true, profile: "work").isEmpty)
 }
 
 // Your examples: needed = what's left ÷ time left. Orange past it, red past it + 5 (S) or + 10 (W).
@@ -259,7 +264,7 @@ private func sample(_ time: String, s: Int, sReset: Date = reset, w: Int = 60) -
 
 @Test func barColorsSessionAndWeekOnly() {
     let rates = (Rate(speed: 22, needed: 20, unit: 3600, margin: 5), Rate(speed: 30, needed: 13, unit: 86400, margin: 10))
-    let bar = barText(Usage(session: Limit(percent: 30), week: Limit(percent: 60), fable: Limit(percent: 7)), rates: rates, showFable: true, showBudget: false)
+    let bar = barText(Usage(session: Limit(percent: 30), week: Limit(percent: 60), fable: Limit(percent: 7)), rates: rates, showBudget: false)
     func color(_ text: String) -> NSColor? {
         bar.attribute(.foregroundColor, at: (bar.string as NSString).range(of: text).location, effectiveRange: nil) as? NSColor
     }
