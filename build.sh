@@ -20,6 +20,7 @@ SWIFT_OPTS=(--scratch-path "$WORK/build" --cache-path "$WORK/cache" --config-pat
             --security-path "$WORK/security" --manifest-cache none)
 RELEASE_OPTS=(-c release --arch arm64 --arch x86_64)
 APP=dist/dmg/ClaudioStat.app
+WIDGET="$APP/Contents/PlugIns/ClaudioStatWidget.appex"
 
 if [ "$MODE" != dmg ]; then
 swift test "${SWIFT_OPTS[@]}"
@@ -32,6 +33,14 @@ cp "$BIN/ClaudioStat" "$APP/Contents/MacOS/"
 cp Info.plist "$APP/Contents/"
 swift -module-cache-path "$WORK/modules" Icon/make-icon.swift "$WORK/AppIcon.iconset"
 iconutil -c icns "$WORK/AppIcon.iconset" -o "$APP/Contents/Resources/AppIcon.icns"
+# The desktop widget, with the app's versions and its strings.
+mkdir -p "$WIDGET/Contents/MacOS" "$WIDGET/Contents/Resources"
+cp "$BIN/ClaudioStatWidget" "$WIDGET/Contents/MacOS/"
+cp Sources/ClaudioStatWidget/Info.plist "$WIDGET/Contents/"
+for key in CFBundleShortVersionString CFBundleVersion; do
+    /usr/libexec/PlistBuddy -c "Set $key $(/usr/libexec/PlistBuddy -c "Print $key" Info.plist)" "$WIDGET/Contents/Info.plist"
+done
+xcrun xcstringstool compile Sources/ClaudioStatWidget/Localizable.xcstrings -o "$WIDGET/Contents/Resources"
 # The DMG window's background lives inside the app, so the DMG shows nothing but the app and Applications.
 swift -module-cache-path "$WORK/modules" Icon/make-dmg-background.swift "$WORK/bg"
 tiffutil -cathidpicheck "$WORK/bg/background.png" "$WORK/bg/background@2x.png" \
@@ -41,7 +50,10 @@ fi
 [ -d "$APP" ] || { echo "$APP is missing: run ./build.sh app first." >&2; exit 1; }
 
 # Notarization requires the hardened runtime and a secure timestamp. Without SIGN_ID the app is signed ad hoc.
-codesign --force --options runtime ${SIGN_ID:+--timestamp} --sign "${SIGN_ID:--}" "$APP"
+# The widget first, inside out; each gets the group it shares with the other.
+codesign --force --options runtime ${SIGN_ID:+--timestamp} --entitlements Sources/ClaudioStatWidget/Widget.entitlements \
+    --sign "${SIGN_ID:--}" "$WIDGET"
+codesign --force --options runtime ${SIGN_ID:+--timestamp} --entitlements ClaudioStat.entitlements --sign "${SIGN_ID:--}" "$APP"
 codesign --verify --strict "$APP"
 ln -sfn /Applications dist/dmg/Applications
 

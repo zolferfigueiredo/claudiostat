@@ -264,6 +264,7 @@ extension AppDelegate {
         if picks["interval"] != nil { reschedule() }
         if shown != before { profilesChanged() }
         render()
+        shareWithWidget()
     }
 
     @objc func toggleSetting(_ sender: NSMenuItem) {
@@ -272,6 +273,7 @@ extension AppDelegate {
         log.notice("\(key, privacy: .public) = \(self.defaults.bool(forKey: key), privacy: .public)")
         if key == "onlyWhileClaude" { reschedule() }
         render()
+        shareWithWidget()
     }
 
     @objc func chooseLanguage(_ sender: NSMenuItem) {
