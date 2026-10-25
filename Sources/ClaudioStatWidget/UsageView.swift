@@ -1,4 +1,4 @@
-// Copied from appclaudiostat's apps/mobile/targets/_shared for the desktop widget: copy it again when it changes there. Changed here: the small size on the Mac too, and no lock screen sizes there.
+// Copied from appclaudiostat's apps/mobile/targets/_shared for the desktop widget: copy it again when it changes there. Changed here: the small size on the Mac too, no lock screen sizes there, and the theme.
 import SwiftUI
 import WidgetKit
 
@@ -143,6 +143,17 @@ func mainItem(_ items: [Shown], _ config: UsageConfig, _ settings: Settings) -> 
     return items.first { $0.kind == focus } ?? items.first
 }
 
+extension View {
+    /// The widget's theme: the desktop's light or dark, or always one of them.
+    @ViewBuilder func themed(_ theme: ThemeChoice?) -> some View {
+        switch theme {
+        case .dark: environment(\.colorScheme, .dark)
+        case .light: environment(\.colorScheme, .light)
+        default: self
+        }
+    }
+}
+
 /// The website's night with its rose glow, or cream by day.
 struct Backdrop: View {
     @Environment(\.colorScheme) private var scheme
@@ -176,8 +187,9 @@ struct UsageView: View {
     var body: some View {
         content
             .opacity(stale ? 0.8 : 1)
+            .themed(entry.config.theme)
             .containerBackground(for: .widget) {
-                if accessory { Color.clear } else { Backdrop() }
+                if accessory { Color.clear } else { Backdrop().themed(entry.config.theme) }
             }
     }
 

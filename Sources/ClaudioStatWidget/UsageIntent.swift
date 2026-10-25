@@ -1,4 +1,5 @@
 // Copied from appclaudiostat's apps/mobile/targets/_shared for the desktop widget: copy it again when it changes there.
+// Changed here: the theme, a Mac choice the phone doesn't have.
 import AppIntents
 import WidgetKit
 
@@ -11,6 +12,17 @@ enum LimitChoice: String, AppEnum {
     static let typeDisplayRepresentation: TypeDisplayRepresentation = "Limit"
     static let caseDisplayRepresentations: [LimitChoice: DisplayRepresentation] = [
         .session: "Session", .week: "Week", .fable: "Fable",
+    ]
+}
+
+/// The widget's colors: the desktop's light or dark, or always one of them.
+@available(iOS 17.0, watchOS 10.0, *)
+enum ThemeChoice: String, AppEnum {
+    case auto, dark, light
+
+    static let typeDisplayRepresentation: TypeDisplayRepresentation = "Theme"
+    static let caseDisplayRepresentations: [ThemeChoice: DisplayRepresentation] = [
+        .auto: "Automatic", .dark: "Dark", .light: "Light",
     ]
 }
 
@@ -78,6 +90,7 @@ struct UsageConfig: WidgetConfigurationIntent {
     @Parameter(title: "Account") var account: AccountEntity?
     /// The limit that leads (outer ring, big number); none: the app's focus. Session and week always show.
     @Parameter(title: "Focus") var main: LimitChoice?
+    @Parameter(title: "Theme", default: .auto) var theme: ThemeChoice?
 
     init() {}
 

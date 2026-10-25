@@ -18,7 +18,8 @@ export TMPDIR="$WORK/tmp" SWIFTPM_MODULECACHE_OVERRIDE="$WORK/modules" CLANG_MOD
 mkdir -p "$TMPDIR"
 SWIFT_OPTS=(--scratch-path "$WORK/build" --cache-path "$WORK/cache" --config-path "$WORK/config"
             --security-path "$WORK/security" --manifest-cache none)
-RELEASE_OPTS=(-c release --arch arm64 --arch x86_64)
+# Swift Build writes the constants widget.sh makes the widget's App Intents file from.
+RELEASE_OPTS=(-c release --arch arm64 --arch x86_64 --build-system swiftbuild)
 APP=dist/dmg/ClaudioStat.app
 WIDGET="$APP/Contents/PlugIns/ClaudioStatWidget.appex"
 
@@ -33,14 +34,7 @@ cp "$BIN/ClaudioStat" "$APP/Contents/MacOS/"
 cp Info.plist "$APP/Contents/"
 swift -module-cache-path "$WORK/modules" Icon/make-icon.swift "$WORK/AppIcon.iconset"
 iconutil -c icns "$WORK/AppIcon.iconset" -o "$APP/Contents/Resources/AppIcon.icns"
-# The desktop widget, with the app's versions and its strings.
-mkdir -p "$WIDGET/Contents/MacOS" "$WIDGET/Contents/Resources"
-cp "$BIN/ClaudioStatWidget" "$WIDGET/Contents/MacOS/"
-cp Sources/ClaudioStatWidget/Info.plist "$WIDGET/Contents/"
-for key in CFBundleShortVersionString CFBundleVersion; do
-    /usr/libexec/PlistBuddy -c "Set $key $(/usr/libexec/PlistBuddy -c "Print $key" Info.plist)" "$WIDGET/Contents/Info.plist"
-done
-xcrun xcstringstool compile Sources/ClaudioStatWidget/Localizable.xcstrings -o "$WIDGET/Contents/Resources"
+./widget.sh "$APP" "$BIN" "$WORK/build"
 # The DMG window's background lives inside the app, so the DMG shows nothing but the app and Applications.
 swift -module-cache-path "$WORK/modules" Icon/make-dmg-background.swift "$WORK/bg"
 tiffutil -cathidpicheck "$WORK/bg/background.png" "$WORK/bg/background@2x.png" \
