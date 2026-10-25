@@ -37,5 +37,7 @@ codesign --force --entitlements ClaudioStat.entitlements --sign "${SIGN_ID:--}" 
 # -i: builds before 0.2.0 run as Claudiostat. -U: another user's copy is theirs, and can't be quit from here.
 pkill -ix -U "$(id -u)" claudiostat || true
 while pgrep -ix -U "$(id -u)" claudiostat >/dev/null; do sleep 0.2; done
+# A widget still running from the last build would keep answering for the new one.
+pkill -x -U "$(id -u)" ClaudioStatWidget || true
 open "$APP" --args "$@"
 echo "Running $APP"
