@@ -8,6 +8,12 @@
 	<string>ClaudioStat</string>
 	<key>CFBundleIdentifier</key>
 	<string>com.zolfer.claudiostat.widget</string>
+	<key>CFBundleInfoDictionaryVersion</key>
+	<string>6.0</string>
+	<key>CFBundleSupportedPlatforms</key>
+	<array>
+		<string>MacOSX</string>
+	</array>
 	<key>CFBundleName</key>
 	<string>ClaudioStatWidget</string>
 	<key>CFBundleExecutable</key>
