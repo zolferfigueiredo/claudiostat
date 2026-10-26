@@ -58,6 +58,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         defaults.register(defaults: Self.settings)
+        // `defaults write` from elsewhere (Hammerspoon, a script) changes these too: the bar follows at once, not at its
+        // next redraw. The app's own picks redraw twice, which is harmless.
+        for key in Self.barLook { defaults.addObserver(self, forKeyPath: key, context: nil) }
         // 30 and 150 seconds and pace warnings off are no longer options.
         if [30, 150].contains(defaults.integer(forKey: "interval")) { defaults.removeObject(forKey: "interval") }
         if defaults.string(forKey: "speedColors") == "off" { defaults.removeObject(forKey: "speedColors") }
@@ -107,6 +110,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         autoCheck()
         Task { showUpdateComplete() }  // after launch finishes, not in the middle of it
         if defaults.bool(forKey: "testNotifications") { testNotifications() }
+    }
+
+    /// The settings that only change how the bar looks.
+    static let barLook = ["menuBar", "icon", "compactText", "background", "showPace", "showBudget", "showResets", "showProfile",
+                          "loadingIcon", "loadingText", "speedColors"]
+
+    // It can arrive off the main thread.
+    nonisolated override func observeValue(forKeyPath keyPath: String?, of object: Any?, change: [NSKeyValueChangeKey: Any]?,
+                                           context: UnsafeMutableRawPointer?) {
+        Task { @MainActor in
+            log.notice("\(keyPath ?? "", privacy: .public) changed")
+            render()
+            shareWithWidget()
+        }
     }
 
     @objc func appsChanged(_ note: Notification) {
