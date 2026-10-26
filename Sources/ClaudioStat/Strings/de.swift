@@ -1,11 +1,13 @@
 // Deutsch. Most of these are the strings claudiostat.zolfer.com shows in its demo.
 extension Strings {
     nonisolated static let de: [String: String] = [
+        "a_day": "pro Tag",
         "about": "Über ClaudioStat",
         "about_tab": "Über",
         "account": "Konto",
         "add_a_profile": "Profil hinzufügen",
         "add_profile": "Profil hinzufügen…",
+        "an_hour": "pro Stunde",
         "app": "App",
         "app_icon": "App-Symbol",
         "applications_only": "ClaudioStat aktualisiert sich nur, wenn es aus dem Ordner „Programme“ läuft.",
@@ -47,6 +49,7 @@ extension Strings {
         "going_too_fast": "zu schnell",
         "hours.one": "{n} Stunde",
         "hours.other": "{n} Stunden",
+        "hours_short": "{n}h",
         "icon_only": "Nur Symbol",
         "install_now": "Version {version} jetzt installieren",
         "installed": "Version {version} ist installiert.",
@@ -158,8 +161,6 @@ extension Strings {
         "widget_choices": "Wähle, was dieses Widget zeigt.",
         "widget_limits": "Sitzung, Woche und Fable.",
         "work": "Tägliche Arbeitszeit",
-        "working_hours.one": "{n} Arbeitsstunde",
-        "working_hours.other": "{n} Arbeitsstunden",
         "wrong_download": "Der Download ist nicht ClaudioStat {version}.",
     ]
 }

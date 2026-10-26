@@ -1,11 +1,13 @@
 // 中文. Most of these are the strings claudiostat.zolfer.com shows in its demo.
 extension Strings {
     nonisolated static let zh: [String: String] = [
+        "a_day": "每天",
         "about": "关于 ClaudioStat",
         "about_tab": "关于",
         "account": "账户",
         "add_a_profile": "添加个人资料",
         "add_profile": "添加个人资料…",
+        "an_hour": "每小时",
         "app": "应用",
         "app_icon": "应用图标",
         "applications_only": "ClaudioStat 仅在从“应用程序”文件夹运行时才会自行更新。",
@@ -46,6 +48,7 @@ extension Strings {
         "going_fast": "偏快",
         "going_too_fast": "太快",
         "hours.other": "{n} 小时",
+        "hours_short": "{n} 小时",
         "icon_only": "仅图标",
         "install_now": "立即安装版本 {version}",
         "installed": "版本 {version} 已安装。",
@@ -156,7 +159,6 @@ extension Strings {
         "widget_choices": "选择这个小组件显示的内容。",
         "widget_limits": "会话、本周和 Fable。",
         "work": "每日工作时长",
-        "working_hours.other": "{n} 个工作小时",
         "wrong_download": "下载的文件不是 ClaudioStat {version}。",
     ]
 }

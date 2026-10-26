@@ -70,18 +70,18 @@ extension AppDelegate {
                 limit(letter("W", "week"), usage?.week, rate.week)
                 if let fable = usage?.fable { limit(letter("F", "fable"), fable) }
                 let hourly = rate.week.unit == 3600
-                let speed = percent(rate.week.speed)
-                info("\(letter("P", "pace")) · " + (rate.week.speed == nil ? speed : tr(hourly ? "rate_hour" : "rate_day", ["n": speed])))
-                let budgetName = letter("B", hourly ? "budget_hour" : "budget_day")
+                // The value, then its unit: "Pace 3% · an hour".
+                let per = { (name: String, value: Double?) in "\(name) \(percent(value))" + (value == nil ? "" : " · " + tr(hourly ? "an_hour" : "a_day")) }
+                info(per(letter("P", "pace"), rate.week.speed))
+                var budget = per(letter("B", "budget"), rate.week.needed)
                 if let week = usage?.week, let reset = week.resetsAt, rate.week.needed != nil {
                     let left = reset.timeIntervalSince(now)
                     // Hourly, the budget divides over working hours only, so show those rather than the wall-clock countdown.
-                    let over = hourly ? plural("working_hours", Int((left * Double(defaults.integer(forKey: "workHours")) / 24 / 3600).rounded(.up)))
+                    let over = hourly ? tr("hours_short", ["n": Int((left * Double(defaults.integer(forKey: "workHours")) / 24 / 3600).rounded(.up))])
                                       : span(left)
-                    info("\(budgetName) \(percent(rate.week.needed)) · " + tr("left_over", ["left": max(0, 100 - week.percent), "time": over]))
-                } else {
-                    info("\(budgetName) \(percent(rate.week.needed))")
+                    budget += " · " + tr("left_over", ["left": max(0, 100 - week.percent), "time": over])
                 }
+                info(budget)
             }
             let details = defaults.bool(forKey: "showDetails"), layout = defaults.string(forKey: "detailsLayout")
             if shown.count == 1 {

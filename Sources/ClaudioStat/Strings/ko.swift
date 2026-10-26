@@ -1,11 +1,13 @@
 // 한국어. Most of these are the strings claudiostat.zolfer.com shows in its demo.
 extension Strings {
     nonisolated static let ko: [String: String] = [
+        "a_day": "하루",
         "about": "ClaudioStat에 관하여",
         "about_tab": "정보",
         "account": "계정",
         "add_a_profile": "프로필을 추가하세요",
         "add_profile": "프로필 추가…",
+        "an_hour": "시간당",
         "app": "앱",
         "app_icon": "앱 아이콘",
         "applications_only": "ClaudioStat은(는) 응용 프로그램 폴더에서 실행할 때만 스스로 업데이트합니다.",
@@ -46,6 +48,7 @@ extension Strings {
         "going_fast": "빠름",
         "going_too_fast": "너무 빠름",
         "hours.other": "{n}시간",
+        "hours_short": "{n}시간",
         "icon_only": "아이콘만",
         "install_now": "지금 버전 {version} 설치",
         "installed": "버전 {version}이(가) 설치되었습니다.",
@@ -156,7 +159,6 @@ extension Strings {
         "widget_choices": "이 위젯에 표시할 내용을 고르세요.",
         "widget_limits": "세션, 주간, Fable.",
         "work": "하루 근무 시간",
-        "working_hours.other": "근무 {n}시간",
         "wrong_download": "다운로드한 파일이 ClaudioStat {version}이(가) 아닙니다.",
     ]
 }

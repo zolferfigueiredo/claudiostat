@@ -1,11 +1,13 @@
 // Українська. Most of these are the strings claudiostat.zolfer.com shows in its demo.
 extension Strings {
     nonisolated static let uk: [String: String] = [
+        "a_day": "на день",
         "about": "Про ClaudioStat",
         "about_tab": "Про програму",
         "account": "Обліковий запис",
         "add_a_profile": "Додайте профіль",
         "add_profile": "Додати профіль…",
+        "an_hour": "на годину",
         "app": "Застосунок",
         "app_icon": "Іконка застосунку",
         "applications_only": "ClaudioStat оновлюється сам, лише коли запущений із папки «Програми».",
@@ -49,6 +51,7 @@ extension Strings {
         "hours.many": "{n} годин",
         "hours.one": "{n} година",
         "hours.other": "{n} години",
+        "hours_short": "{n} год",
         "icon_only": "Лише іконка",
         "install_now": "Встановити версію {version} зараз",
         "installed": "Версію {version} встановлено.",
@@ -162,10 +165,6 @@ extension Strings {
         "widget_choices": "Виберіть, що показує цей віджет.",
         "widget_limits": "Сесія, тиждень і Fable.",
         "work": "Робочий час на день",
-        "working_hours.few": "{n} робочі години",
-        "working_hours.many": "{n} робочих годин",
-        "working_hours.one": "{n} робочу годину",
-        "working_hours.other": "{n} робочої години",
         "wrong_download": "Завантажено не ClaudioStat {version}.",
     ]
 }
