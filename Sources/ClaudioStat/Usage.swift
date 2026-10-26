@@ -262,7 +262,7 @@ extension NSColor {
 
     /// The soft background Background puts behind the bar's icon and text.
     nonisolated static let barBackground = NSColor(name: nil) { look in
-        look.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua ? NSColor.white.withAlphaComponent(0.1) : .black.withAlphaComponent(0.08)
+        look.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua ? NSColor.white.withAlphaComponent(0.12) : .black.withAlphaComponent(0.08)
     }
 }
 
@@ -346,12 +346,13 @@ func oneLine(_ text: NSAttributedString) -> NSImage {
 
 /// The bar's icon and text on a soft rounded background, drawn as the menu bar is: light or dark.
 func backed(_ image: NSImage) -> NSImage {
-    // A status item is 24 points tall since macOS 26, more than thickness says: the background fills it, 3 points clear
-    // of the icon above and below.
-    let pad: CGFloat = 6, height = max(24, NSStatusBar.system.thickness)
+    // 28 points tall, 5 clear of the icon above and below, where the menu bar has room: a notch makes it 37 or more.
+    // A 24-point menu bar keeps 24, which a status item has since macOS 26.
+    let menuBar = NSScreen.main.map { $0.frame.maxY - $0.visibleFrame.maxY } ?? 0
+    let pad: CGFloat = 7, height = min(28, max(24, menuBar - 10))
     let backed = NSImage(size: NSSize(width: image.size.width + 2 * pad, height: height), flipped: false) { rect in
         NSColor.barBackground.setFill()
-        NSBezierPath(roundedRect: rect, xRadius: 7, yRadius: 7).fill()
+        NSBezierPath(roundedRect: rect, xRadius: 8, yRadius: 8).fill()
         image.draw(in: NSRect(origin: NSPoint(x: pad, y: (rect.height - image.size.height) / 2), size: image.size))
         return true
     }
