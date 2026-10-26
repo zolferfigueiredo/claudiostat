@@ -156,14 +156,14 @@ struct MenuBarSettings: View {
                 // What the menu bar shows after S and W. speedColors is the unit of P and B, which W's color compares.
                 Section(tr("data")) {
                     Toggle(tr("profile_name"), isOn: setting("showProfile"))
+                    Toggle(tr("resets_in"), isOn: setting("showResets"))
                     Toggle(tr("pace"), isOn: setting("showPace"))
+                    Toggle(tr("budget"), isOn: setting("showBudget"))
                     // The menu's Pace and Budget lines and W's color use it too, so it stays on with both hidden.
                     Picker(tr("pace_budget"), selection: setting("speedColors") as Binding<String>) {
                         Text(tr("budget_day")).tag("day")
                         Text(tr("budget_hour")).tag("hour")
                     }
-                    Toggle(tr("budget"), isOn: setting("showBudget"))
-                    Toggle(tr("resets_in"), isOn: setting("showResets"))
                 }
             }
             .formStyle(.grouped)
