@@ -65,7 +65,7 @@ extension Strings {
         "limit.fable": "Fable 한도",
         "limit.session": "세션 한도",
         "limit.week": "주간 한도",
-        "loading": "로딩 중",
+        "loading": "활동 표시",
         "loading_icon": "아이콘",
         "loading_text": "텍스트",
         "login": "로그인 시 실행",

@@ -180,11 +180,6 @@ struct MenuBarSettings: View {
                     // A soft rounded background behind the icon and text.
                     Toggle(tr("background"), isOn: setting("background"))
                 }
-                // They pulse while tokens are being spent.
-                Section(tr("loading")) {
-                    Toggle(tr("loading_icon"), isOn: setting("loadingIcon")).disabled(mode == "numbers")
-                    Toggle(tr("loading_text"), isOn: setting("loadingText")).disabled(mode == "icon")
-                }
                 // What the menu bar shows after S and W. speedColors is the unit of P and B, which W's color compares.
                 Section(tr("data")) {
                     Toggle(tr("profile_name"), isOn: setting("showProfile"))
@@ -200,6 +195,11 @@ struct MenuBarSettings: View {
                     Picker(tr("work"), selection: setting("workHours") as Binding<Int>) {
                         ForEach([24, 16, 12, 8, 6, 4], id: \.self) { Text(plural("hours", $0)).tag($0) }
                     }
+                }
+                // They pulse while tokens are being spent.
+                Section(tr("loading")) {
+                    Toggle(tr("loading_icon"), isOn: setting("loadingIcon")).disabled(mode == "numbers")
+                    Toggle(tr("loading_text"), isOn: setting("loadingText")).disabled(mode == "icon")
                 }
             }
             .formStyle(.grouped)

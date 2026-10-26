@@ -65,7 +65,7 @@ extension Strings {
         "limit.fable": "Fable の制限",
         "limit.session": "セッションの制限",
         "limit.week": "週間の制限",
-        "loading": "読み込み中",
+        "loading": "アクティビティを表示",
         "loading_icon": "アイコン",
         "loading_text": "テキスト",
         "login": "ログイン時に起動",

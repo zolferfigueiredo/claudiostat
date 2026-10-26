@@ -65,7 +65,7 @@ extension Strings {
         "limit.fable": "Fable 限额",
         "limit.session": "会话限额",
         "limit.week": "每周限额",
-        "loading": "加载动画",
+        "loading": "显示活动",
         "loading_icon": "图标",
         "loading_text": "文字",
         "login": "登录时启动",

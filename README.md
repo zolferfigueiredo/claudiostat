@@ -109,8 +109,8 @@ Every refresh, ClaudioStat runs your installed Claude Code once, headless, and s
       - When Claude turns the profile's usage checks away for a while, the last numbers stay, faded, and ClaudioStat waits 25 minutes before it asks again. The menu says **Claude paused usage checks. Sign in again…**, which signs the same profile in again for a new login that works right away.
     - **Notifications**: a limit reached, its reset, and the week at 80% and 90%. All on.
   - **Menu Bar**: **Display**: icon and text, icon only or text only, with the app icon or a plain star. A letter without a value yet is left out, and with none the bar shows just the icon. **Compact text** (on) puts the text on two lines. **Background** (off) puts a soft rounded background behind the icon and text.
-    Under **Loading**: **Icon** (on) and **Text** (off) pick what pulses while Claude Code writes a reply.
     Under **Data**: whether the menu bar starts with the profile's name (off), **Resets in …** (off), whether it shows P and B (off), whether P and B count per day or per hour (**Pace and budget**), and **Daily working time**: the hours a day you use Claude, 24 down to 4 (8 by default), so P and B leave out the rest of the day.
+    Under **Show activity**: **Icon** (on) and **Text** (off) pick what pulses while Claude Code writes a reply.
   - **About**: the version, **Check for updates…** and the website.
 - **Show usage details** (on): every limit with its reset countdown, then pace and the budget. With several profiles shown, each in its own block or submenu.
 - **Refresh** (⌘R).

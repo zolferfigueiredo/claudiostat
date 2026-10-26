@@ -66,7 +66,7 @@ extension Strings {
         "limit.fable": "Limite Fable",
         "limit.session": "Limite di sessione",
         "limit.week": "Limite settimanale",
-        "loading": "Caricamento",
+        "loading": "Mostra attività",
         "loading_icon": "Icona",
         "loading_text": "Testo",
         "login": "Apri all’accesso",
