@@ -116,7 +116,7 @@ struct GeneralSettings: View {
                     }
                 }
                 // Each profile is a Claude Code folder with its own login. The ones switched on fill the bar, one after another.
-                Section(tr("profile")) {
+                Section {
                     let all = delegate.allProfiles, on = delegate.shown
                     // A row is drawn again only when its item changes, so the item holds the names it shows.
                     let rows = all.map { (path: $0, name: profileName($0),
@@ -138,14 +138,17 @@ struct GeneralSettings: View {
                             Spacer()
                             // After the action, so the window redraws once the alert is gone.
                             Button(tr("rename"), systemImage: "pencil") { Task { delegate.renameProfile(path) } }
+                            Button(tr("link_folder"), systemImage: "folder") { Task { delegate.linkFolder(path) } }
                             Button(tr("remove"), systemImage: "trash") { Task { delegate.removeProfile(path) } }
                         }
                         .labelStyle(.iconOnly)
                         .buttonStyle(.borderless)
                     }
+                } header: {
                     HStack {
+                        Text(tr("profile"))
+                        Spacer()
                         Button(tr("add_profile")) { delegate.addProfile() }
-                        Button(tr("link_folder")) { Task { delegate.linkFolder() } }
                     }
                 }
                 Section(tr("notify")) {

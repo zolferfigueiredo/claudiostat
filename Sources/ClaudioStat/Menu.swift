@@ -200,20 +200,38 @@ extension AppDelegate {
 
     @objc func addProfile() { showSetup(nextProfile(after: allProfiles)) }
 
-    /// A Claude Code folder you already use, like ~/.claude-work, as a profile.
-    func linkFolder() {
+    /// Links the profile to another Claude Code folder you use, like ~/.claude-work. Its name and switch stay, and the
+    /// folder keeps its login: the setup checks it, and signs in only when there is none. The readings start over, as
+    /// the folder may hold another account.
+    func linkFolder(_ path: String) {
+        let home = FileManager.default.homeDirectoryForCurrentUser.appending(path: ".claude").standardizedFileURL.path
         let panel = NSOpenPanel()
         panel.canChooseDirectories = true
         panel.canChooseFiles = false
         panel.showsHiddenFiles = true
-        panel.directoryURL = FileManager.default.homeDirectoryForCurrentUser
+        panel.directoryURL = URL(fileURLWithPath: path.isEmpty ? home : path)
         panel.message = tr("link_info")
         panel.prompt = tr("link")
         NSApp.activate()
         guard panel.runModal() == .OK, let url = panel.url?.standardizedFileURL else { return }
-        // ~/.claude is "" here.
-        let home = FileManager.default.homeDirectoryForCurrentUser.appending(path: ".claude").standardizedFileURL.path
-        showSetup(url.path == home ? "" : url.path)
+        // ~/.claude is "" here. A folder another profile has stays with it.
+        let folder = url.path == home ? "" : url.path
+        guard folder != path, !allProfiles.contains(folder) else { return }
+        func moved(_ list: [String]) -> [String] { list.map { $0 == path ? folder : $0 } }
+        defaults.set(moved(allProfiles), forKey: "profileList")
+        defaults.set(moved(defaults.stringArray(forKey: "shownProfiles") ?? []), forKey: "shownProfiles")
+        var custom = defaults.dictionary(forKey: "customNames") ?? [:]
+        custom[folder] = custom.removeValue(forKey: path)
+        defaults.set(custom, forKey: "customNames")
+        var names = defaults.dictionary(forKey: "names") ?? [:]
+        names[path] = nil
+        defaults.set(names, forKey: "names")
+        defaults.removeObject(forKey: historyKey(path))
+        accounts[path] = nil
+        load(folder)
+        log.notice("linked \(folderName(path), privacy: .public) to \(folderName(folder), privacy: .public)")
+        profilesChanged()
+        showSetup(folder)
     }
 
     @objc func reconnect() { showSetup(profile) }
