@@ -2,29 +2,6 @@ import AppKit
 import ClaudioStatStrings
 import SwiftUI
 
-/// Built when About opens, and again after the language changes.
-var aboutWindow: NSWindow?
-
-func makeAboutWindow() -> NSWindow {
-    let window = NSWindow(contentViewController: NSHostingController(rootView: AboutView()))
-    window.styleMask = [.titled, .closable]
-    window.title = tr("about")
-    window.titleVisibility = .hidden
-    window.isReleasedWhenClosed = false
-    // The hosting controller only sizes the window once shown, too late for center().
-    window.setContentSize(window.contentView!.fittingSize)
-    window.center()
-    return window
-}
-
-extension AppDelegate {
-    @objc func showAbout() {
-        NSApp.activate()
-        if aboutWindow == nil { aboutWindow = makeAboutWindow() }
-        aboutWindow?.makeKeyAndOrderFront(nil)
-    }
-}
-
 struct AboutView: View {
     var body: some View {
         VStack(spacing: 4) {

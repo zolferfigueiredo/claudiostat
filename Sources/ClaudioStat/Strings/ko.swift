@@ -2,6 +2,7 @@
 extension Strings {
     nonisolated static let ko: [String: String] = [
         "about": "ClaudioStat에 관하여",
+        "about_tab": "정보",
         "account": "계정",
         "add_a_profile": "프로필을 추가하세요",
         "add_profile": "프로필 추가…",
@@ -39,6 +40,7 @@ extension Strings {
         "failed": "{time} 새로 고침 실패",
         "flagged_as": "{limit}: {severity}",
         "focus": "포커스",
+        "general": "일반",
         "get_claude_code": "Claude Code 받기",
         "going_fast": "빠름",
         "going_too_fast": "너무 빠름",
@@ -60,6 +62,7 @@ extension Strings {
         "loading_icon": "로딩 중 아이콘 효과",
         "loading_text": "로딩 중 텍스트 효과",
         "login": "로그인 시 실행",
+        "menu_bar": "메뉴 막대",
         "minutes.other": "{n}분",
         "multiple_users": "여러 사용자",
         "never": "안 함",
@@ -109,7 +112,8 @@ extension Strings {
         "resets_in": "재설정까지 남은 시간",
         "rings": "링",
         "session": "세션",
-        "show_data": "아래에 데이터 표시",
+        "settings": "설정…",
+        "show_data": "사용량 세부정보 보기",
         "sign_in": "로그인",
         "sign_in_info": "브라우저가 열리면 로그인하세요. 한도를 확인할 Claude 계정을 선택하세요.",
         "signed_out": "Claude Code에 로그인…",

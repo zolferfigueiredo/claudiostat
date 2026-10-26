@@ -2,6 +2,7 @@
 extension Strings {
     nonisolated static let ja: [String: String] = [
         "about": "ClaudioStat について",
+        "about_tab": "情報",
         "account": "アカウント",
         "add_a_profile": "プロファイルを追加",
         "add_profile": "プロファイルを追加…",
@@ -39,6 +40,7 @@ extension Strings {
         "failed": "{time} の更新に失敗",
         "flagged_as": "{limit}: {severity}",
         "focus": "フォーカス",
+        "general": "一般",
         "get_claude_code": "Claude Code を入手",
         "going_fast": "速い",
         "going_too_fast": "速すぎ",
@@ -60,6 +62,7 @@ extension Strings {
         "loading_icon": "読み込み中のアイコン",
         "loading_text": "読み込み中のテキスト",
         "login": "ログイン時に起動",
+        "menu_bar": "メニューバー",
         "minutes.other": "{n} 分",
         "multiple_users": "複数ユーザー",
         "never": "しない",
@@ -109,7 +112,8 @@ extension Strings {
         "resets_in": "リセットまでの時間",
         "rings": "リング",
         "session": "セッション",
-        "show_data": "下にデータを表示",
+        "settings": "設定…",
+        "show_data": "使用状況の詳細を表示",
         "sign_in": "サインイン",
         "sign_in_info": "ブラウザが開くのでサインインしてください。制限を見たい Claude アカウントを選んでください。",
         "signed_out": "Claude Code にサインイン…",

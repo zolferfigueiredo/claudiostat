@@ -2,6 +2,7 @@
 extension Strings {
     nonisolated static let uk: [String: String] = [
         "about": "Про ClaudioStat",
+        "about_tab": "Про програму",
         "account": "Обліковий запис",
         "add_a_profile": "Додайте профіль",
         "add_profile": "Додати профіль…",
@@ -39,6 +40,7 @@ extension Strings {
         "failed": "Не вдалось оновити о {time}",
         "flagged_as": "{limit}: {severity}",
         "focus": "Фокус",
+        "general": "Загальні",
         "get_claude_code": "Завантажити Claude Code",
         "going_fast": "швидко",
         "going_too_fast": "надто швидко",
@@ -63,6 +65,7 @@ extension Strings {
         "loading_icon": "Завантаження на іконці",
         "loading_text": "Завантаження в тексті",
         "login": "Запускати під час входу",
+        "menu_bar": "Рядок меню",
         "minutes.few": "{n} хвилини",
         "minutes.many": "{n} хвилин",
         "minutes.one": "{n} хвилина",
@@ -115,7 +118,8 @@ extension Strings {
         "resets_in": "Скидання через …",
         "rings": "Кільця",
         "session": "Сесія",
-        "show_data": "Показувати дані нижче",
+        "settings": "Налаштування…",
+        "show_data": "Показувати подробиці використання",
         "sign_in": "Увійти",
         "sign_in_info": "Відкриється браузер, у якому ви ввійдете. Виберіть обліковий запис Claude, ліміти якого хочете бачити.",
         "signed_out": "Увійти в Claude Code…",

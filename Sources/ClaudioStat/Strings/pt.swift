@@ -2,6 +2,7 @@
 extension Strings {
     nonisolated static let pt: [String: String] = [
         "about": "Sobre o ClaudioStat",
+        "about_tab": "Sobre",
         "account": "Conta",
         "add_a_profile": "Adicione um perfil",
         "add_profile": "Adicionar perfil…",
@@ -39,6 +40,7 @@ extension Strings {
         "failed": "Falha ao atualizar às {time}",
         "flagged_as": "{limit}: {severity}",
         "focus": "Foco",
+        "general": "Geral",
         "get_claude_code": "Baixar o Claude Code",
         "going_fast": "rápido",
         "going_too_fast": "rápido demais",
@@ -61,6 +63,7 @@ extension Strings {
         "loading_icon": "Carregamento no ícone",
         "loading_text": "Carregamento no texto",
         "login": "Abrir ao iniciar sessão",
+        "menu_bar": "Barra de menus",
         "minutes.one": "{n} minuto",
         "minutes.other": "{n} minutos",
         "multiple_users": "Vários usuários",
@@ -111,7 +114,8 @@ extension Strings {
         "resets_in": "Reinicia em …",
         "rings": "Anéis",
         "session": "Sessão",
-        "show_data": "Mostrar dados abaixo",
+        "settings": "Ajustes…",
+        "show_data": "Mostrar detalhes de uso",
         "sign_in": "Entrar",
         "sign_in_info": "Seu navegador abre para você entrar. Escolha a conta do Claude cujos limites você quer ver.",
         "signed_out": "Entrar no Claude Code…",

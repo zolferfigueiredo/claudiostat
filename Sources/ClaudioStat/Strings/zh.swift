@@ -2,6 +2,7 @@
 extension Strings {
     nonisolated static let zh: [String: String] = [
         "about": "关于 ClaudioStat",
+        "about_tab": "关于",
         "account": "账户",
         "add_a_profile": "添加个人资料",
         "add_profile": "添加个人资料…",
@@ -39,6 +40,7 @@ extension Strings {
         "failed": "刷新失败 {time}",
         "flagged_as": "{limit}：{severity}",
         "focus": "焦点",
+        "general": "通用",
         "get_claude_code": "获取 Claude Code",
         "going_fast": "偏快",
         "going_too_fast": "太快",
@@ -60,6 +62,7 @@ extension Strings {
         "loading_icon": "图标加载动画",
         "loading_text": "文字加载动画",
         "login": "登录时启动",
+        "menu_bar": "菜单栏",
         "minutes.other": "{n} 分钟",
         "multiple_users": "多个用户",
         "never": "从不",
@@ -109,7 +112,8 @@ extension Strings {
         "resets_in": "重置倒计时",
         "rings": "圆环",
         "session": "会话",
-        "show_data": "在下方显示数据",
+        "settings": "设置…",
+        "show_data": "显示用量详情",
         "sign_in": "登录",
         "sign_in_info": "浏览器会打开供你登录。请选择你想查看其限额的 Claude 账户。",
         "signed_out": "登录 Claude Code…",

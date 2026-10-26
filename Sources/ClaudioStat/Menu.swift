@@ -14,9 +14,7 @@ extension AppDelegate {
     func menuNeedsUpdate(_ menu: NSMenu) {
         menu.removeAllItems()
         lookForClaudeCode()
-        // choice() checks the stored value, which can still name a removed profile.
-        defaults.set(profile, forKey: "profile")
-        let now = Date.now, mode = defaults.string(forKey: "menuBar")
+        let now = Date.now
         @discardableResult
         func action(_ title: String, _ selector: Selector, key: String = "", on: Bool = false, enabled: Bool = true) -> NSMenuItem {
             let entry = NSMenuItem(title: title, action: selector, keyEquivalent: key)
@@ -26,31 +24,16 @@ extension AppDelegate {
             menu.addItem(entry)
             return entry
         }
-        func choice(_ title: String, _ key: String, _ value: Any, enabled: Bool = true) -> NSMenuItem {
-            let entry = NSMenuItem(title: title, action: #selector(choose), keyEquivalent: "")
-            entry.target = self
-            entry.representedObject = [key: value]
-            entry.state = "\(defaults.object(forKey: key) ?? "")" == "\(value)" ? .on : .off
-            entry.isEnabled = enabled
-            return entry
-        }
-        func toggle(_ title: String, _ key: String, enabled: Bool = true) -> NSMenuItem {
-            let entry = NSMenuItem(title: title, action: #selector(toggleSetting), keyEquivalent: "")
-            entry.target = self
-            entry.representedObject = key
-            entry.state = defaults.bool(forKey: key) ? .on : .off
-            entry.isEnabled = enabled
-            return entry
-        }
-
-        // Each group sets one setting, groups split by a line. The `disabled` group is greyed out.
-        @discardableResult
-        func submenu(_ title: String, _ groups: [(key: String, options: [(value: Any, title: String)])], disabled: String? = nil) -> NSMenuItem {
+        // The choices of one setting.
+        func submenu(_ title: String, _ key: String, _ options: [(value: Any, title: String)]) -> NSMenuItem {
             let choices = NSMenu()
             choices.autoenablesItems = false
-            for (key, options) in groups {
-                if choices.numberOfItems > 0 { choices.addItem(.separator()) }
-                for (value, name) in options { choices.addItem(choice(name, key, value, enabled: key != disabled)) }
+            for (value, name) in options {
+                let entry = NSMenuItem(title: name, action: #selector(choose), keyEquivalent: "")
+                entry.target = self
+                entry.representedObject = [key: value]
+                entry.state = "\(defaults.object(forKey: key) ?? "")" == "\(value)" ? .on : .off
+                choices.addItem(entry)
             }
             let entry = NSMenuItem(title: title, action: nil, keyEquivalent: "")
             entry.submenu = choices
@@ -58,6 +41,8 @@ extension AppDelegate {
             return entry
         }
 
+        action(tr("settings"), #selector(showSettings), key: ",").image = NSImage(systemSymbolName: "gearshape", accessibilityDescription: nil)
+        menu.addItem(.separator())
         if allProfiles.isEmpty {
             // Nothing to show or refresh yet, so the menu starts with the one thing to do.
             action(tr("add_profile"), #selector(addProfile)).image = NSImage(systemSymbolName: "person.crop.circle.badge.plus", accessibilityDescription: nil)
@@ -103,7 +88,7 @@ extension AppDelegate {
                 action(tr("show_data"), #selector(toggleSetting), on: details).representedObject = "showDetails"
                 if details { readings(shown[0], into: menu) }
             } else {
-                // Several accounts shown: Show data below picks how, each under its name. Off is showDetails unchecked.
+                // Several accounts shown: Show usage details picks how, each under its name. Off is showDetails unchecked.
                 let ways = NSMenu()
                 ways.autoenablesItems = false
                 let options: [(title: String, picks: [String: Any], on: Bool)] = [
@@ -155,80 +140,9 @@ extension AppDelegate {
             }
 
             action(tr("refresh"), #selector(refreshNow), key: "r", enabled: !paused && !busy)
-
-            submenu(tr("every"), [("interval", [60, 180, 300, 600].map { ($0, plural("minutes", $0 / 60)) })])
-            if claudeInstalled {
-                action(tr("only"), #selector(toggleSetting), on: defaults.bool(forKey: "onlyWhileClaude")).representedObject = "onlyWhileClaude"
-            }
         }
         menu.addItem(.separator())
 
-        // Each profile is a Claude Code folder with its own login. The checked one fills the bar and this menu.
-        let profiles = submenu(tr("profile"), [("profile", allProfiles.map { ($0, profileName($0)) })])
-        profiles.image = NSImage(systemSymbolName: "person.2", accessibilityDescription: nil)
-        let add = NSMenuItem(title: tr("add_profile"), action: #selector(addProfile), keyEquivalent: "")
-        add.target = self
-        let remove = NSMenuItem(title: tr("remove_profile"), action: #selector(removeProfile), keyEquivalent: "")
-        remove.target = self
-        remove.isEnabled = !allProfiles.isEmpty
-        for entry in allProfiles.isEmpty ? [add, remove] : [.separator(), add, remove] { profiles.submenu?.addItem(entry) }
-
-        // "numbers" stays the stored value from before the label became Text only.
-        let display = submenu(tr("display"), [("menuBar", [("both", tr("both")), ("icon", tr("icon_only")), ("numbers", tr("text_only"))]),
-                                              ("icon", [("app", tr("app_icon")), ("star", tr("star_icon"))])],
-                              disabled: mode == "numbers" ? "icon" : nil)
-        display.image = NSImage(systemSymbolName: "menubar.rectangle", accessibilityDescription: nil)
-        // The text on two lines, under the choices above.
-        display.submenu?.insertItem(.separator(), at: 3)
-        display.submenu?.insertItem(toggle(tr("compact_text"), "compactText", enabled: mode != "icon"), at: 4)
-        // They pulse while tokens are being spent. Text only has no icon, Icon only no text.
-        display.submenu?.addItem(.separator())
-        display.submenu?.addItem(toggle(tr("loading_icon"), "loadingIcon", enabled: mode != "numbers"))
-        display.submenu?.addItem(toggle(tr("loading_text"), "loadingText", enabled: mode != "icon"))
-        // A submenu of on/off settings.
-        @discardableResult
-        func toggles(_ title: String, _ settings: [(title: String, key: String)]) -> NSMenuItem {
-            let choices = NSMenu()
-            choices.autoenablesItems = false
-            for (name, key) in settings { choices.addItem(toggle(name, key)) }
-            let entry = NSMenuItem(title: title, action: nil, keyEquivalent: "")
-            entry.submenu = choices
-            menu.addItem(entry)
-            return entry
-        }
-
-        // What the menu bar shows after S and W. speedColors is the unit of P and B, which W's color compares.
-        let data = toggles(tr("data"), [(tr("pace"), "showPace"), (tr("budget"), "showBudget")])
-        data.image = NSImage(systemSymbolName: "chart.bar", accessibilityDescription: nil)
-        data.submenu?.addItem(.separator())
-        for (value, name) in [("day", tr("budget_day")), ("hour", tr("budget_hour"))] {
-            data.submenu?.addItem(choice(name, "speedColors", value, enabled: defaults.bool(forKey: "showBudget")))
-        }
-        data.submenu?.addItem(.separator())
-        data.submenu?.addItem(toggle(tr("resets_in"), "showResets"))
-        let head = [toggle(tr("profile_name"), "showProfile"), .separator(),
-                    choice(tr("multiple_users"), "users", "multiple"), choice(tr("single_user"), "users", "single"), .separator()]
-        for (index, entry) in head.enumerated() { data.submenu?.insertItem(entry, at: index) }
-        // Hours a day spent using Claude, so the pace ignores the rest of the day.
-        submenu(tr("work"), [("workHours", [24, 16, 12, 8, 6, 4].map { ($0, plural("hours", $0)) })])
-            .image = NSImage(systemSymbolName: "briefcase", accessibilityDescription: nil)
-        toggles(tr("notify"), [(tr("notify_reached"), NoticeKind.reached.setting), (tr("notify_reset"), NoticeKind.reset.setting),
-                               (tr("notify_marks"), NoticeKind.week.setting)])
-            .image = NSImage(systemSymbolName: "bell", accessibilityDescription: nil)
-        // The globe is the website's language picker. Each language is named in itself, so it can always be found.
-        let languages = NSMenu()
-        for language in Language.allCases {
-            let entry = NSMenuItem(title: "\(language.flag) \(language.name)", action: #selector(chooseLanguage), keyEquivalent: "")
-            entry.target = self
-            entry.representedObject = language.rawValue
-            entry.state = language == .current ? .on : .off
-            languages.addItem(entry)
-        }
-        let languageEntry = NSMenuItem(title: tr("language"), action: nil, keyEquivalent: "")
-        languageEntry.image = NSImage(systemSymbolName: "globe", accessibilityDescription: nil)
-        languageEntry.submenu = languages
-        menu.addItem(languageEntry)
-        menu.addItem(.separator())
         // Registering from anywhere else (a build folder in /tmp) would point the login item at a bundle that disappears.
         action(tr("login"), #selector(toggleLogin), on: SMAppService.mainApp.status == .enabled,
                enabled: Bundle.main.bundlePath.hasPrefix("/Applications/"))
@@ -246,7 +160,7 @@ extension AppDelegate {
             check.image = NSImage(systemSymbolName: "arrow.down.circle", accessibilityDescription: nil)
         }
         // A blank image lines the title up with the icon rows.
-        submenu(tr("auto"), [("updateEvery", [(86400, tr("daily")), (604800, tr("weekly")), (0, tr("never"))])]).image = NSImage(size: NSSize(width: 16, height: 16))
+        submenu(tr("auto"), "updateEvery", [(86400, tr("daily")), (604800, tr("weekly")), (0, tr("never"))]).image = NSImage(size: NSSize(width: 16, height: 16))
         menu.addItem(.separator())
         let quit = NSMenuItem(title: tr("quit"), action: #selector(NSApplication.terminate), keyEquivalent: "q")
         quit.image = NSImage(systemSymbolName: "xmark.square", accessibilityDescription: nil)
@@ -255,34 +169,31 @@ extension AppDelegate {
         showImages(menu)
     }
 
-    @objc func choose(_ sender: NSMenuItem) {
-        guard let picks = sender.representedObject as? [String: Any] else { return }
+    /// Settings picked in the menu or the Settings window.
+    func pick(_ picks: [String: Any]) {
         let before = shown
         for (key, value) in picks {
             defaults.set(value, forKey: key)
             log.notice("\(key, privacy: .public) = \(String(describing: value), privacy: .public)")
         }
-        if picks["interval"] != nil { reschedule() }
+        if picks["interval"] != nil || picks["onlyWhileClaude"] != nil { reschedule() }
         if shown != before { profilesChanged() }
         render()
         shareWithWidget()
     }
 
-    @objc func toggleSetting(_ sender: NSMenuItem) {
-        guard let key = sender.representedObject as? String else { return }
-        defaults.set(!defaults.bool(forKey: key), forKey: key)
-        log.notice("\(key, privacy: .public) = \(self.defaults.bool(forKey: key), privacy: .public)")
-        if key == "onlyWhileClaude" { reschedule() }
-        render()
-        shareWithWidget()
+    @objc func choose(_ sender: NSMenuItem) {
+        if let picks = sender.representedObject as? [String: Any] { pick(picks) }
     }
 
-    @objc func chooseLanguage(_ sender: NSMenuItem) {
-        guard let code = sender.representedObject as? String else { return }
-        defaults.set(code, forKey: "language")
-        log.notice("language = \(code, privacy: .public)")
-        aboutWindow?.close()  // it was built in the old language
-        aboutWindow = nil
+    @objc func toggleSetting(_ sender: NSMenuItem) {
+        if let key = sender.representedObject as? String { pick([key: !defaults.bool(forKey: key)]) }
+    }
+
+    func chooseLanguage(_ language: Language) {
+        defaults.set(language.rawValue, forKey: "language")
+        log.notice("language = \(language.rawValue, privacy: .public)")
+        renameTabs()
         render()
         shareWithWidget()
     }
