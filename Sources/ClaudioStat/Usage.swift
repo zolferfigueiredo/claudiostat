@@ -253,17 +253,34 @@ nonisolated func colored(_ text: String, _ color: NSColor?) -> NSAttributedStrin
     NSAttributedString(string: text, attributes: color.map { [.foregroundColor: $0] } ?? [:])
 }
 
-/// With `resetsFrom`, S, W and F add the time to their reset: "S 54% (1h13)". A `profile` name goes first.
+extension NSColor {
+    /// The bar's letters and reset times: dimmer than the values, a little brighter than secondaryLabelColor. As it is
+    /// drawn it follows a light or dark menu bar, which labelColor.withAlphaComponent doesn't.
+    nonisolated static let barDim = NSColor(name: nil) { look in
+        (look.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua ? NSColor.white : .black).withAlphaComponent(0.65)
+    }
+}
+
+/// "S 54%": the letter dimmed, the value in its pace's color.
+nonisolated func lettered(_ stat: Stat) -> NSMutableAttributedString {
+    let text = NSMutableAttributedString(attributedString: colored("\(stat.letter) ", .barDim))
+    text.append(colored(stat.value, stat.pace.color))
+    return text
+}
+
+/// With `resetsFrom`, S, W and F add the time to their reset: "S 54% 1h13". The letters and times are dimmed, so the
+/// values stand apart without dots or brackets. A `profile` name goes first.
 nonisolated func barText(_ usage: Usage?, rates: (session: Rate, week: Rate)? = nil, showPace: Bool = false,
                          showBudget: Bool, resetsFrom now: Date? = nil, profile: String? = nil) -> NSAttributedString {
-    var parts = barStats(usage, rates: rates, showPace: showPace, showBudget: showBudget).map { stat in
-        let reset = now.flatMap { now in stat.resetsAt.map { " (\(span($0.timeIntervalSince(now), short: true)))" } } ?? ""
-        return colored("\(stat.letter) \(stat.value)\(reset)", stat.pace.color)
+    var parts: [NSAttributedString] = barStats(usage, rates: rates, showPace: showPace, showBudget: showBudget).map { stat in
+        let part = lettered(stat)
+        if let now, let reset = stat.resetsAt { part.append(colored(" " + span(reset.timeIntervalSince(now), short: true), .barDim)) }
+        return part
     }
     // A profile without any letter is left out whole.
     guard !parts.isEmpty else { return NSAttributedString() }
     if let profile { parts.insert(NSAttributedString(string: profile), at: 0) }
-    return joined(parts)
+    return joined(parts, separator: "  ")
 }
 
 /// barText on two lines, for a narrower bar: S and its reset over W, F and W's reset, then P over B.
@@ -275,7 +292,7 @@ nonisolated func compactText(_ usage: Usage?, rates: (session: Rate, week: Rate)
     func cells(_ letters: [String], resetOf reset: String) -> [NSAttributedString] {
         let found = stats.filter { letters.contains($0.letter) }
         let time = now.flatMap { now in found.first { $0.letter == reset }?.resetsAt.map { span($0.timeIntervalSince(now), short: true) } }
-        return found.map { colored("\($0.letter) \($0.value)", $0.pace.color) } + (time.map { [colored($0, .secondaryLabelColor)] } ?? [])
+        return found.map(lettered) + (time.map { [colored($0, .barDim)] } ?? [])
     }
     let top = cells(["S"], resetOf: "S"), bottom = cells(["W", "F"], resetOf: "W"), side = cells(["P", "B"], resetOf: "")
     // The grid's cells line up by column: S's reset over F.
@@ -323,13 +340,14 @@ nonisolated func beside(_ left: NSImage?, _ right: NSImage, gap: CGFloat = 4) ->
     }
 }
 
-/// The parts with " · " between them, in the menu bar's font unless given another, and in labelColor where a part has no
-/// color of its own: text without one is dimmed like a template on the menu bars of the displays not in use, see `redrawn`.
-nonisolated func joined(_ parts: [NSAttributedString],
+/// The parts with " · " (or `separator`) between them, in the menu bar's font unless given another, and in labelColor where
+/// a part has no color of its own: text without one is dimmed like a template on the menu bars of the displays not in use,
+/// see `redrawn`.
+nonisolated func joined(_ parts: [NSAttributedString], separator: String = " · ",
                         font: NSFont = .monospacedDigitSystemFont(ofSize: 0, weight: .regular)) -> NSAttributedString {
     let line = NSMutableAttributedString()
     for part in parts where part.length > 0 {
-        if line.length > 0 { line.append(NSAttributedString(string: " · ")) }
+        if line.length > 0 { line.append(NSAttributedString(string: separator)) }
         line.append(part)
     }
     let all = NSRange(location: 0, length: line.length)
