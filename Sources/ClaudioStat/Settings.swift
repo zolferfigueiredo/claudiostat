@@ -20,8 +20,6 @@ func makeSettingsWindow() -> NSWindow {
     }
     add("general", "gearshape", GeneralSettings())
     add("menu_bar", "menubar.rectangle", MenuBarSettings())
-    add("profile", "person.2", ProfileSettings())
-    add("notify", "bell", NotificationSettings())
     // Unchanged otherwise, so only a new language draws it again.
     add("about_tab", "info.circle", Redrawn { AboutView().id(Language.current) })
     let window = NSWindow(contentViewController: tabs)
@@ -78,17 +76,45 @@ struct GeneralSettings: View {
     var body: some View {
         Redrawn {
             Form {
-                Picker(tr("every"), selection: setting("interval") as Binding<Int>) {
-                    ForEach([60, 180, 300, 600], id: \.self) { Text(plural("minutes", $0 / 60)).tag($0) }
+                Section(tr("app")) {
+                    // Each language is named in itself, so it can always be found.
+                    Picker(tr("language"), selection: Binding(get: { Language.current }, set: { delegate.chooseLanguage($0) })) {
+                        ForEach(Language.allCases, id: \.self) { Text("\($0.flag) \($0.name)").tag($0) }
+                    }
+                    if delegate.claudeInstalled { Toggle(tr("only"), isOn: setting("onlyWhileClaude")) }
+                    Picker(tr("every"), selection: setting("interval") as Binding<Int>) {
+                        ForEach([60, 180, 300, 600], id: \.self) { Text(plural("minutes", $0 / 60)).tag($0) }
+                    }
+                    // Hours a day spent using Claude, so the pace ignores the rest of the day.
+                    Picker(tr("work"), selection: setting("workHours") as Binding<Int>) {
+                        ForEach([24, 16, 12, 8, 6, 4], id: \.self) { Text(plural("hours", $0)).tag($0) }
+                    }
                 }
-                if delegate.claudeInstalled { Toggle(tr("only"), isOn: setting("onlyWhileClaude")) }
-                // Hours a day spent using Claude, so the pace ignores the rest of the day.
-                Picker(tr("work"), selection: setting("workHours") as Binding<Int>) {
-                    ForEach([24, 16, 12, 8, 6, 4], id: \.self) { Text(plural("hours", $0)).tag($0) }
+                // Each profile is a Claude Code folder with its own login. The checked one fills the bar and the menu.
+                Section(tr("profile")) {
+                    if !delegate.allProfiles.isEmpty {
+                        Picker(tr("profile"), selection: Binding(get: { delegate.profile }, set: { delegate.pick(["profile": $0]) })) {
+                            ForEach(delegate.allProfiles, id: \.self) { Text(profileName($0)).tag($0) }
+                        }
+                        .pickerStyle(.radioGroup)
+                        .labelsHidden()
+                    }
+                    HStack {
+                        Button(tr("add_profile")) { delegate.addProfile() }
+                        Button(tr("remove_profile")) { delegate.removeProfile() }.disabled(delegate.allProfiles.isEmpty)
+                    }
                 }
-                // Each language is named in itself, so it can always be found.
-                Picker(tr("language"), selection: Binding(get: { Language.current }, set: { delegate.chooseLanguage($0) })) {
-                    ForEach(Language.allCases, id: \.self) { Text("\($0.flag) \($0.name)").tag($0) }
+                Picker(tr("profile"), selection: setting("users") as Binding<String>) {
+                    Text(tr("single_user")).tag("single")
+                    Text(tr("multiple_users")).tag("multiple")
+                }
+                .pickerStyle(.radioGroup)
+                .horizontalRadioGroupLayout()
+                .labelsHidden()
+                Section(tr("notify")) {
+                    Toggle(tr("notify_reached"), isOn: setting(NoticeKind.reached.setting))
+                    Toggle(tr("notify_reset"), isOn: setting(NoticeKind.reset.setting))
+                    Toggle(tr("notify_marks"), isOn: setting(NoticeKind.week.setting))
                 }
             }
             .formStyle(.grouped)
@@ -119,7 +145,9 @@ struct MenuBarSettings: View {
                     .disabled(mode == "numbers")
                     // The text on two lines.
                     Toggle(tr("compact_text"), isOn: setting("compactText")).disabled(mode == "icon")
-                    // They pulse while tokens are being spent.
+                }
+                // They pulse while tokens are being spent.
+                Section(tr("loading")) {
                     Toggle(tr("loading_icon"), isOn: setting("loadingIcon")).disabled(mode == "numbers")
                     Toggle(tr("loading_text"), isOn: setting("loadingText")).disabled(mode == "icon")
                 }
@@ -138,50 +166,6 @@ struct MenuBarSettings: View {
                     .disabled(!delegate.defaults.bool(forKey: "showBudget"))
                     Toggle(tr("resets_in"), isOn: setting("showResets"))
                 }
-            }
-            .formStyle(.grouped)
-        }
-    }
-}
-
-struct ProfileSettings: View {
-    var body: some View {
-        Redrawn {
-            Form {
-                // Each profile is a Claude Code folder with its own login. The checked one fills the bar and the menu.
-                Section {
-                    if !delegate.allProfiles.isEmpty {
-                        Picker(tr("profile"), selection: Binding(get: { delegate.profile }, set: { delegate.pick(["profile": $0]) })) {
-                            ForEach(delegate.allProfiles, id: \.self) { Text(profileName($0)).tag($0) }
-                        }
-                        .pickerStyle(.radioGroup)
-                        .labelsHidden()
-                    }
-                    HStack {
-                        Button(tr("add_profile")) { delegate.addProfile() }
-                        Button(tr("remove_profile")) { delegate.removeProfile() }.disabled(delegate.allProfiles.isEmpty)
-                    }
-                }
-                Picker(tr("profile"), selection: setting("users") as Binding<String>) {
-                    Text(tr("single_user")).tag("single")
-                    Text(tr("multiple_users")).tag("multiple")
-                }
-                .pickerStyle(.radioGroup)
-                .horizontalRadioGroupLayout()
-                .labelsHidden()
-            }
-            .formStyle(.grouped)
-        }
-    }
-}
-
-struct NotificationSettings: View {
-    var body: some View {
-        Redrawn {
-            Form {
-                Toggle(tr("notify_reached"), isOn: setting(NoticeKind.reached.setting))
-                Toggle(tr("notify_reset"), isOn: setting(NoticeKind.reset.setting))
-                Toggle(tr("notify_marks"), isOn: setting(NoticeKind.week.setting))
             }
             .formStyle(.grouped)
         }

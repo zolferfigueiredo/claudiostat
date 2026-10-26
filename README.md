@@ -98,16 +98,18 @@ Every refresh, ClaudioStat runs your installed Claude Code once, headless, and s
 <details>
 <summary><b>Every setting</b></summary>
 
-- **Settings…** (⌘,) opens a window with five tabs:
-  - **General**: **Refresh rate** 1, 3 (default), 5 or 10 minutes. **Pause when Claude is closed** (off): while neither the Claude desktop app nor Claude Code in a terminal is running, nothing refreshes and the last numbers dim. It looks for a running `claude` every minute and when you open the menu. Hidden when neither is installed. **Daily working time**: the hours a day you use Claude, 24 down to 4 (8 by default), so P and B leave out the rest of the day. **Language** picks one of the 12.
-  - **Menu Bar**: **Display**: icon and text, icon only or text only, with the app icon or a plain star. A letter without a value yet is left out, and with none the bar shows just the icon. **Loading icon** (on) and **Loading text** (off) pick what pulses while Claude Code writes a reply. **Compact text** (on) puts the text on two lines.
+- **Settings…** (⌘,) opens a window with three tabs:
+  - **General**, in three parts:
+    - **App**: **Language** picks one of the 12. **Pause when Claude is closed** (off): while neither the Claude desktop app nor Claude Code in a terminal is running, nothing refreshes and the last numbers dim. It looks for a running `claude` every minute and when you open the menu. Hidden when neither is installed. **Refresh rate** 1, 3 (default), 5 or 10 minutes. **Daily working time**: the hours a day you use Claude, 24 down to 4 (8 by default), so P and B leave out the rest of the day.
+    - **Profiles**: one per Claude account, each in its own Claude Code folder and named by its email. The checked one fills the bar and the menu. With none, the menu bar says **Add a profile** and the menu starts with **Add profile…**. **Multiple users** shows every profile one after another, **Single user** (default) the checked one.
+      - **Add profile…** signs in to another account through your browser, into a new folder: `~/.claude-2`, `~/.claude-3` and so on. With no profile left, it signs `~/.claude` in instead.
+      - **Remove profile** removes the checked one after asking, `~/.claude` included, and signs it out of Claude Code with `claude auth logout`. For `~/.claude` that is the login Claude Code uses in Terminal too. The folder stays.
+      - When the checked profile is signed out, the menu says **Sign in to Claude Code…**, which signs it in again.
+      - When Claude turns the profile's usage checks away for a while, the last numbers stay, faded, and ClaudioStat waits 25 minutes before it asks again. The menu says **Claude paused usage checks. Sign in again…**, which signs the same profile in again for a new login that works right away.
+    - **Notifications**: a limit reached, its reset, and the week at 80% and 90%. All on.
+  - **Menu Bar**: **Display**: icon and text, icon only or text only, with the app icon or a plain star. A letter without a value yet is left out, and with none the bar shows just the icon. **Compact text** (on) puts the text on two lines.
+    Under **Loading**: **Icon** (on) and **Text** (off) pick what pulses while Claude Code writes a reply.
     Under **Data**: whether the menu bar starts with the profile's name (off), whether it shows P and B (off), whether P and B count per day or per hour, and **Resets in …** (off).
-  - **Profiles**: one per Claude account, each in its own Claude Code folder and named by its email. The checked one fills the bar and the menu. With none, the menu bar says **Add a profile** and the menu starts with **Add profile…**. **Multiple users** shows every profile one after another, **Single user** (default) the checked one.
-    - **Add profile…** signs in to another account through your browser, into a new folder: `~/.claude-2`, `~/.claude-3` and so on. With no profile left, it signs `~/.claude` in instead.
-    - **Remove profile** removes the checked one after asking, `~/.claude` included, and signs it out of Claude Code with `claude auth logout`. For `~/.claude` that is the login Claude Code uses in Terminal too. The folder stays.
-    - When the checked profile is signed out, the menu says **Sign in to Claude Code…**, which signs it in again.
-    - When Claude turns the profile's usage checks away for a while, the last numbers stay, faded, and ClaudioStat waits 25 minutes before it asks again. The menu says **Claude paused usage checks. Sign in again…**, which signs the same profile in again for a new login that works right away.
-  - **Notifications**: a limit reached, its reset, and the week at 80% and 90%. All on.
   - **About**: the version, **Check for updates…** and the website.
 - **Show usage details** (on): every limit with its reset countdown, then pace and the budget. With several profiles shown, each in its own block or submenu.
 - **Refresh** (⌘R).
