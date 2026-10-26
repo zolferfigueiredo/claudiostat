@@ -28,7 +28,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     var timer: Timer?
     var pulse: Timer?        // redraws the icon or numbers while they fade
     var midReply: [String: Date] = [:]  // Claude Code transcripts mid-reply, by when they were last written
-    var sessions: FSEventStreamRef?  // watches the shown profiles' transcripts
+    var sessions: FSEventStreamRef?  // watches the shown profiles' transcripts and ~/.claude's
     var lastBar = ""
     var checking = false     // an update check or install is running
     var awaitingReopen = false  // the setup window asks to reopen, so the bar holds back the numbers until then

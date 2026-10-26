@@ -155,7 +155,8 @@ nonisolated func thinking(_ transcript: String) -> Bool {
 }
 
 extension AppDelegate {
-    /// Claude Code logs each session to a transcript under its folder's projects as it goes. Only the shown profiles count.
+    /// Claude Code logs each session to a transcript under its folder's projects as it goes. The shown profiles count, and
+    /// ~/.claude always: the Claude app's Claude Code writes there whichever profile is shown.
     func watchSessions() {
         if let sessions {
             FSEventStreamStop(sessions)
@@ -165,7 +166,7 @@ extension AppDelegate {
         }
         midReply = [:]
         let home = FileManager.default.homeDirectoryForCurrentUser.appending(path: ".claude").path
-        let projects = shown.map { ($0.isEmpty ? home : $0) + "/projects" }
+        let projects = Array(Set(([""] + shown).map { ($0.isEmpty ? home : $0) + "/projects" }))
         var context = FSEventStreamContext(version: 0, info: Unmanaged.passUnretained(self).toOpaque(),
                                            retain: nil, release: nil, copyDescription: nil)
         let changed: FSEventStreamCallback = { _, info, _, paths, _, _ in

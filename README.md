@@ -91,7 +91,7 @@ Every refresh, ClaudioStat runs your installed Claude Code once, headless, and s
 - It looks for `claude` in `~/.local/bin`, `/opt/homebrew/bin` and `/usr/local/bin`, then for the copy the Claude desktop app keeps in `~/Library/Application Support/Claude/claude-code`.
 - Claude Code uses its own login. **Sign In** runs `claude auth login`, which finishes in your browser, and removing a profile runs `claude auth logout`. ClaudioStat never sees or stores a credential. It keeps only each profile's email, from `claude auth status`, to name it.
 - Hooks, plugins and MCP servers are off for that run, and no session is saved.
-- To know when Claude Code is writing a reply, it watches the session files in `~/.claude/projects` and reads the end of the one that changed. It keeps and sends nothing.
+- To know when Claude Code is writing a reply, it watches the session files in `~/.claude/projects` and in each shown profile's folder, and reads the end of the one that changed. It keeps and sends nothing.
 - **Check for updates…** asks GitHub for the newest release and sends nothing about you, and an update downloads from that release. An update installs only if it's signed by the same developer, and only into the copy in Applications. While it installs, a window shows each step under a loading bar; **Reopen** then starts the new version. When an automatic check finds a new version, a notification says so once; clicking it offers Update Now.
 - Only one copy runs at a time: opening another one, say from the DMG, quits the copy already running.
 
