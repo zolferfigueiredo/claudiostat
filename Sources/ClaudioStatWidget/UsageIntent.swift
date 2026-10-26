@@ -1,11 +1,11 @@
-// Copied from appclaudiostat's apps/mobile/targets/_shared for the desktop widget: copy it again when it changes there.
-// Changed here: the theme, a Mac choice the phone doesn't have, and a new widget starts on the first account and Session.
 import AppIntents
+import ClaudioStatStrings
 import WidgetKit
 
-// What a widget or complication shows, chosen per widget: touch and hold it, then Edit Widget.
+// What a widget shows, chosen per widget: right-click it, then Edit. macOS shows these names in the language of the
+// Mac, from the Localizable.strings that WidgetStrings writes into the widget, keyed by the English text: each name
+// here has to be one of the app's English strings (Sources/ClaudioStat/Strings/en.swift), or it stays in English.
 
-@available(iOS 17.0, watchOS 10.0, *)
 enum LimitChoice: String, AppEnum {
     case session, week, fable
 
@@ -16,7 +16,6 @@ enum LimitChoice: String, AppEnum {
 }
 
 /// The widget's colors: the desktop's light or dark, or always one of them.
-@available(iOS 17.0, watchOS 10.0, *)
 enum ThemeChoice: String, AppEnum {
     case auto, dark, light
 
@@ -32,18 +31,18 @@ enum StyleChoice {
 }
 
 /// What a widget shows: rings or bars, session and week always, P and B as its kind says, and Fable by itself once
-/// it's used. Each kind is its own widget in the gallery (4 of them, as on the watch and Android).
+/// it's used. Each kind is its own widget in the gallery.
 struct Kind {
     let style: StyleChoice
     let rates: Bool
 
-    /// The ids widgets were added with keep working: "usage" is the rings widget with everything.
+    /// "usage" is the rings widget with everything.
     var id: String {
         "usage" + (style == .bars ? ".bars" : "") + (rates ? "" : ".norates")
     }
 
-    var description: LocalizedStringResource {
-        rates ? "Session, week, Fable, pace and budget." : "Session, week and Fable."
+    var description: String {
+        tr(rates ? "widget_all" : "widget_limits")
     }
 }
 
@@ -57,8 +56,7 @@ enum RingsFable: KindSpec { static let kind = Kind(style: .rings, rates: false) 
 enum BarsAll: KindSpec { static let kind = Kind(style: .bars, rates: true) }
 enum BarsFable: KindSpec { static let kind = Kind(style: .bars, rates: false) }
 
-/// One of the phone's Claude accounts, for a widget set to it.
-@available(iOS 17.0, watchOS 10.0, *)
+/// One of the app's profiles, for a widget set to it.
 struct AccountEntity: AppEntity {
     let id: String
     let name: String
@@ -68,11 +66,10 @@ struct AccountEntity: AppEntity {
     var displayRepresentation: DisplayRepresentation { DisplayRepresentation(title: "\(name)") }
 
     static func all() -> [AccountEntity] {
-        storedAccounts().enumerated().map { AccountEntity(id: $1.id, name: $1.label($0)) }
+        storedAccounts().map { AccountEntity(id: $0.id, name: $0.label) }
     }
 }
 
-@available(iOS 17.0, watchOS 10.0, *)
 struct AccountQuery: EntityQuery {
     func entities(for identifiers: [String]) async throws -> [AccountEntity] {
         AccountEntity.all().filter { identifiers.contains($0.id) }
@@ -80,40 +77,30 @@ struct AccountQuery: EntityQuery {
 
     func suggestedEntities() async throws -> [AccountEntity] { AccountEntity.all() }
 
-    /// A new widget shows the first account rather than an empty choice.
+    /// A new widget shows the first profile rather than an empty choice.
     func defaultResult() async -> AccountEntity? { AccountEntity.all().first }
 }
 
-@available(iOS 17.0, watchOS 10.0, *)
 struct UsageConfig: WidgetConfigurationIntent {
     static let title: LocalizedStringResource = "Usage"
     static let description = IntentDescription("Choose what this widget shows.")
 
-    /// None: the account the app shows.
+    /// None: the profile checked in the app's menu.
     @Parameter(title: "Account") var account: AccountEntity?
-    /// The limit that leads (outer ring, big number); none: the app's focus. Session and week always show.
+    /// The limit with the big number in the middle of the rings. Session and week always show.
     @Parameter(title: "Focus", default: .session) var main: LimitChoice?
     @Parameter(title: "Theme", default: .auto) var theme: ThemeChoice?
 
     init() {}
 
-    init(main: LimitChoice? = nil, account: AccountEntity? = nil) {
-        self.main = main
+    init(account: AccountEntity?) {
         self.account = account
     }
 
-    /// The limit that leads: this widget's, else the app's.
-    func focus(_ settings: Settings) -> LimitChoice {
-        main ?? ["w": .week, "f": .fable][settings.main] ?? .session
-    }
+    var focus: LimitChoice { main ?? .session }
 
     /// The stored account this widget shows.
     var stored: StoredAccount? {
         account.flatMap { chosen in storedAccounts().first { $0.id == chosen.id } } ?? currentAccount()
-    }
-
-    /// The app's own choices (Settings), for the watch app's screen.
-    init(_ settings: Settings) {
-        main = ["w": .week, "f": .fable][settings.main] ?? .session
     }
 }

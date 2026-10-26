@@ -1,4 +1,5 @@
 import AppKit
+import ClaudioStatStrings
 
 nonisolated struct Limit: Equatable, Codable {
     var percent: Int
@@ -397,12 +398,4 @@ nonisolated func faded(_ text: NSAttributedString, _ alpha: CGFloat) -> NSAttrib
         copy.addAttribute(.foregroundColor, value: ((color as? NSColor) ?? .labelColor).withAlphaComponent(alpha), range: range)
     }
     return copy
-}
-
-/// "3d 18h", "2h 13m", "7m", or short for the menu bar: "3d18h", "2h13", "7m". Each language has its own units.
-nonisolated func span(_ seconds: TimeInterval, short: Bool = false) -> String {
-    let minutes = max(0, Int(seconds / 60)), days = minutes / 1440, hours = minutes / 60 % 24
-    let form = days > 0 ? "dh" : hours > 0 ? "hm" : "m"
-    return tr("span.\(form)\(short ? "_short" : "")",
-              ["d": days, "h": hours, "m": minutes % 60, "mm": String(format: "%02d", minutes % 60)])
 }

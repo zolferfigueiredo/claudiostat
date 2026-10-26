@@ -1,4 +1,5 @@
 import AppKit
+import ClaudioStatStrings
 import ServiceManagement
 
 extension AppDelegate {
@@ -283,6 +284,7 @@ extension AppDelegate {
         aboutWindow?.close()  // it was built in the old language
         aboutWindow = nil
         render()
+        shareWithWidget()
     }
 
     @objc func addProfile() { showSetup(nextProfile(after: allProfiles)) }

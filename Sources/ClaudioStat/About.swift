@@ -1,4 +1,5 @@
 import AppKit
+import ClaudioStatStrings
 import SwiftUI
 
 /// Built when About opens, and again after the language changes.

@@ -2,9 +2,9 @@ import Foundation
 import Testing
 @testable import ClaudioStat
 
-// The desktop widget is the phone app's code, so it reads the reply the phone app's API sends: pct, reset in epoch
-// seconds, src, S and W speeds per hour.
-@MainActor @Test func widgetGetsThePhoneAppsReply() throws {
+// What the desktop widget reads (Sources/ClaudioStatWidget/Usage.swift): pct, reset in epoch seconds, src, S and W
+// speeds per hour.
+@MainActor @Test func widgetReadsTheProfilesNumbers() throws {
     let now = ISO8601DateFormatter().date(from: "2026-10-26T12:00:00Z")!, epoch = Int(now.timeIntervalSince1970)
     func usage(_ session: Int, _ week: Int) -> Usage {
         Usage(session: Limit(percent: session, resetsAt: now.addingTimeInterval(3600), severity: "normal"),

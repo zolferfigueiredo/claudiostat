@@ -1,11 +1,9 @@
-// Copied from appclaudiostat's apps/mobile/targets/_shared for the desktop widget: copy it again when it changes there.
 import SwiftUI
 
-// The double ring of the widgets, the watch app and its complications, as in the app (src/Rings.tsx): session outside,
-// week inside, Fable innermost when it's on. Each ring fills to its limit's percentage, with a hand at the share of
+// The widgets' rings: session outside, week inside, Fable innermost when it's on. Each ring fills to its limit's percentage, with a hand at the share of
 // its window already passed; ring ahead of the hand means faster than an even spread.
 
-/// ClaudioStat's website colors (claudiostatwebsite public/assets/style.css), as in src/ui.tsx.
+/// ClaudioStat's website colors (claudiostatwebsite public/assets/style.css).
 enum Brand {
     static let peach = Color(red: 1, green: 0xb2 / 255, blue: 0x66 / 255)
     static let orange = Color(red: 0xee / 255, green: 0x70 / 255, blue: 0x48 / 255)
@@ -141,7 +139,7 @@ struct Bar: View {
     }
 }
 
-/// Three quarters of a ring, open at the top, as in the app (src/Rings.tsx): pace fills it clockwise like the limits, the budget is the mark.
+/// Three quarters of a ring, open at the top: pace fills it clockwise like the limits, the budget is the mark.
 /// Rings draws it innermost.
 struct Gauge: View {
     let meter: Meter

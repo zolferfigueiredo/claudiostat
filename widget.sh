@@ -1,6 +1,6 @@
 #!/bin/bash
 # Puts the desktop widget (Sources/ClaudioStatWidget) into an app that build.sh or run.sh made, as Xcode would: the
-# binary, its Info.plist with the app's versions, its strings, and the App Intents file. They sign it afterwards.
+# binary, its Info.plist with the app's versions, the app's strings, and the App Intents file. They sign it afterwards.
 #   ./widget.sh <app> <swift build's bin folder> <swift build's scratch folder>
 set -euo pipefail
 cd "$(dirname "$0")"
@@ -14,7 +14,8 @@ cp Sources/ClaudioStatWidget/Info.plist "$WIDGET/Contents/"
 for key in CFBundleShortVersionString CFBundleVersion; do
   /usr/libexec/PlistBuddy -c "Set $key $(/usr/libexec/PlistBuddy -c "Print $key" Info.plist)" "$WIDGET/Contents/Info.plist"
 done
-xcrun xcstringstool compile Sources/ClaudioStatWidget/Localizable.xcstrings -o "$WIDGET/Contents/Resources"
+# The widget speaks the app's Strings/ itself; macOS needs them as files for Edit Widget's names.
+"$BIN/WidgetStrings" "$WIDGET/Contents/Resources"
 
 # Edit Widget's choices: without this file macOS has none to give the widget, and the widget gets no numbers.
 # It is made from constants the compiler writes under the Swift Build engine (--build-system swiftbuild); one

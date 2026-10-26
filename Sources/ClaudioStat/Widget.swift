@@ -1,11 +1,12 @@
+import ClaudioStatStrings
 import Foundation
 import WidgetKit
 
-// The desktop widget (Sources/ClaudioStatWidget, the phone app's widget code) can't run Claude Code, so the app leaves
-// it each profile's numbers in their shared group, in the keys and JSON the phone app writes for its own widgets.
+// The desktop widget (Sources/ClaudioStatWidget) can't run Claude Code, so the app leaves it each profile's numbers
+// in their shared group.
 let widgetGroup = UserDefaults(suiteName: "497V6MCDS8.com.zolfer.claudiostat")
 
-/// A profile's numbers as the phone app's API replies with them: resets in epoch seconds, S and W rising per hour.
+/// A profile's numbers for the widget: resets in epoch seconds, S and W rising per hour.
 nonisolated struct WidgetReply: Encodable {
     struct Used: Encodable {
         let pct: Int
@@ -34,6 +35,7 @@ nonisolated struct WidgetSettings: Encodable {
     let workHours: Double
     let showPace: Bool
     let showBudget: Bool
+    let language: String
 }
 
 /// Nil until the profile's first reading.
@@ -66,7 +68,8 @@ extension AppDelegate {
             "accounts": json(allProfiles.map { ["id": id($0), "token": "", "email": profileName($0)] }),
             "settings": json(WidgetSettings(colors: defaults.string(forKey: "speedColors") ?? "day",
                                             workHours: Double(defaults.integer(forKey: "workHours")),
-                                            showPace: defaults.bool(forKey: "showPace"), showBudget: defaults.bool(forKey: "showBudget"))),
+                                            showPace: defaults.bool(forKey: "showPace"), showBudget: defaults.bool(forKey: "showBudget"),
+                                            language: Language.current.rawValue)),
         ]
         // A profile without numbers keeps its last ones there.
         for path in allProfiles {

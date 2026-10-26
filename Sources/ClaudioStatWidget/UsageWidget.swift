@@ -1,6 +1,5 @@
-// Copied from appclaudiostat's apps/mobile/targets/widget for the desktop widget: copy it again when it changes there.
-// Changed here: no Live Activity, the desktop's sizes, and the bars' own choices, without Focus.
 import AppIntents
+import ClaudioStatStrings
 import SwiftUI
 import WidgetKit
 
@@ -14,17 +13,17 @@ struct Widgets: WidgetBundle {
     }
 }
 
-// The timeline and views are the phone's (UsageView.swift). Each kind (rings or bars, with or without P and B; Fable
-// by itself once used) is its own widget, so the gallery shows them all; Edit Widget chooses the profile, focus and
-// theme. Those choices need the App Intents file widget.sh adds to the bundle.
+// The timeline and views are in UsageView.swift. Each kind (rings or bars, with or without P and B; Fable by itself
+// once used) is its own widget, so the gallery shows them all; Edit Widget chooses the profile, focus and theme.
+// Those choices need the App Intents file widget.sh adds to the bundle.
 struct UsageWidget<Spec: KindSpec>: Widget {
     var body: some WidgetConfiguration {
         let kind = Spec.kind
         return AppIntentConfiguration(kind: kind.id, intent: UsageConfig.self, provider: Provider(kind: kind)) {
             UsageView(entry: $0)
         }
-        .configurationDisplayName(Text("Rings"))
-        .description(Text(kind.description))
+        .configurationDisplayName(tr("rings"))
+        .description(kind.description)
         .supportedFamilies([.systemSmall, .systemMedium])
     }
 }
@@ -36,8 +35,8 @@ struct BarsWidget<Spec: KindSpec>: Widget {
         return AppIntentConfiguration(kind: kind.id, intent: BarsConfig.self, provider: BarsProvider(base: Provider(kind: kind))) {
             UsageView(entry: $0)
         }
-        .configurationDisplayName(Text("Bars"))
-        .description(Text(kind.description))
+        .configurationDisplayName(tr("bars"))
+        .description(kind.description)
         .supportedFamilies([.systemSmall, .systemMedium])
     }
 }
@@ -49,7 +48,7 @@ struct BarsConfig: WidgetConfigurationIntent {
     @Parameter(title: "Account") var account: AccountEntity?
     @Parameter(title: "Theme", default: .auto) var theme: ThemeChoice?
 
-    /// The same choices as the rings', for the phone's timeline and views.
+    /// The same choices as the rings', for their timeline and views.
     var usage: UsageConfig {
         let config = UsageConfig(account: account)
         config.theme = theme

@@ -1,4 +1,5 @@
 import AppKit
+import ClaudioStatStrings
 import UserNotifications
 import os
 
