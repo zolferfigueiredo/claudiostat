@@ -132,7 +132,7 @@ struct MenuBarSettings: View {
             // Text only has no icon, Icon only no text.
             let mode = delegate.defaults.string(forKey: "menuBar")
             Form {
-                Section {
+                Section(tr("view")) {
                     // "numbers" stays the stored value from before the label became Text only.
                     Picker(tr("display"), selection: setting("menuBar") as Binding<String>) {
                         Text(tr("both")).tag("both")

@@ -153,6 +153,7 @@ extension Strings {
         "usage": "使用状況",
         "use_again": "{name} をまた使えます。",
         "version": "バージョン {version}",
+        "view": "見た目",
         "website": "Web サイト",
         "week": "週間",
         "week_at": "週間 {n}%",

@@ -159,6 +159,7 @@ extension Strings {
         "usage": "Витрата",
         "use_again": "{name} знову можна використовувати.",
         "version": "Версія {version}",
+        "view": "Зовнішній вигляд",
         "website": "Сайт",
         "week": "Тиждень",
         "week_at": "Тиждень: {n}%",

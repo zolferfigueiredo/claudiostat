@@ -153,6 +153,7 @@ extension Strings {
         "usage": "用量",
         "use_again": "可以再次使用 {name} 了。",
         "version": "版本 {version}",
+        "view": "视图",
         "website": "网站",
         "week": "本周",
         "week_at": "本周已用 {n}%",

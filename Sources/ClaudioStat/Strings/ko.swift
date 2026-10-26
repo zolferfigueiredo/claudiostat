@@ -153,6 +153,7 @@ extension Strings {
         "usage": "사용량",
         "use_again": "{name}을(를) 다시 사용할 수 있습니다.",
         "version": "버전 {version}",
+        "view": "보기",
         "website": "웹사이트",
         "week": "주간",
         "week_at": "주간 {n}%",

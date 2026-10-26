@@ -155,6 +155,7 @@ extension Strings {
         "usage": "Utilisation",
         "use_again": "Vous pouvez de nouveau utiliser {name}.",
         "version": "Version {version}",
+        "view": "Présentation",
         "website": "Site web",
         "week": "Semaine",
         "week_at": "Semaine à {n}%",
