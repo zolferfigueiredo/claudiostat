@@ -2,7 +2,7 @@ import AppKit
 import ClaudioStatStrings
 import SwiftUI
 
-/// Built when Settings or About first opens, then kept.
+/// Built when Settings or About opens, and let go when it closes, so its views don't stay in memory.
 var settingsWindow: NSWindow?
 
 func makeSettingsWindow() -> NSWindow {
@@ -26,8 +26,16 @@ func makeSettingsWindow() -> NSWindow {
     window.styleMask = [.titled, .closable]
     window.toolbarStyle = .preference
     window.isReleasedWhenClosed = false
+    window.delegate = delegate
     window.center()
     return window
+}
+
+extension AppDelegate: NSWindowDelegate {
+    // showTab builds it again on the next open.
+    func windowWillClose(_ notification: Notification) {
+        if notification.object as? NSWindow === settingsWindow { settingsWindow = nil }
+    }
 }
 
 extension AppDelegate {
