@@ -109,7 +109,7 @@ Every refresh, ClaudioStat runs your installed Claude Code once, headless, and s
     - **Notifications**: a limit reached, its reset, and the week at 80% and 90%. All on.
   - **Menu Bar**: **Display**: icon and text, icon only or text only, with the app icon or a plain star. A letter without a value yet is left out, and with none the bar shows just the icon. **Compact text** (on) puts the text on two lines.
     Under **Loading**: **Icon** (on) and **Text** (off) pick what pulses while Claude Code writes a reply.
-    Under **Data**: whether the menu bar starts with the profile's name (off), whether it shows P and B (off), whether P and B count per day or per hour, and **Resets in …** (off).
+    Under **Data**: whether the menu bar starts with the profile's name (off), whether it shows P and B (off), whether P and B count per day or per hour (**Pace and budget**), and **Resets in …** (off).
   - **About**: the version, **Check for updates…** and the website.
 - **Show usage details** (on): every limit with its reset countdown, then pace and the budget. With several profiles shown, each in its own block or submenu.
 - **Refresh** (⌘R).
@@ -121,7 +121,7 @@ Every refresh, ClaudioStat runs your installed Claude Code once, headless, and s
 <details>
 <summary><b>How pace, budget and the colors are worked out</b></summary>
 
-**P** is how fast W is rising over the last hour, per day (times the working time, 8 hours by default) or per hour, following Budget per day or Budget per hour under Data. It shows "-" in the menu, and stays out of the menu bar, until there's a reading from 10 minutes ago. Until the readings cover the hour, it's measured over what they cover. After a pause, the rise is spread over the whole gap.
+**P** is how fast W is rising over the last hour, per day (times the working time, 8 hours by default) or per hour, following **Pace and budget** under Data. It shows "-" in the menu, and stays out of the menu bar, until there's a reading from 10 minutes ago. Until the readings cover the hour, it's measured over what they cover. After a pause, the rise is spread over the whole gap.
 
 **B** is what's left of the week split over the days (or working hours) until the weekly reset, a partial last one counting in full, rounded down: 35% left with 1d 17h to go is 17% a day, or 0.8% an hour with a 24-hour working time. Per hour, the menu says how many working hours it is spread over.
 

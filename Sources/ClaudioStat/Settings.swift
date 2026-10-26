@@ -121,6 +121,12 @@ struct GeneralSettings: View {
 }
 
 struct MenuBarSettings: View {
+    let appIcon: NSImage = {
+        let icon = NSApp.applicationIconImage.copy() as? NSImage ?? NSImage()
+        icon.size = NSSize(width: 16, height: 16)  // the star's size
+        return icon
+    }()
+
     var body: some View {
         Redrawn {
             // Text only has no icon, Icon only no text.
@@ -133,13 +139,11 @@ struct MenuBarSettings: View {
                         Text(tr("icon_only")).tag("icon")
                         Text(tr("text_only")).tag("numbers")
                     }
-                    Picker(tr("display"), selection: setting("icon") as Binding<String>) {
-                        Text(tr("app_icon")).tag("app")
-                        Text(tr("star_icon")).tag("star")
+                    // Each choice with the icon it puts in the menu bar.
+                    Picker(tr("icon"), selection: setting("icon") as Binding<String>) {
+                        Label { Text(tr("app_icon")) } icon: { Image(nsImage: appIcon) }.tag("app")
+                        Label { Text(tr("star_icon")) } icon: { Image(nsImage: star(nil)) }.tag("star")
                     }
-                    .pickerStyle(.radioGroup)
-                    .horizontalRadioGroupLayout()
-                    .labelsHidden()
                     .disabled(mode == "numbers")
                     // The text on two lines.
                     Toggle(tr("compact_text"), isOn: setting("compactText")).disabled(mode == "icon")
@@ -153,15 +157,12 @@ struct MenuBarSettings: View {
                 Section(tr("data")) {
                     Toggle(tr("profile_name"), isOn: setting("showProfile"))
                     Toggle(tr("pace"), isOn: setting("showPace"))
-                    Toggle(tr("budget"), isOn: setting("showBudget"))
-                    Picker(tr("budget"), selection: setting("speedColors") as Binding<String>) {
+                    // The menu's Pace and Budget lines and W's color use it too, so it stays on with both hidden.
+                    Picker(tr("pace_budget"), selection: setting("speedColors") as Binding<String>) {
                         Text(tr("budget_day")).tag("day")
                         Text(tr("budget_hour")).tag("hour")
                     }
-                    .pickerStyle(.radioGroup)
-                    .horizontalRadioGroupLayout()
-                    .labelsHidden()
-                    .disabled(!delegate.defaults.bool(forKey: "showBudget"))
+                    Toggle(tr("budget"), isOn: setting("showBudget"))
                     Toggle(tr("resets_in"), isOn: setting("showResets"))
                 }
             }
