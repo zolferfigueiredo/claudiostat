@@ -67,11 +67,11 @@ extension AppDelegate {
 
     var configDir: String? { path.isEmpty ? nil : path }
 
-    // ~/.claude is your own Claude Code login, so it is only signed in again when it has none, or Claude turns it away.
-    // A new folder always signs in, so it holds the account picked in the browser.
+    // A folder already there (~/.claude, a profile's, one linked) keeps its login, so it is only signed in again when it
+    // has none, or Claude turns it away. A new folder always signs in, so it holds the account picked in the browser.
     func start() {
         if claudePath() == nil { step = .notFound }
-        else if path.isEmpty || app.allProfiles.contains(path) { check() }
+        else if path.isEmpty || FileManager.default.fileExists(atPath: path) { check() }
         else { step = .signIn }
     }
 

@@ -200,6 +200,22 @@ extension AppDelegate {
 
     @objc func addProfile() { showSetup(nextProfile(after: allProfiles)) }
 
+    /// A Claude Code folder you already use, like ~/.claude-work, as a profile.
+    func linkFolder() {
+        let panel = NSOpenPanel()
+        panel.canChooseDirectories = true
+        panel.canChooseFiles = false
+        panel.showsHiddenFiles = true
+        panel.directoryURL = FileManager.default.homeDirectoryForCurrentUser
+        panel.message = tr("link_info")
+        panel.prompt = tr("link")
+        NSApp.activate()
+        guard panel.runModal() == .OK, let url = panel.url?.standardizedFileURL else { return }
+        // ~/.claude is "" here.
+        let home = FileManager.default.homeDirectoryForCurrentUser.appending(path: ".claude").standardizedFileURL.path
+        showSetup(url.path == home ? "" : url.path)
+    }
+
     @objc func reconnect() { showSetup(profile) }
 
     // Signs it out of Claude Code too, so no login is left behind. The folder stays.

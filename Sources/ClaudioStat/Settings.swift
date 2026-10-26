@@ -128,7 +128,13 @@ struct GeneralSettings: View {
                                 delegate.pick(["shownProfiles": all.filter { $0 == path ? isOn : on.contains($0) }])
                             }))
                             .disabled(on == [path])
-                            Text(name == email ? email : "\(name) (\(email))")
+                            VStack(alignment: .leading) {
+                                Text(name == email ? email : "\(name) (\(email))")
+                                // The Claude Code folder it is linked to.
+                                Text(path.isEmpty ? "~/.claude" : (path as NSString).abbreviatingWithTildeInPath)
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            }
                             Spacer()
                             // After the action, so the window redraws once the alert is gone.
                             Button(tr("rename"), systemImage: "pencil") { Task { delegate.renameProfile(path) } }
@@ -137,7 +143,10 @@ struct GeneralSettings: View {
                         .labelStyle(.iconOnly)
                         .buttonStyle(.borderless)
                     }
-                    Button(tr("add_profile")) { delegate.addProfile() }
+                    HStack {
+                        Button(tr("add_profile")) { delegate.addProfile() }
+                        Button(tr("link_folder")) { Task { delegate.linkFolder() } }
+                    }
                 }
                 Section(tr("notify")) {
                     Toggle(tr("notify_reached"), isOn: setting(NoticeKind.reached.setting))
