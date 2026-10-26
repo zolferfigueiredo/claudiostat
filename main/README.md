@@ -297,6 +297,19 @@ Every look of the menu bar, dark on the left and light on the right. Made by `sc
 | icon only · app icon | ![icon only · app icon](icon-only-app-icon.png) |
 | icon only · star | ![icon only · star](icon-only-star.png) |
 
+## Background
+
+| Look | Bar |
+|---|---|
+| background · icon and text · app icon · compact | ![background · icon and text · app icon · compact](background-icon-and-text-app-icon-compact.png) |
+| background · icon and text · app icon · one line | ![background · icon and text · app icon · one line](background-icon-and-text-app-icon-one-line.png) |
+| background · icon and text · star · compact | ![background · icon and text · star · compact](background-icon-and-text-star-compact.png) |
+| background · icon and text · star · one line | ![background · icon and text · star · one line](background-icon-and-text-star-one-line.png) |
+| background · text only · compact | ![background · text only · compact](background-text-only-compact.png) |
+| background · text only · one line | ![background · text only · one line](background-text-only-one-line.png) |
+| background · icon only · app icon | ![background · icon only · app icon](background-icon-only-app-icon.png) |
+| background · icon only · star | ![background · icon only · star](background-icon-only-star.png) |
+
 ## States
 
 | Look | Bar |
