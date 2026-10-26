@@ -30,7 +30,8 @@ extension AppDelegate {
 
     func connected(_ path: String, _ result: UsageResult) {
         if !allProfiles.contains(path) { defaults.set(allProfiles + [path], forKey: "profileList") }
-        defaults.set(path, forKey: "profile")
+        let on = defaults.stringArray(forKey: "shownProfiles") ?? []
+        if !on.contains(path) { defaults.set(on + [path], forKey: "shownProfiles") }
         log.notice("connected \(folderName(path), privacy: .public)")
         // Not profilesChanged(): it would ask Claude Code again right away.
         apply(result, to: path)
@@ -66,11 +67,11 @@ extension AppDelegate {
 
     var configDir: String? { path.isEmpty ? nil : path }
 
-    // ~/.claude is your own Claude Code login, so it is only signed in again when it has none, or Claude turns it away.
-    // A new folder always signs in, so it holds the account picked in the browser.
+    // A folder already there (~/.claude, a profile's, one linked) keeps its login, so it is only signed in again when it
+    // has none, or Claude turns it away. A new folder always signs in, so it holds the account picked in the browser.
     func start() {
         if claudePath() == nil { step = .notFound }
-        else if path.isEmpty || app.allProfiles.contains(path) { check() }
+        else if path.isEmpty || FileManager.default.fileExists(atPath: path) { check() }
         else { step = .signIn }
     }
 

@@ -28,23 +28,21 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     var timer: Timer?
     var pulse: Timer?        // redraws the icon or numbers while they fade
     var midReply: [String: Date] = [:]  // Claude Code transcripts mid-reply, by when they were last written
-    var sessions: FSEventStreamRef?  // watches the shown profiles' transcripts
+    var sessions: FSEventStreamRef?  // watches the shown profiles' transcripts and ~/.claude's
     var lastBar = ""
     var checking = false     // an update check or install is running
     var awaitingReopen = false  // the setup window asks to reopen, so the bar holds back the numbers until then
     var sharedWithWidget: [String: String] = [:]  // what the desktop widget was last given
+    var changedAt = Date.now  // the last reading whose numbers moved
 
     // Without the Claude app or Claude Code there is nothing to wait for.
     var paused: Bool { defaults.bool(forKey: "onlyWhileClaude") && claudeInstalled && !claudeRunning && !codeRunning }
     lazy var claudeInstalled = NSWorkspace.shared.urlForApplication(withBundleIdentifier: claudeID) != nil || claudePath() != nil
-    /// The checked Claude Code folder, else the first. "" is ~/.claude.
-    var profile: String {
-        let checked = defaults.string(forKey: "profile") ?? ""
-        return allProfiles.contains(checked) ? checked : allProfiles.first ?? ""
-    }
+    /// The first Claude Code folder in the bar, whose status the menu shows. "" is ~/.claude.
+    var profile: String { shown.first ?? "" }
     var allProfiles: [String] { defaults.stringArray(forKey: "profileList") ?? [] }
-    /// The profiles in the bar: every one with Multiple users, else the checked one.
-    var shown: [String] { defaults.string(forKey: "users") == "multiple" ? allProfiles : allProfiles.filter { $0 == profile } }
+    /// The profiles in the bar: the ones switched on in Settings, else the first.
+    var shown: [String] { shownProfiles(allProfiles, on: defaults.stringArray(forKey: "shownProfiles") ?? []) }
     // The menu shows the checked profile's readings.
     var usage: Usage? { accounts[profile]?.usage }
     var updated: Date? { accounts[profile]?.updated }
@@ -55,8 +53,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     static let settings: [String: Any] = ["interval": 180, "showPace": false, "showBudget": false, "showResets": false, "onlyWhileClaude": false,
                                           "menuBar": "both", "icon": "app", "speedColors": "day", "workHours": 8, "updateEvery": 604800,
                                           "notifyReached": true, "notifyReset": true, "notifyWeek": true,
-                                          "loadingIcon": true, "loadingText": false, "showDetails": true, "showProfile": false, "users": "single",
-                                          "detailsLayout": "blocks", "compactText": true]
+                                          "loadingIcon": true, "loadingText": false, "showDetails": true, "showProfile": false,
+                                          "detailsLayout": "blocks", "compactText": true, "background": false]
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         defaults.register(defaults: Self.settings)
@@ -67,6 +65,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         if defaults.object(forKey: "profileList") == nil {
             defaults.set((defaults.object(forKey: "history") == nil ? [] : [""]) + (defaults.stringArray(forKey: "profiles") ?? []),
                          forKey: "profileList")
+        }
+        // Before 0.10.0 the bar showed every profile with Multiple users, else the checked one.
+        if defaults.object(forKey: "shownProfiles") == nil {
+            let checked = defaults.string(forKey: "profile")
+            defaults.set(defaults.string(forKey: "users") == "multiple" ? allProfiles : allProfiles.filter { $0 == checked },
+                         forKey: "shownProfiles")
+            defaults.removeObject(forKey: "users")
+            defaults.removeObject(forKey: "profile")
         }
         allProfiles.forEach(load)
         let menu = NSMenu()
@@ -133,7 +139,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         accounts[profile] = Account(samples: (try? JSONDecoder().decode([Sample].self, from: defaults.data(forKey: historyKey(profile)) ?? Data())) ?? [])
     }
 
-    /// After the checked profile, Multiple users or the list changed.
+    /// After a profile was switched on or off, added or removed.
     func profilesChanged() {
         log.notice("shown: \(self.shown.map(folderName), privacy: .public)")
         watchSessions()
@@ -148,8 +154,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         timer = nil
         guard !paused else { return log.notice("paused") }
         tick()
-        let timer = Timer(timeInterval: TimeInterval(defaults.integer(forKey: "interval")), target: self,
-                          selector: #selector(tick), userInfo: nil, repeats: true)
+        startTimer()
+    }
+
+    func startTimer() {
+        timer?.invalidate()
+        let every = refreshEvery(TimeInterval(defaults.integer(forKey: "interval")), quiet: Date.now.timeIntervalSince(changedAt))
+        let timer = Timer(timeInterval: every, target: self, selector: #selector(tick), userInfo: nil, repeats: true)
         timer.tolerance = 5
         RunLoop.main.add(timer, forMode: .common)
         self.timer = timer
@@ -169,6 +180,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             }
             busy = false
             shareWithWidget()
+            if let timer, timer.timeInterval != refreshEvery(TimeInterval(defaults.integer(forKey: "interval")),
+                                                              quiet: Date.now.timeIntervalSince(changedAt)) { startTimer() }
             // Checked or added meanwhile: those still need asking.
             if shown != asked { tick() }
         }
@@ -189,6 +202,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         switch result {
         case .ok(let reply):
             let fresh = keepSeverity(reply, from: account.samples.last?.usage)
+            let old = account.samples.last?.usage
+            if [fresh.session?.percent, fresh.week?.percent, fresh.fable?.percent] != [old?.session?.percent, old?.week?.percent, old?.fable?.percent] {
+                changedAt = .now
+            }
             post(labeled(notices(from: account.samples.last?.usage, to: fresh, now: .now), profile), settings: defaults)
             account.usage = fresh; account.updated = .now; account.failedAt = nil
             account.samples.append(Sample(at: .now, usage: fresh))
@@ -240,7 +257,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         func last(_ profile: String, _ text: NSAttributedString) -> NSAttributedString {
             accounts[profile]?.blockedUntil == nil ? text : faded(text, 0.5)
         }
-        // Multiple users: each profile's numbers in turn.
+        // Several profiles on: each one's numbers in turn.
         let bar = joined(zip(counted, rates).map { profile, rate in
             last(profile, barText(accounts[profile]?.usage, rates: rate, showPace: speed, showBudget: budget,
                                   resetsFrom: resets, profile: names ? profileName(profile) : nil))
@@ -278,19 +295,30 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         let fadeText = thinking && mode != "icon" && defaults.bool(forKey: "loadingText")
         let alpha = 0.7 + 0.3 * cos(now.timeIntervalSinceReferenceDate * 2 * .pi / 1.5)
         let icon = fadeIcon ? redrawn(image, alpha: alpha) : image
+        let background = defaults.bool(forKey: "background"), spoken = (alert.map { "\($0) · " } ?? "") + bar.string
         if !compact.isEmpty, mode != "icon" {
             // A title has one line, so the two go beside the icon in its image, which appearsDisabled dims whole.
             let lines = twoLines(compact), both = beside(icon, fadeText ? redrawn(lines, alpha: alpha) ?? lines : lines)
-            both.accessibilityDescription = (alert.map { "\($0) · " } ?? "") + bar.string
-            button.image = both
+            both.accessibilityDescription = spoken
+            button.image = background ? backed(both) : both
             button.attributedTitle = NSAttributedString()
             button.imagePosition = .imageOnly
         } else {
-            button.image = icon
             // appearsDisabled leaves colored text alone, so paused text is faded to half here.
             let textAlpha = (fadeText ? alpha : 1) * (paused ? 0.5 : 1)
-            button.attributedTitle = textAlpha < 1 ? faded(title, textAlpha) : title
-            button.imagePosition = mode == "icon" && !shown.isEmpty ? .imageOnly : .imageLeading
+            let text = textAlpha < 1 ? faded(title, textAlpha) : title
+            if background {
+                // The background goes behind the icon and the text together, so the text goes in the image too.
+                let both = text.length == 0 ? icon : beside(icon, oneLine(text))
+                if !spoken.isEmpty { both?.accessibilityDescription = spoken }
+                button.image = both.map(backed)
+                button.attributedTitle = NSAttributedString()
+                button.imagePosition = .imageOnly
+            } else {
+                button.image = icon
+                button.attributedTitle = text
+                button.imagePosition = mode == "icon" && !shown.isEmpty ? .imageOnly : .imageLeading
+            }
         }
         button.appearsDisabled = paused
         if (fadeIcon || fadeText) != (pulse != nil) {

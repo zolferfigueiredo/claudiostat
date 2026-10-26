@@ -60,7 +60,7 @@ You need:
 | **P** | Pace | How fast W rose over the last hour, per day. Off by default |
 | **B** | Budget | What's left of the week per day, or per working hour, until the reset. Off by default |
 
-Turn on **Resets in …** under Data to add the time to each reset on the line: `S 54% (1h13) · W 6% (1d2h) · F 0% (1d2h)`.
+Turn on **Resets in …** in Settings, Menu Bar, to add the time to each reset on the line: `S 54% 1h13  W 6% 1d2h  F 3% 1d2h`. The letters and times are dimmed, so the values stand out.
 
 S and W turn orange when you're using them faster than they last until the reset, and red when it's well past that. A warning triangle takes the icon's place when Claude flags a limit.
 
@@ -72,7 +72,7 @@ S and W turn orange when you're using them faster than they last until the reset
 - **Shows when tokens are going.** The icon pulses while Claude Code is writing a reply on this Mac.
 - **Tells you in time.** Notifications when a limit is reached, when it resets, and when the week hits 80% and 90%.
 - **Sleeps when Claude does.** While neither the Claude app nor Claude Code in a terminal is running, it stops asking, and the last numbers dim so you can tell they're old.
-- **Speaks 12 languages.** Deutsch, English, Español, Français, Italiano, Polski, Português, Русский, Українська, 中文, 日本語 and 한국어. It starts in your Mac's language, and **Language** in the menu changes it.
+- **Speaks 12 languages.** Deutsch, English, Español, Français, Italiano, Polski, Português, Русский, Українська, 中文, 日本語 and 한국어. It starts in your Mac's language, and **Language** in Settings changes it.
 - **Native and tiny.** A small Swift app with no Dock icon. It can launch at login and installs updates in one click.
 
 ## Screenshots
@@ -89,27 +89,32 @@ S and W turn orange when you're using them faster than they last until the reset
 Every refresh, ClaudioStat runs your installed Claude Code once, headless, and sends it one `get_usage` control request: the same numbers as `/usage`. No prompt goes with it, so it costs zero tokens.
 
 - It looks for `claude` in `~/.local/bin`, `/opt/homebrew/bin` and `/usr/local/bin`, then for the copy the Claude desktop app keeps in `~/Library/Application Support/Claude/claude-code`.
-- Claude Code uses its own login. **Sign In** runs `claude auth login`, which finishes in your browser, and **Remove profile** runs `claude auth logout`. ClaudioStat never sees or stores a credential. It keeps only each profile's email, from `claude auth status`, to name it.
+- Claude Code uses its own login. **Sign In** runs `claude auth login`, which finishes in your browser, and removing a profile runs `claude auth logout`. ClaudioStat never sees or stores a credential. It keeps only each profile's email, from `claude auth status`, to name it.
 - Hooks, plugins and MCP servers are off for that run, and no session is saved.
-- To know when Claude Code is writing a reply, it watches the session files in `~/.claude/projects` and reads the end of the one that changed. It keeps and sends nothing.
+- To know when Claude Code is writing a reply, it watches the session files in `~/.claude/projects` and in each shown profile's folder, and reads the end of the one that changed. It keeps and sends nothing.
 - **Check for updates…** asks GitHub for the newest release and sends nothing about you, and an update downloads from that release. An update installs only if it's signed by the same developer, and only into the copy in Applications. While it installs, a window shows each step under a loading bar; **Reopen** then starts the new version. When an automatic check finds a new version, a notification says so once; clicking it offers Update Now.
 - Only one copy runs at a time: opening another one, say from the DMG, quits the copy already running.
 
 <details>
 <summary><b>Every setting</b></summary>
 
-- **Show data below** (on): every limit with its reset countdown, then pace and the budget.
-- **Refresh** (⌘R), and **Refresh rate** 1, 3 (default), 5 or 10 minutes.
-- **Pause when Claude is closed** (off): while neither the Claude desktop app nor Claude Code in a terminal is running, nothing refreshes and the last numbers dim. It looks for a running `claude` every minute and when you open the menu. Hidden when neither is installed.
-- **Profiles**: one per Claude account, each in its own Claude Code folder and named by its email. The checked one fills the bar and the menu. With none, the menu bar says **Add a profile** and the menu starts with **Add profile…**.
-  - **Add profile…** signs in to another account through your browser, into a new folder: `~/.claude-2`, `~/.claude-3` and so on. With no profile left, it signs `~/.claude` in instead.
-  - **Remove profile** removes the checked one after asking, `~/.claude` included, and signs it out of Claude Code with `claude auth logout`. For `~/.claude` that is the login Claude Code uses in Terminal too. The folder stays.
-  - When the checked profile is signed out, the menu says **Sign in to Claude Code…**, which signs it in again.
-  - When Claude turns the profile's usage checks away for a while, the last numbers stay, faded, and ClaudioStat waits 25 minutes before it asks again. The menu says **Claude paused usage checks. Sign in again…**, which signs the same profile in again for a new login that works right away.
-- **Display**: icon and text, icon only or text only, with the app icon or a plain star. A letter without a value yet is left out, and with none the bar shows just the icon. **Loading icon** (on) and **Loading text** (off) pick what pulses while Claude Code writes a reply.
-- **Data**: whether the menu bar starts with the profile's name (off); **Multiple users** to show every profile one after another, or **Single user** (default) for the checked one; whether it shows F (on), P and B (off), and whether P and B count per day or per hour.
-- **Daily working time**: the hours a day you use Claude, 24 down to 4 (8 by default), so P and B leave out the rest of the day.
-- **Notifications**: a limit reached, its reset, and the week at 80% and 90%. All on.
+- **Settings…** (⌘,) opens a window with three tabs:
+  - **General**, in three parts:
+    - **App**: **Language** picks one of the 12. **Pause when Claude is closed** (off): while neither the Claude desktop app nor Claude Code in a terminal is running, nothing refreshes and the last numbers dim. It looks for a running `claude` every minute and when you open the menu. Hidden when neither is installed. **Refresh rate** 1, 3 (default), 5 or 10 minutes.
+    - **Profiles**: one per Claude account, each in its own Claude Code folder and named by its email. Each row has a switch on the left: the ones switched on fill the bar, one after another, and the last one on stays on. Under its name, the Claude Code folder it is linked to. On the right, a pencil renames it, a folder links it to another folder and a trash can removes it. **Add profile…** sits on the Profiles title. With none, the menu bar says **Add a profile** and the menu offers **Add profile…**.
+      - **Add profile…** signs in to another account through your browser and switches it on, into a new folder: `~/.claude-2`, `~/.claude-3` and so on. With no profile left, it signs `~/.claude` in instead.
+      - The folder links the profile to another Claude Code folder you use, like `~/.claude-work`. Its name and switch stay, and the folder keeps its login: it signs in only when the folder has none. Its readings start over, as that folder may hold another account.
+      - The pencil gives it a name of your own, shown instead of its email: the row says "Personal (you@example.com)". Left empty, the email comes back.
+      - The trash can removes it after asking, `~/.claude` included, and signs it out of Claude Code with `claude auth logout`. For `~/.claude` that is the login Claude Code uses in Terminal too. The folder stays.
+      - When the first profile switched on is signed out, the menu says **Sign in to Claude Code…**, which signs it in again.
+      - When Claude turns the profile's usage checks away for a while, the last numbers stay, faded, and ClaudioStat waits 25 minutes before it asks again. The menu says **Claude paused usage checks. Sign in again…**, which signs the same profile in again for a new login that works right away.
+    - **Notifications**: a limit reached, its reset, and the week at 80% and 90%. All on.
+  - **Menu Bar**: **Display**: icon and text, icon only or text only, with the app icon or a plain star. A letter without a value yet is left out, and with none the bar shows just the icon. **Compact text** (on) puts the text on two lines. **Background** (off) puts a soft rounded background behind the icon and text.
+    Under **Data**: whether the menu bar starts with the profile's name (off), **Resets in …** (off), whether it shows P and B (off), whether P and B count per day or per hour (**Pace and budget**), and **Daily working time**: the hours a day you use Claude, 24 down to 4 (8 by default), so P and B leave out the rest of the day.
+    Under **Show activity**: **Icon** (on) and **Text** (off) pick what pulses while Claude Code writes a reply.
+  - **About**: the version, **Check for updates…** and the website.
+- **Show usage details** (on): every limit with its reset countdown, then pace and the budget. With several profiles shown, each in its own block or submenu.
+- **Refresh** (⌘R).
 - **Launch at login** (from the Applications folder) and **Keep in Dock**.
 - **Check for updates…**, and **Check automatically** daily, weekly (default) or never.
 
@@ -118,7 +123,7 @@ Every refresh, ClaudioStat runs your installed Claude Code once, headless, and s
 <details>
 <summary><b>How pace, budget and the colors are worked out</b></summary>
 
-**P** is how fast W is rising over the last hour, per day (times the working time, 8 hours by default) or per hour, following Budget per day or Budget per hour under Data. It shows "-" in the menu, and stays out of the menu bar, until there's a reading from 10 minutes ago. Until the readings cover the hour, it's measured over what they cover. After a pause, the rise is spread over the whole gap.
+**P** is how fast W is rising over the last hour, per day (times the working time, 8 hours by default) or per hour, following **Pace and budget** under Data. It shows "-" in the menu, and stays out of the menu bar, until there's a reading from 10 minutes ago. Until the readings cover the hour, it's measured over what they cover. After a pause, the rise is spread over the whole gap.
 
 **B** is what's left of the week split over the days (or working hours) until the weekly reset, a partial last one counting in full, rounded down: 35% left with 1d 17h to go is 17% a day, or 0.8% an hour with a 24-hour working time. Per hour, the menu says how many working hours it is spread over.
 

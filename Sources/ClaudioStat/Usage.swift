@@ -223,6 +223,11 @@ nonisolated func percent(_ value: Double?) -> String {
     value.map { "\($0.formatted(.number.precision(.fractionLength(0...1))))%" } ?? "-"
 }
 
+/// 1 minute slows to 3 once the numbers have stood still for 15 minutes, until they move again.
+nonisolated func refreshEvery(_ picked: TimeInterval, quiet: TimeInterval) -> TimeInterval {
+    picked == 60 && quiet >= 15 * 60 ? 180 : picked
+}
+
 /// One letter on the bar: "S 54%", with the time to its limit's reset.
 nonisolated struct Stat {
     var letter: String
@@ -253,17 +258,39 @@ nonisolated func colored(_ text: String, _ color: NSColor?) -> NSAttributedStrin
     NSAttributedString(string: text, attributes: color.map { [.foregroundColor: $0] } ?? [:])
 }
 
-/// With `resetsFrom`, S, W and F add the time to their reset: "S 54% (1h13)". A `profile` name goes first.
+extension NSColor {
+    /// The bar's letters and reset times: dimmer than the values, a little brighter than secondaryLabelColor. As it is
+    /// drawn it follows a light or dark menu bar, which labelColor.withAlphaComponent doesn't.
+    nonisolated static let barDim = NSColor(name: nil) { look in
+        (look.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua ? NSColor.white : .black).withAlphaComponent(0.65)
+    }
+
+    /// The soft background Background puts behind the bar's icon and text.
+    nonisolated static let barBackground = NSColor(name: nil) { look in
+        look.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua ? NSColor.white.withAlphaComponent(0.12) : .black.withAlphaComponent(0.08)
+    }
+}
+
+/// "S 54%": the letter dimmed, the value in its pace's color.
+nonisolated func lettered(_ stat: Stat) -> NSMutableAttributedString {
+    let text = NSMutableAttributedString(attributedString: colored("\(stat.letter) ", .barDim))
+    text.append(colored(stat.value, stat.pace.color))
+    return text
+}
+
+/// With `resetsFrom`, S, W and F add the time to their reset: "S 54% 1h13". The letters and times are dimmed, so the
+/// values stand apart without dots or brackets. A `profile` name goes first.
 nonisolated func barText(_ usage: Usage?, rates: (session: Rate, week: Rate)? = nil, showPace: Bool = false,
                          showBudget: Bool, resetsFrom now: Date? = nil, profile: String? = nil) -> NSAttributedString {
-    var parts = barStats(usage, rates: rates, showPace: showPace, showBudget: showBudget).map { stat in
-        let reset = now.flatMap { now in stat.resetsAt.map { " (\(span($0.timeIntervalSince(now), short: true)))" } } ?? ""
-        return colored("\(stat.letter) \(stat.value)\(reset)", stat.pace.color)
+    var parts: [NSAttributedString] = barStats(usage, rates: rates, showPace: showPace, showBudget: showBudget).map { stat in
+        let part = lettered(stat)
+        if let now, let reset = stat.resetsAt { part.append(colored(" " + span(reset.timeIntervalSince(now), short: true), .barDim)) }
+        return part
     }
     // A profile without any letter is left out whole.
     guard !parts.isEmpty else { return NSAttributedString() }
     if let profile { parts.insert(NSAttributedString(string: profile), at: 0) }
-    return joined(parts)
+    return joined(parts, separator: "  ")
 }
 
 /// barText on two lines, for a narrower bar: S and its reset over W, F and W's reset, then P over B.
@@ -275,7 +302,7 @@ nonisolated func compactText(_ usage: Usage?, rates: (session: Rate, week: Rate)
     func cells(_ letters: [String], resetOf reset: String) -> [NSAttributedString] {
         let found = stats.filter { letters.contains($0.letter) }
         let time = now.flatMap { now in found.first { $0.letter == reset }?.resetsAt.map { span($0.timeIntervalSince(now), short: true) } }
-        return found.map { colored("\($0.letter) \($0.value)", $0.pace.color) } + (time.map { [colored($0, .secondaryLabelColor)] } ?? [])
+        return found.map(lettered) + (time.map { [colored($0, .barDim)] } ?? [])
     }
     let top = cells(["S"], resetOf: "S"), bottom = cells(["W", "F"], resetOf: "W"), side = cells(["P", "B"], resetOf: "")
     // The grid's cells line up by column: S's reset over F.
@@ -312,6 +339,32 @@ func twoLines(_ groups: [[[NSAttributedString]]]) -> NSImage {
     }
 }
 
+/// barText as an image the menu bar's height, its capitals centred like twoLines' lone cells, to go on a background.
+func oneLine(_ text: NSAttributedString) -> NSImage {
+    let font = text.attribute(.font, at: 0, effectiveRange: nil) as? NSFont ?? .menuBarFont(ofSize: 0), width = ceil(text.size().width)
+    return NSImage(size: NSSize(width: width, height: NSStatusBar.system.thickness), flipped: false) { rect in
+        // Without .usesLineFragmentOrigin the origin is the baseline.
+        text.draw(with: NSRect(x: 0, y: rect.midY - font.capHeight / 2, width: width, height: font.ascender), options: [])
+        return true
+    }
+}
+
+/// The bar's icon and text on a soft rounded background, drawn as the menu bar is: light or dark.
+func backed(_ image: NSImage) -> NSImage {
+    // 28 points tall, 5 clear of the icon above and below, where the menu bar has room: a notch makes it 37 or more.
+    // A 24-point menu bar keeps 24, which a status item has since macOS 26.
+    let menuBar = NSScreen.main.map { $0.frame.maxY - $0.visibleFrame.maxY } ?? 0
+    let pad: CGFloat = 7, height = min(28, max(24, menuBar - 10))
+    let backed = NSImage(size: NSSize(width: image.size.width + 2 * pad, height: height), flipped: false) { rect in
+        NSColor.barBackground.setFill()
+        NSBezierPath(roundedRect: rect, xRadius: 8, yRadius: 8).fill()
+        image.draw(in: NSRect(origin: NSPoint(x: pad, y: (rect.height - image.size.height) / 2), size: image.size))
+        return true
+    }
+    backed.accessibilityDescription = image.accessibilityDescription
+    return backed
+}
+
 /// The two images side by side, `gap` points apart and centred on each other.
 nonisolated func beside(_ left: NSImage?, _ right: NSImage, gap: CGFloat = 4) -> NSImage {
     guard let left else { return right }
@@ -323,13 +376,14 @@ nonisolated func beside(_ left: NSImage?, _ right: NSImage, gap: CGFloat = 4) ->
     }
 }
 
-/// The parts with " · " between them, in the menu bar's font unless given another, and in labelColor where a part has no
-/// color of its own: text without one is dimmed like a template on the menu bars of the displays not in use, see `redrawn`.
-nonisolated func joined(_ parts: [NSAttributedString],
+/// The parts with " · " (or `separator`) between them, in the menu bar's font unless given another, and in labelColor where
+/// a part has no color of its own: text without one is dimmed like a template on the menu bars of the displays not in use,
+/// see `redrawn`.
+nonisolated func joined(_ parts: [NSAttributedString], separator: String = " · ",
                         font: NSFont = .monospacedDigitSystemFont(ofSize: 0, weight: .regular)) -> NSAttributedString {
     let line = NSMutableAttributedString()
     for part in parts where part.length > 0 {
-        if line.length > 0 { line.append(NSAttributedString(string: " · ")) }
+        if line.length > 0 { line.append(NSAttributedString(string: separator)) }
         line.append(part)
     }
     let all = NSRange(location: 0, length: line.length)

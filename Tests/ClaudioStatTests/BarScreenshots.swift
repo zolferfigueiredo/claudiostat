@@ -6,7 +6,7 @@ import Testing
 // Settings the bar screenshots vary, and the ones that don't change the bar. A new setting has to go in one of them,
 // and when it changes the bar, into the looks below too.
 private let onTheBar: Set<String> = ["menuBar", "icon", "compactText", "showPace", "showBudget", "speedColors", "showResets",
-                                     "showProfile", "users", "loadingIcon", "loadingText", "onlyWhileClaude"]
+                                     "showProfile", "loadingIcon", "loadingText", "onlyWhileClaude", "background"]
 private let offTheBar: Set<String> = ["interval", "updateEvery", "notifyReached", "notifyReset", "notifyWeek", "showDetails",
                                       "detailsLayout", "workHours"]
 
@@ -61,7 +61,7 @@ private let work = "/tmp/claudiostat-screenshots/.claude-work"
         ("S W B", ["showBudget": true], 0), ("S W P", ["showPace": true], 0)]
     let profiles: [(name: String, settings: [String: Any], two: Bool)] = [
         ("one profile", [:], false), ("one profile named", ["showProfile": true], false),
-        ("two profiles", ["users": "multiple"], true), ("two profiles named", ["users": "multiple", "showProfile": true], true)]
+        ("two profiles", ["shownProfiles": ["", work]], true), ("two profiles named", ["shownProfiles": ["", work], "showProfile": true], true)]
     func name(_ parts: String?...) -> String { parts.compactMap { $0 }.joined(separator: " · ") }
     var found: [Look] = []
 
@@ -84,6 +84,21 @@ private let work = "/tmp/claudiostat-screenshots/.claude-work"
     }
     for (iconName, icon) in icons {
         found.append(Look(section: "Layouts", name: name("icon only", iconName), settings: ["menuBar": "icon", "icon": icon]))
+    }
+
+    // Background behind every display.
+    let all: [String: Any] = ["background": true, "showPace": true, "showBudget": true, "showResets": true]
+    for (display, menuBar) in displays {
+        for (iconName, icon) in menuBar == "numbers" ? [(nil, "app")] : icons.map({ (Optional($0.0), $0.1) }) {
+            for compact in [true, false] {
+                found.append(Look(section: "Background", name: name("background", display, iconName, compact ? "compact" : "one line"),
+                                  settings: all.merging(["menuBar": menuBar, "icon": icon, "compactText": compact]) { $1 }))
+            }
+        }
+    }
+    for (iconName, icon) in icons {
+        found.append(Look(section: "Background", name: name("background", "icon only", iconName),
+                          settings: all.merging(["menuBar": "icon", "icon": icon]) { $1 }))
     }
 
     let thinking = { (app: AppDelegate) in app.midReply = ["transcript": now] }
@@ -111,7 +126,7 @@ private let work = "/tmp/claudiostat-screenshots/.claude-work"
                 for compact in [true, false] where icon == "app" || compact {
                     for (profile, two) in [("one profile", false), ("two profiles", true)] {
                         variants.append((name(display, iconName, compact ? "compact" : "one line", profile),
-                                         ["menuBar": menuBar, "icon": icon, "compactText": compact, "users": two ? "multiple" : "single"], two))
+                                         ["menuBar": menuBar, "icon": icon, "compactText": compact, "shownProfiles": two ? ["", work] : [""]], two))
                     }
                 }
             }
@@ -144,7 +159,7 @@ private let work = "/tmp/claudiostat-screenshots/.claude-work"
     button.attributedTitle = item.attributedTitle
     button.imagePosition = item.imagePosition
     button.isEnabled = !item.appearsDisabled
-    let size = NSSize(width: ceil(button.intrinsicContentSize.width), height: NSStatusBar.system.thickness)
+    let size = NSSize(width: ceil(button.intrinsicContentSize.width), height: max(NSStatusBar.system.thickness, item.image?.size.height ?? 0))
     button.setFrameSize(size)
     let pad: CGFloat = 8, panel = NSSize(width: size.width + 2 * pad, height: size.height + 2 * pad)
     func bitmap(_ size: NSSize) -> NSBitmapImageRep {
@@ -190,7 +205,7 @@ private let work = "/tmp/claudiostat-screenshots/.claude-work"
     var gallery = "# ClaudioStat bar looks\n\nEvery look of the menu bar, dark on the left and light on the right. Made by `screenshots.sh`.\n"
     var section = ""
     for look in looks() {
-        for key in Array(AppDelegate.settings.keys) + ["profile", "profileList", "names", "language"] { defaults.removeObject(forKey: key) }
+        for key in Array(AppDelegate.settings.keys) + ["shownProfiles", "profileList", "names", "customNames", "language"] { defaults.removeObject(forKey: key) }
         defaults.set("en", forKey: "language")
         defaults.set(look.two ? ["", work] : [""], forKey: "profileList")
         defaults.set(["": "personal", work: "work"], forKey: "names")

@@ -73,17 +73,17 @@ func dailyBudgetTable(now: String, week: Int, reset: String, hours: Double, expe
     #expect(barText(usage, showPace: true, showBudget: true).string == "S 42%")
     #expect(barText(nil, showPace: true, showBudget: true).string == "")
     #expect(barText(nil, showBudget: false, profile: "claude-work").string == "")
-    // Multiple users: each profile in turn, one without numbers left out whole.
+    // Several profiles on: each in turn, one without numbers left out whole.
     #expect(joined([barText(usage, showBudget: false, profile: "claude"),
-                    barText(nil, showBudget: false, profile: "claude-work")]).string == "claude · S 42%")
+                    barText(nil, showBudget: false, profile: "claude-work")]).string == "claude  S 42%")
     let rates = (Rate(unit: 3600, margin: 5), Rate(speed: 1, needed: 0.8, unit: 3600, margin: 10))
     // P comes from the saved history: never on its own, before a reading or without W.
     #expect(barText(nil, rates: rates, showPace: true, showBudget: true).string == "")
     #expect(barText(usage, rates: rates, showPace: true, showBudget: false).string == "S 42%")
     let week = Usage(week: Limit(percent: 18))
-    #expect(barText(week, rates: rates, showPace: true, showBudget: true).string == local("W 18% · P 1% · B 0.8%"))
+    #expect(barText(week, rates: rates, showPace: true, showBudget: true).string == local("W 18%  P 1%  B 0.8%"))
     let daily = (Rate(unit: 86400, margin: 5), Rate(speed: 16, needed: 13, unit: 86400, margin: 10))
-    #expect(barText(week, rates: daily, showBudget: true).string == "W 18% · B 13%")
+    #expect(barText(week, rates: daily, showBudget: true).string == "W 18%  B 13%")
 }
 
 @Test func resetsOnTheLine() {
@@ -94,11 +94,11 @@ func dailyBudgetTable(now: String, week: Int, reset: String, hours: Double, expe
     let now = date("2026-09-28T12:00:00Z")
     let usage = Usage(session: Limit(percent: 54, resetsAt: now.addingTimeInterval(4380)),
                       week: Limit(percent: 6, resetsAt: now.addingTimeInterval(93600)), fable: Limit(percent: 0))
-    #expect(barText(usage, showBudget: true, resetsFrom: now).string == "S 54% (1h13) · W 6% (1d2h)")
+    #expect(barText(usage, showBudget: true, resetsFrom: now).string == "S 54% 1h13  W 6% 1d2h")
     // F once Fable is used, not at 0%.
     var used = usage
     used.fable?.percent = 7
-    #expect(barText(used, showBudget: false).string == "S 54% · W 6% · F 7%")
+    #expect(barText(used, showBudget: false).string == "S 54%  W 6%  F 7%")
 }
 
 @Test func compactOnTwoLines() {
@@ -269,11 +269,13 @@ private func sample(_ time: String, s: Int, sReset: Date = reset, w: Int = 60) -
     func color(_ text: String) -> NSColor? {
         bar.attribute(.foregroundColor, at: (bar.string as NSString).range(of: text).location, effectiveRange: nil) as? NSColor
     }
-    #expect(bar.string == "S 30% · W 60% · F 7%")
-    #expect(color("S 30%") == .systemOrange)
-    #expect(color("W 60%") == .systemRed)
-    #expect(color("F 7%") == .labelColor)  // else dimmed like a template on the displays not in use
-    #expect(color(" · ") == .labelColor)
+    #expect(bar.string == "S 30%  W 60%  F 7%")
+    // The letters dimmed, the values in their color.
+    #expect(color("S") == .barDim)
+    #expect(color("30%") == .systemOrange)
+    #expect(color("60%") == .systemRed)
+    #expect(color("7%") == .labelColor)  // else dimmed like a template on the displays not in use
+    #expect(color("  ") == .labelColor)
 }
 
 // Trimmed from a real reply: locked_reason on each window, severity in the limits list.
@@ -345,4 +347,17 @@ private func sample(_ time: String, s: Int, sReset: Date = reset, w: Int = 60) -
     #expect(nextProfile(after: [""], home: "/u") == "/u/.claude-2")
     #expect(nextProfile(after: ["/u/.claude-2"], home: "/u") == "/u/.claude-3")
     #expect(nextProfile(after: ["", "/u/.claude-3", "/u/.claude-work"], home: "/u") == "/u/.claude-2")
+}
+
+@Test func oneMinuteSlowsWhileNothingMoves() {
+    #expect(refreshEvery(60, quiet: 14 * 60) == 60)
+    #expect(refreshEvery(60, quiet: 15 * 60) == 180)
+    #expect(refreshEvery(300, quiet: 3600) == 300)
+}
+
+@Test func profilesSwitchedOn() {
+    #expect(shownProfiles(["", "/a", "/b"], on: ["/b", ""]) == ["", "/b"])
+    // A removed profile left on is not shown, and with none on the first is.
+    #expect(shownProfiles(["", "/a"], on: ["/gone"]) == [""])
+    #expect(shownProfiles([], on: []) == [])
 }
