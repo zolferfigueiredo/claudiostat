@@ -30,7 +30,10 @@ BIN=$(swift build "${RELEASE_OPTS[@]}" "${SWIFT_OPTS[@]}" --show-bin-path)
 
 rm -rf dist/dmg
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
-cp "$BIN/ClaudioStat" "$APP/Contents/MacOS/"
+# SwiftPM marks the app as built with the macOS 15 SDK, so macOS 26 and later draw it in their old look: smaller
+# switches, older buttons. Marked with the SDK it was built with, it gets System Settings' look.
+vtool -set-build-version macos "$(/usr/libexec/PlistBuddy -c 'Print LSMinimumSystemVersion' Info.plist)" "$(xcrun --show-sdk-version)" \
+    -replace -output "$APP/Contents/MacOS/ClaudioStat" "$BIN/ClaudioStat"
 cp Info.plist "$APP/Contents/"
 swift -module-cache-path "$WORK/modules" Icon/make-icon.swift "$WORK/AppIcon.iconset"
 iconutil -c icns "$WORK/AppIcon.iconset" -o "$APP/Contents/Resources/AppIcon.icns"
