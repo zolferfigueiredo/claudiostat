@@ -235,13 +235,27 @@ private func sample(_ time: String, s: Int, sReset: Date = reset, w: Int = 60) -
     let done = #"{"type":"assistant","message":{"content":[{"type":"text","text":"Done."}],"stop_reason":"end_turn"}}"#
     let esc = #"{"type":"user","message":{"role":"user","content":[{"type":"text","text":"[Request interrupted by user]"}]}}"#
     let note = #"{"type":"attachment","attachment":{}}"#
-    #expect(thinking([prompt, note].joined(separator: "\n")))  // entries without a message don't count
-    #expect(thinking([call, result].joined(separator: "\n")))
-    #expect(thinking([result, thought].joined(separator: "\n")))
-    #expect(!thinking([thought, call].joined(separator: "\n")))
-    #expect(!thinking([prompt, thought, done].joined(separator: "\n")))
-    #expect(!thinking([prompt, esc].joined(separator: "\n")))
-    #expect(!thinking("{\"cut off"))
+    #expect(thinking([prompt, note].joined(separator: "\n")) == true)  // entries without a message don't count
+    #expect(thinking([call, result].joined(separator: "\n")) == true)
+    #expect(thinking([result, thought].joined(separator: "\n")) == true)
+    #expect(thinking([thought, call].joined(separator: "\n")) == false)
+    #expect(thinking([prompt, thought, done].joined(separator: "\n")) == false)
+    #expect(thinking([prompt, esc].joined(separator: "\n")) == false)
+    #expect(thinking("{\"cut off") == nil)
+}
+
+// A tool result bigger than 64 KB fills the tail read first, which then decides nothing: the last megabyte does.
+@Test func thinkingPastABigToolResult() throws {
+    let done = #"{"type":"assistant","message":{"content":[{"type":"text","text":"Done."}],"stop_reason":"end_turn"}}"#
+    let big = #"{"type":"user","message":{"role":"user","content":[{"type":"tool_result","content":""# + String(repeating: "x", count: 100_000)
+        + #"","tool_use_id":"t1"}]}}"#
+    let file = FileManager.default.temporaryDirectory.appending(path: "\(UUID().uuidString).jsonl")
+    defer { try? FileManager.default.removeItem(at: file) }
+    try (done + "\n" + big + "\n").write(to: file, atomically: true, encoding: .utf8)
+    #expect(thinking(String(big.suffix(1 << 16))) == nil)
+    #expect(thinking(atPath: file.path))
+    try (big + "\n" + done + "\n").write(to: file, atomically: true, encoding: .utf8)
+    #expect(!thinking(atPath: file.path))
 }
 
 // A terminal's claude, started by a shell, counts. One started by this app itself doesn't.

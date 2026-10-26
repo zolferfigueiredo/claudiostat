@@ -134,7 +134,8 @@ nonisolated func profileName(_ path: String) -> String {
 
 /// Whether a Claude Code session is writing a reply, from the end of its transcript: after a prompt or a tool result
 /// it is. A tool call stops it (the tool runs, or waits for you), and so does the reply's final text or pressing Esc.
-nonisolated func thinking(_ transcript: String) -> Bool {
+/// Nil when the text holds no user or assistant entry to tell by.
+nonisolated func thinking(_ transcript: String) -> Bool? {
     for line in transcript.split(separator: "\n").reversed() {
         guard let entry = try? JSONSerialization.jsonObject(with: Data(line.utf8)) as? [String: Any],
               let message = entry["message"] as? [String: Any] else { continue }
@@ -150,6 +151,20 @@ nonisolated func thinking(_ transcript: String) -> Bool {
         default:
             continue
         }
+    }
+    return nil
+}
+
+/// thinking at the end of a transcript file. Its last 64 KB nearly always decide; a large tool result can fill them,
+/// and then its last megabyte.
+nonisolated func thinking(atPath path: String) -> Bool {
+    guard let file = FileHandle(forReadingAtPath: path) else { return false }
+    defer { try? file.close() }
+    let size = (try? file.seekToEnd()) ?? 0
+    for length: UInt64 in [1 << 16, 1 << 20] {
+        try? file.seek(toOffset: size - min(size, length))
+        if let decided = thinking(String(decoding: file.readDataToEndOfFile(), as: UTF8.self)) { return decided }
+        if length >= size { break }
     }
     return false
 }
@@ -185,15 +200,7 @@ extension AppDelegate {
     }
 
     func sessionsChanged(_ files: [String]) {
-        for path in files where path.hasSuffix(".jsonl") {
-            // The last megabyte: a single tool result can be large.
-            guard let file = FileHandle(forReadingAtPath: path) else { midReply[path] = nil; continue }
-            let size = (try? file.seekToEnd()) ?? 0
-            try? file.seek(toOffset: size - min(size, 1 << 20))
-            let tail = String(decoding: file.readDataToEndOfFile(), as: UTF8.self)
-            try? file.close()
-            midReply[path] = thinking(tail) ? .now : nil
-        }
+        for path in files where path.hasSuffix(".jsonl") { midReply[path] = thinking(atPath: path) ? .now : nil }
         render()
     }
 }
