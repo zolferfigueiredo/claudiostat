@@ -1,5 +1,6 @@
 // Copied from appclaudiostat's apps/mobile/targets/widget for the desktop widget: copy it again when it changes there.
-// Changed here: no Live Activity, and the desktop's sizes.
+// Changed here: no Live Activity, the desktop's sizes, and the bars' own choices, without Focus.
+import AppIntents
 import SwiftUI
 import WidgetKit
 
@@ -8,8 +9,8 @@ struct Widgets: WidgetBundle {
     var body: some Widget {
         UsageWidget<RingsAll>()
         UsageWidget<RingsFable>()
-        UsageWidget<BarsAll>()
-        UsageWidget<BarsFable>()
+        BarsWidget<BarsAll>()
+        BarsWidget<BarsFable>()
     }
 }
 
@@ -22,8 +23,50 @@ struct UsageWidget<Spec: KindSpec>: Widget {
         return AppIntentConfiguration(kind: kind.id, intent: UsageConfig.self, provider: Provider(kind: kind)) {
             UsageView(entry: $0)
         }
-        .configurationDisplayName(kind.style == .bars ? Text("Bars") : Text("Rings"))
+        .configurationDisplayName(Text("Rings"))
         .description(Text(kind.description))
         .supportedFamilies([.systemSmall, .systemMedium])
+    }
+}
+
+/// The bars draw every limit alike, so their Edit Widget has no Focus.
+struct BarsWidget<Spec: KindSpec>: Widget {
+    var body: some WidgetConfiguration {
+        let kind = Spec.kind
+        return AppIntentConfiguration(kind: kind.id, intent: BarsConfig.self, provider: BarsProvider(base: Provider(kind: kind))) {
+            UsageView(entry: $0)
+        }
+        .configurationDisplayName(Text("Bars"))
+        .description(Text(kind.description))
+        .supportedFamilies([.systemSmall, .systemMedium])
+    }
+}
+
+struct BarsConfig: WidgetConfigurationIntent {
+    static let title: LocalizedStringResource = "Usage"
+    static let description = IntentDescription("Choose what this widget shows.")
+
+    @Parameter(title: "Account") var account: AccountEntity?
+    @Parameter(title: "Theme", default: .auto) var theme: ThemeChoice?
+
+    /// The same choices as the rings', for the phone's timeline and views.
+    var usage: UsageConfig {
+        let config = UsageConfig(account: account)
+        config.theme = theme
+        return config
+    }
+}
+
+struct BarsProvider: AppIntentTimelineProvider {
+    let base: Provider
+
+    func placeholder(in context: Context) -> Entry { base.placeholder(in: context) }
+
+    func snapshot(for configuration: BarsConfig, in context: Context) async -> Entry {
+        await base.snapshot(for: configuration.usage, in: context)
+    }
+
+    func timeline(for configuration: BarsConfig, in context: Context) async -> Timeline<Entry> {
+        await base.timeline(for: configuration.usage, in: context)
     }
 }

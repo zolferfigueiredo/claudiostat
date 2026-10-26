@@ -1,5 +1,5 @@
 // Copied from appclaudiostat's apps/mobile/targets/_shared for the desktop widget: copy it again when it changes there.
-// Changed here: the theme, a Mac choice the phone doesn't have.
+// Changed here: the theme, a Mac choice the phone doesn't have, and a new widget starts on the first account and Session.
 import AppIntents
 import WidgetKit
 
@@ -79,6 +79,9 @@ struct AccountQuery: EntityQuery {
     }
 
     func suggestedEntities() async throws -> [AccountEntity] { AccountEntity.all() }
+
+    /// A new widget shows the first account rather than an empty choice.
+    func defaultResult() async -> AccountEntity? { AccountEntity.all().first }
 }
 
 @available(iOS 17.0, watchOS 10.0, *)
@@ -89,7 +92,7 @@ struct UsageConfig: WidgetConfigurationIntent {
     /// None: the account the app shows.
     @Parameter(title: "Account") var account: AccountEntity?
     /// The limit that leads (outer ring, big number); none: the app's focus. Session and week always show.
-    @Parameter(title: "Focus") var main: LimitChoice?
+    @Parameter(title: "Focus", default: .session) var main: LimitChoice?
     @Parameter(title: "Theme", default: .auto) var theme: ThemeChoice?
 
     init() {}
