@@ -56,7 +56,7 @@ extension Strings {
         "language": "언어",
         "later": "나중에",
         "left": "{n}% 남음.",
-        "left_over": "{time} 동안 {left}% 남음",
+        "left_over": "{time} 동안 {left}%",
         "left_resets": "{n}% 남음, {time} 후 재설정.",
         "liked": "이 프로젝트가 마음에 드셨나요?",
         "limit": "한도",

@@ -56,7 +56,7 @@ extension Strings {
         "language": "言語",
         "later": "あとで",
         "left": "残り {n}%。",
-        "left_over": "残り {left}% を {time}で",
+        "left_over": "{left}% を {time}で",
         "left_resets": "残り {n}%、{time}後にリセット。",
         "liked": "このプロジェクトは気に入りましたか？",
         "limit": "制限",

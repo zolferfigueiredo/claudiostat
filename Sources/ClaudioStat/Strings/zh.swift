@@ -56,7 +56,7 @@ extension Strings {
         "language": "语言",
         "later": "稍后",
         "left": "剩余 {n}%。",
-        "left_over": "剩余 {left}%，可用 {time}",
+        "left_over": "{left}% 可用 {time}",
         "left_resets": "剩余 {n}%，{time}后重置。",
         "liked": "喜欢这个项目吗？",
         "limit": "限额",

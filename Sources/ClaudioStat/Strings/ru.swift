@@ -59,7 +59,7 @@ extension Strings {
         "language": "Язык",
         "later": "Позже",
         "left": "Осталось {n}%.",
-        "left_over": "осталось {left}% на {time}",
+        "left_over": "{left}% на {time}",
         "left_resets": "Осталось {n}%, сброс через {time}.",
         "liked": "Вам понравился этот проект?",
         "limit": "Лимит",
