@@ -1,4 +1,5 @@
 import AppKit
+import ClaudioStatStrings
 import UserNotifications
 
 let appVersion = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "-"

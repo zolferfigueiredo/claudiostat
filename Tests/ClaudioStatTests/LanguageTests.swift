@@ -1,6 +1,7 @@
 import Foundation
 import Testing
 @testable import ClaudioStat
+@testable import ClaudioStatStrings
 
 /// "minutes.one" and "minutes.few" are forms of "minutes".
 private func base(_ key: String) -> String {

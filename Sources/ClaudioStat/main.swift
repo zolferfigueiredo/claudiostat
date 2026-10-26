@@ -1,4 +1,5 @@
 import AppKit
+import ClaudioStatStrings
 import UserNotifications
 import os
 
@@ -31,6 +32,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     var lastBar = ""
     var checking = false     // an update check or install is running
     var awaitingReopen = false  // the setup window asks to reopen, so the bar holds back the numbers until then
+    var sharedWithWidget: [String: String] = [:]  // what the desktop widget was last given
 
     // Without the Claude app or Claude Code there is nothing to wait for.
     var paused: Bool { defaults.bool(forKey: "onlyWhileClaude") && claudeInstalled && !claudeRunning && !codeRunning }
@@ -137,6 +139,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         watchSessions()
         reschedule()
         render()
+        shareWithWidget()
     }
 
     /// Refresh now, then every interval. While paused there is no timer, so no requests.
@@ -165,6 +168,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
                 render()
             }
             busy = false
+            shareWithWidget()
             // Checked or added meanwhile: those still need asking.
             if shown != asked { tick() }
         }

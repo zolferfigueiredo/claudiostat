@@ -1,6 +1,7 @@
 import AppKit
 import Testing
 @testable import ClaudioStat
+@testable import ClaudioStatStrings
 
 // Settings the bar screenshots vary, and the ones that don't change the bar. A new setting has to go in one of them,
 // and when it changes the bar, into the looks below too.

@@ -1,6 +1,7 @@
 import AppKit
 import Testing
 @testable import ClaudioStat
+@testable import ClaudioStatStrings
 
 private func date(_ text: String) -> Date { ISO8601DateFormatter().date(from: text)! }
 // The strings expected below are English, whatever language this Mac uses.
