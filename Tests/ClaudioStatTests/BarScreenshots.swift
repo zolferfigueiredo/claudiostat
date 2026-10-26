@@ -159,7 +159,7 @@ private let work = "/tmp/claudiostat-screenshots/.claude-work"
     button.attributedTitle = item.attributedTitle
     button.imagePosition = item.imagePosition
     button.isEnabled = !item.appearsDisabled
-    let size = NSSize(width: ceil(button.intrinsicContentSize.width), height: NSStatusBar.system.thickness)
+    let size = NSSize(width: ceil(button.intrinsicContentSize.width), height: max(NSStatusBar.system.thickness, item.image?.size.height ?? 0))
     button.setFrameSize(size)
     let pad: CGFloat = 8, panel = NSSize(width: size.width + 2 * pad, height: size.height + 2 * pad)
     func bitmap(_ size: NSSize) -> NSBitmapImageRep {
