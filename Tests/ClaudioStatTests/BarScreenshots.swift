@@ -6,7 +6,7 @@ import Testing
 // Settings the bar screenshots vary, and the ones that don't change the bar. A new setting has to go in one of them,
 // and when it changes the bar, into the looks below too.
 private let onTheBar: Set<String> = ["menuBar", "icon", "compactText", "showPace", "showBudget", "speedColors", "showResets",
-                                     "showProfile", "loadingIcon", "loadingText", "onlyWhileClaude"]
+                                     "showProfile", "loadingIcon", "loadingText", "onlyWhileClaude", "background"]
 private let offTheBar: Set<String> = ["interval", "updateEvery", "notifyReached", "notifyReset", "notifyWeek", "showDetails",
                                       "detailsLayout", "workHours"]
 
@@ -84,6 +84,21 @@ private let work = "/tmp/claudiostat-screenshots/.claude-work"
     }
     for (iconName, icon) in icons {
         found.append(Look(section: "Layouts", name: name("icon only", iconName), settings: ["menuBar": "icon", "icon": icon]))
+    }
+
+    // Background behind every display.
+    let all: [String: Any] = ["background": true, "showPace": true, "showBudget": true, "showResets": true]
+    for (display, menuBar) in displays {
+        for (iconName, icon) in menuBar == "numbers" ? [(nil, "app")] : icons.map({ (Optional($0.0), $0.1) }) {
+            for compact in [true, false] {
+                found.append(Look(section: "Background", name: name("background", display, iconName, compact ? "compact" : "one line"),
+                                  settings: all.merging(["menuBar": menuBar, "icon": icon, "compactText": compact]) { $1 }))
+            }
+        }
+    }
+    for (iconName, icon) in icons {
+        found.append(Look(section: "Background", name: name("background", "icon only", iconName),
+                          settings: all.merging(["menuBar": "icon", "icon": icon]) { $1 }))
     }
 
     let thinking = { (app: AppDelegate) in app.midReply = ["transcript": now] }

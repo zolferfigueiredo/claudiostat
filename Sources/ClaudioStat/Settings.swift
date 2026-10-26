@@ -177,6 +177,8 @@ struct MenuBarSettings: View {
                     .disabled(mode == "numbers")
                     // The text on two lines.
                     Toggle(tr("compact_text"), isOn: setting("compactText")).disabled(mode == "icon")
+                    // A soft rounded background behind the icon and text.
+                    Toggle(tr("background"), isOn: setting("background"))
                 }
                 // They pulse while tokens are being spent.
                 Section(tr("loading")) {

@@ -13,6 +13,7 @@ extension Strings {
         "applications_only": "ClaudioStat updates itself only when it runs from the Applications folder.",
         "auto": "Check automatically",
         "available": "ClaudioStat {version} is available",
+        "background": "Background",
         "bars": "Bars",
         "both": "Icon and text",
         "budget": "Budget",

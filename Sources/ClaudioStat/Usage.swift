@@ -259,6 +259,11 @@ extension NSColor {
     nonisolated static let barDim = NSColor(name: nil) { look in
         (look.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua ? NSColor.white : .black).withAlphaComponent(0.65)
     }
+
+    /// The soft background Background puts behind the bar's icon and text.
+    nonisolated static let barBackground = NSColor(name: nil) { look in
+        look.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua ? NSColor.white.withAlphaComponent(0.15) : .black.withAlphaComponent(0.08)
+    }
 }
 
 /// "S 54%": the letter dimmed, the value in its pace's color.
@@ -327,6 +332,29 @@ func twoLines(_ groups: [[[NSAttributedString]]]) -> NSImage {
         }
         return true
     }
+}
+
+/// barText as an image the menu bar's height, its capitals centred like twoLines' lone cells, to go on a background.
+func oneLine(_ text: NSAttributedString) -> NSImage {
+    let font = text.attribute(.font, at: 0, effectiveRange: nil) as? NSFont ?? .menuBarFont(ofSize: 0), width = ceil(text.size().width)
+    return NSImage(size: NSSize(width: width, height: NSStatusBar.system.thickness), flipped: false) { rect in
+        // Without .usesLineFragmentOrigin the origin is the baseline.
+        text.draw(with: NSRect(x: 0, y: rect.midY - font.capHeight / 2, width: width, height: font.ascender), options: [])
+        return true
+    }
+}
+
+/// The bar's icon and text on a soft rounded background, drawn as the menu bar is: light or dark.
+func backed(_ image: NSImage) -> NSImage {
+    let pad: CGFloat = 6
+    let backed = NSImage(size: NSSize(width: image.size.width + 2 * pad, height: NSStatusBar.system.thickness), flipped: false) { rect in
+        NSColor.barBackground.setFill()
+        NSBezierPath(roundedRect: rect.insetBy(dx: 0, dy: 2), xRadius: 6, yRadius: 6).fill()
+        image.draw(in: NSRect(origin: NSPoint(x: pad, y: (rect.height - image.size.height) / 2), size: image.size))
+        return true
+    }
+    backed.accessibilityDescription = image.accessibilityDescription
+    return backed
 }
 
 /// The two images side by side, `gap` points apart and centred on each other.

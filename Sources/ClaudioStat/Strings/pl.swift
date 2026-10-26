@@ -13,6 +13,7 @@ extension Strings {
         "applications_only": "ClaudioStat uaktualnia się sam tylko wtedy, gdy działa z folderu Aplikacje.",
         "auto": "Sprawdzaj automatycznie",
         "available": "Dostępna jest wersja ClaudioStat {version}",
+        "background": "Tło",
         "bars": "Paski",
         "both": "Ikona i tekst",
         "budget": "Budżet",

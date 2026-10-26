@@ -13,6 +13,7 @@ extension Strings {
         "applications_only": "ClaudioStat은(는) 응용 프로그램 폴더에서 실행할 때만 스스로 업데이트합니다.",
         "auto": "자동으로 확인",
         "available": "ClaudioStat {version} 사용 가능",
+        "background": "배경",
         "bars": "막대",
         "both": "아이콘과 텍스트",
         "budget": "예산",

@@ -13,6 +13,7 @@ extension Strings {
         "applications_only": "ClaudioStat оновлюється сам, лише коли запущений із папки «Програми».",
         "auto": "Перевіряти автоматично",
         "available": "Доступна версія ClaudioStat {version}",
+        "background": "Тло",
         "bars": "Смуги",
         "both": "Іконка й текст",
         "budget": "Бюджет",

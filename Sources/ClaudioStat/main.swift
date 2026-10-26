@@ -53,7 +53,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
                                           "menuBar": "both", "icon": "app", "speedColors": "day", "workHours": 8, "updateEvery": 604800,
                                           "notifyReached": true, "notifyReset": true, "notifyWeek": true,
                                           "loadingIcon": true, "loadingText": false, "showDetails": true, "showProfile": false,
-                                          "detailsLayout": "blocks", "compactText": true]
+                                          "detailsLayout": "blocks", "compactText": true, "background": false]
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         defaults.register(defaults: Self.settings)
@@ -283,19 +283,30 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         let fadeText = thinking && mode != "icon" && defaults.bool(forKey: "loadingText")
         let alpha = 0.7 + 0.3 * cos(now.timeIntervalSinceReferenceDate * 2 * .pi / 1.5)
         let icon = fadeIcon ? redrawn(image, alpha: alpha) : image
+        let background = defaults.bool(forKey: "background"), spoken = (alert.map { "\($0) · " } ?? "") + bar.string
         if !compact.isEmpty, mode != "icon" {
             // A title has one line, so the two go beside the icon in its image, which appearsDisabled dims whole.
             let lines = twoLines(compact), both = beside(icon, fadeText ? redrawn(lines, alpha: alpha) ?? lines : lines)
-            both.accessibilityDescription = (alert.map { "\($0) · " } ?? "") + bar.string
-            button.image = both
+            both.accessibilityDescription = spoken
+            button.image = background ? backed(both) : both
             button.attributedTitle = NSAttributedString()
             button.imagePosition = .imageOnly
         } else {
-            button.image = icon
             // appearsDisabled leaves colored text alone, so paused text is faded to half here.
             let textAlpha = (fadeText ? alpha : 1) * (paused ? 0.5 : 1)
-            button.attributedTitle = textAlpha < 1 ? faded(title, textAlpha) : title
-            button.imagePosition = mode == "icon" && !shown.isEmpty ? .imageOnly : .imageLeading
+            let text = textAlpha < 1 ? faded(title, textAlpha) : title
+            if background {
+                // The background goes behind the icon and the text together, so the text goes in the image too.
+                let both = text.length == 0 ? icon : beside(icon, oneLine(text))
+                if !spoken.isEmpty { both?.accessibilityDescription = spoken }
+                button.image = both.map(backed)
+                button.attributedTitle = NSAttributedString()
+                button.imagePosition = .imageOnly
+            } else {
+                button.image = icon
+                button.attributedTitle = text
+                button.imagePosition = mode == "icon" && !shown.isEmpty ? .imageOnly : .imageLeading
+            }
         }
         button.appearsDisabled = paused
         if (fadeIcon || fadeText) != (pulse != nil) {
