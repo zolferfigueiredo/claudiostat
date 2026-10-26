@@ -33,6 +33,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     var checking = false     // an update check or install is running
     var awaitingReopen = false  // the setup window asks to reopen, so the bar holds back the numbers until then
     var sharedWithWidget: [String: String] = [:]  // what the desktop widget was last given
+    var changedAt = Date.now  // the last reading whose numbers moved
 
     // Without the Claude app or Claude Code there is nothing to wait for.
     var paused: Bool { defaults.bool(forKey: "onlyWhileClaude") && claudeInstalled && !claudeRunning && !codeRunning }
@@ -153,8 +154,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         timer = nil
         guard !paused else { return log.notice("paused") }
         tick()
-        let timer = Timer(timeInterval: TimeInterval(defaults.integer(forKey: "interval")), target: self,
-                          selector: #selector(tick), userInfo: nil, repeats: true)
+        startTimer()
+    }
+
+    func startTimer() {
+        timer?.invalidate()
+        let every = refreshEvery(TimeInterval(defaults.integer(forKey: "interval")), quiet: Date.now.timeIntervalSince(changedAt))
+        let timer = Timer(timeInterval: every, target: self, selector: #selector(tick), userInfo: nil, repeats: true)
         timer.tolerance = 5
         RunLoop.main.add(timer, forMode: .common)
         self.timer = timer
@@ -174,6 +180,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             }
             busy = false
             shareWithWidget()
+            if let timer, timer.timeInterval != refreshEvery(TimeInterval(defaults.integer(forKey: "interval")),
+                                                              quiet: Date.now.timeIntervalSince(changedAt)) { startTimer() }
             // Checked or added meanwhile: those still need asking.
             if shown != asked { tick() }
         }
@@ -194,6 +202,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         switch result {
         case .ok(let reply):
             let fresh = keepSeverity(reply, from: account.samples.last?.usage)
+            let old = account.samples.last?.usage
+            if [fresh.session?.percent, fresh.week?.percent, fresh.fable?.percent] != [old?.session?.percent, old?.week?.percent, old?.fable?.percent] {
+                changedAt = .now
+            }
             post(labeled(notices(from: account.samples.last?.usage, to: fresh, now: .now), profile), settings: defaults)
             account.usage = fresh; account.updated = .now; account.failedAt = nil
             account.samples.append(Sample(at: .now, usage: fresh))

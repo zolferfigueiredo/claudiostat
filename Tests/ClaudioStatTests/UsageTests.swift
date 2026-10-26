@@ -349,6 +349,12 @@ private func sample(_ time: String, s: Int, sReset: Date = reset, w: Int = 60) -
     #expect(nextProfile(after: ["", "/u/.claude-3", "/u/.claude-work"], home: "/u") == "/u/.claude-2")
 }
 
+@Test func oneMinuteSlowsWhileNothingMoves() {
+    #expect(refreshEvery(60, quiet: 14 * 60) == 60)
+    #expect(refreshEvery(60, quiet: 15 * 60) == 180)
+    #expect(refreshEvery(300, quiet: 3600) == 300)
+}
+
 @Test func profilesSwitchedOn() {
     #expect(shownProfiles(["", "/a", "/b"], on: ["/b", ""]) == ["", "/b"])
     // A removed profile left on is not shown, and with none on the first is.

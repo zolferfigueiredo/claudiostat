@@ -223,6 +223,11 @@ nonisolated func percent(_ value: Double?) -> String {
     value.map { "\($0.formatted(.number.precision(.fractionLength(0...1))))%" } ?? "-"
 }
 
+/// 1 minute slows to 3 once the numbers have stood still for 15 minutes, until they move again.
+nonisolated func refreshEvery(_ picked: TimeInterval, quiet: TimeInterval) -> TimeInterval {
+    picked == 60 && quiet >= 15 * 60 ? 180 : picked
+}
+
 /// One letter on the bar: "S 54%", with the time to its limit's reset.
 nonisolated struct Stat {
     var letter: String
