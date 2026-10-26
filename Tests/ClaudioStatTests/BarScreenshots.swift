@@ -190,7 +190,7 @@ private let work = "/tmp/claudiostat-screenshots/.claude-work"
     var gallery = "# ClaudioStat bar looks\n\nEvery look of the menu bar, dark on the left and light on the right. Made by `screenshots.sh`.\n"
     var section = ""
     for look in looks() {
-        for key in Array(AppDelegate.settings.keys) + ["shownProfiles", "profileList", "names", "language"] { defaults.removeObject(forKey: key) }
+        for key in Array(AppDelegate.settings.keys) + ["shownProfiles", "profileList", "names", "customNames", "language"] { defaults.removeObject(forKey: key) }
         defaults.set("en", forKey: "language")
         defaults.set(look.two ? ["", work] : [""], forKey: "profileList")
         defaults.set(["": "personal", work: "work"], forKey: "names")

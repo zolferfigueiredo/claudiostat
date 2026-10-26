@@ -61,6 +61,35 @@ func setting<Value>(_ key: String) -> Binding<Value> {
             set: { delegate.pick([key: $0]) })
 }
 
+/// AppKit's switch at System Settings' size. SwiftUI's, beside other views in a row, ignores VoiceOver's press.
+struct Switch: NSViewRepresentable {
+    let label: String
+    @Binding var isOn: Bool
+
+    func makeNSView(context: Context) -> NSSwitch {
+        let view = NSSwitch()
+        view.target = context.coordinator
+        view.action = #selector(Coordinator.flip)
+        return view
+    }
+
+    func updateNSView(_ view: NSSwitch, context: Context) {
+        context.coordinator.isOn = $isOn
+        view.controlSize = .mini
+        view.state = isOn ? .on : .off
+        view.isEnabled = context.environment.isEnabled
+        view.setAccessibilityLabel(label)
+    }
+
+    func makeCoordinator() -> Coordinator { Coordinator(isOn: $isOn) }
+
+    final class Coordinator: NSObject {
+        var isOn: Binding<Bool>
+        init(isOn: Binding<Bool>) { self.isOn = isOn }
+        @objc func flip(_ sender: NSSwitch) { isOn.wrappedValue = sender.state == .on }
+    }
+}
+
 /// Drawn again whenever a setting changes, here or in the menu, so it shows it in the language picked.
 struct Redrawn<Content: View>: View {
     @ViewBuilder let content: () -> Content
@@ -85,29 +114,30 @@ struct GeneralSettings: View {
                     Picker(tr("every"), selection: setting("interval") as Binding<Int>) {
                         ForEach([60, 180, 300, 600], id: \.self) { Text(plural("minutes", $0 / 60)).tag($0) }
                     }
-                    // Hours a day spent using Claude, so the pace ignores the rest of the day.
-                    Picker(tr("work"), selection: setting("workHours") as Binding<Int>) {
-                        ForEach([24, 16, 12, 8, 6, 4], id: \.self) { Text(plural("hours", $0)).tag($0) }
-                    }
                 }
                 // Each profile is a Claude Code folder with its own login. The ones switched on fill the bar, one after another.
                 Section(tr("profile")) {
                     let all = delegate.allProfiles, on = delegate.shown
-                    // The bar always shows one, so the last one on stays on.
-                    ForEach(all, id: \.self) { path in
-                        Toggle(profileName(path), isOn: Binding(get: { on.contains(path) }, set: { isOn in
-                            delegate.pick(["shownProfiles": all.filter { $0 == path ? isOn : on.contains($0) }])
-                        }))
-                        .disabled(on == [path])
-                    }
-                    HStack {
-                        Button(tr("add_profile")) { delegate.addProfile() }
-                        Menu(tr("remove_profile")) {
-                            ForEach(all, id: \.self) { path in Button(profileName(path)) { delegate.removeProfile(path) } }
+                    // A row is drawn again only when its item changes, so the item holds the names it shows.
+                    let rows = all.map { (path: $0, name: profileName($0),
+                                          email: delegate.defaults.dictionary(forKey: "names")?[$0] as? String ?? folderName($0)) }
+                    ForEach(rows, id: \.path) { path, name, email in
+                        HStack {
+                            // The bar always shows one, so the last one on stays on.
+                            Switch(label: name, isOn: Binding(get: { on.contains(path) }, set: { isOn in
+                                delegate.pick(["shownProfiles": all.filter { $0 == path ? isOn : on.contains($0) }])
+                            }))
+                            .disabled(on == [path])
+                            Text(name == email ? email : "\(name) (\(email))")
+                            Spacer()
+                            // After the action, so the window redraws once the alert is gone.
+                            Button(tr("rename"), systemImage: "pencil") { Task { delegate.renameProfile(path) } }
+                            Button(tr("remove"), systemImage: "trash") { Task { delegate.removeProfile(path) } }
                         }
-                        .fixedSize()
-                        .disabled(all.isEmpty)
+                        .labelStyle(.iconOnly)
+                        .buttonStyle(.borderless)
                     }
+                    Button(tr("add_profile")) { delegate.addProfile() }
                 }
                 Section(tr("notify")) {
                     Toggle(tr("notify_reached"), isOn: setting(NoticeKind.reached.setting))
@@ -163,6 +193,10 @@ struct MenuBarSettings: View {
                     Picker(tr("pace_budget"), selection: setting("speedColors") as Binding<String>) {
                         Text(tr("budget_day")).tag("day")
                         Text(tr("budget_hour")).tag("hour")
+                    }
+                    // Hours a day spent using Claude, so the pace ignores the rest of the day.
+                    Picker(tr("work"), selection: setting("workHours") as Binding<Int>) {
+                        ForEach([24, 16, 12, 8, 6, 4], id: \.self) { Text(plural("hours", $0)).tag($0) }
                     }
                 }
             }

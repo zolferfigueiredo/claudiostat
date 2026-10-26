@@ -125,8 +125,11 @@ nonisolated func folderName(_ path: String) -> String {
     path.isEmpty ? "claude" : String(URL(fileURLWithPath: path).lastPathComponent.drop { $0 == "." })
 }
 
+/// The name given in Settings, else the account's email, else the folder's name.
 nonisolated func profileName(_ path: String) -> String {
-    UserDefaults.standard.dictionary(forKey: "names")?[path] as? String ?? folderName(path)
+    let defaults = UserDefaults.standard
+    return defaults.dictionary(forKey: "customNames")?[path] as? String ?? defaults.dictionary(forKey: "names")?[path] as? String
+        ?? folderName(path)
 }
 
 /// Whether a Claude Code session is writing a reply, from the end of its transcript: after a prompt or a tool result

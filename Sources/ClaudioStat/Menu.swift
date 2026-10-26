@@ -212,11 +212,33 @@ extension AppDelegate {
         }
         defaults.set(allProfiles.filter { $0 != path }, forKey: "profileList")
         defaults.removeObject(forKey: historyKey(path))
-        var names = defaults.dictionary(forKey: "names") ?? [:]
-        names[path] = nil
-        defaults.set(names, forKey: "names")
+        for key in ["names", "customNames"] {
+            var names = defaults.dictionary(forKey: key) ?? [:]
+            names[path] = nil
+            defaults.set(names, forKey: key)
+        }
         accounts[path] = nil
         profilesChanged()
+    }
+
+    /// A name of your own, shown wherever its email was. Left empty, the email comes back.
+    func renameProfile(_ path: String) {
+        var custom = defaults.dictionary(forKey: "customNames") ?? [:]
+        let field = NSTextField(frame: NSRect(x: 0, y: 0, width: 260, height: 22))
+        field.stringValue = custom[path] as? String ?? ""
+        field.placeholderString = defaults.dictionary(forKey: "names")?[path] as? String ?? folderName(path)
+        let alert = NSAlert()
+        alert.messageText = tr("rename_question", ["name": profileName(path)])
+        alert.informativeText = tr("rename_info")
+        alert.addButton(withTitle: tr("rename"))
+        alert.addButton(withTitle: tr("cancel"))
+        alert.accessoryView = field
+        alert.window.initialFirstResponder = field
+        NSApp.activate()
+        guard alert.runModal() == .alertFirstButtonReturn else { return }
+        let name = field.stringValue.trimmingCharacters(in: .whitespaces)
+        custom[path] = name.isEmpty ? nil : name
+        pick(["customNames": custom])
     }
 
     // The restart blinks the screen and the menu bar, so it's asked first. Cancel changes nothing.
