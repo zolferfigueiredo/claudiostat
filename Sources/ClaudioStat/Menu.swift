@@ -203,10 +203,8 @@ extension AppDelegate {
     @objc func reconnect() { showSetup(profile) }
 
     // Signs it out of Claude Code too, so no login is left behind. The folder stays.
-    @objc func removeProfile() {
-        guard !allProfiles.isEmpty, alert(tr("remove_question", ["name": profileName(profile)]), tr("remove_info"), tr("remove"), tr("cancel"))
-        else { return }
-        let path = profile
+    func removeProfile(_ path: String) {
+        guard alert(tr("remove_question", ["name": profileName(path)]), tr("remove_info"), tr("remove"), tr("cancel")) else { return }
         if let logout = claude(["auth", "logout"], configDir: path.isEmpty ? nil : path) {
             Task {
                 do { try await run(logout) } catch { log.error("sign out \(folderName(path), privacy: .public): \(error.localizedDescription, privacy: .public)") }
@@ -218,7 +216,6 @@ extension AppDelegate {
         names[path] = nil
         defaults.set(names, forKey: "names")
         accounts[path] = nil
-        defaults.removeObject(forKey: "profile")
         profilesChanged()
     }
 

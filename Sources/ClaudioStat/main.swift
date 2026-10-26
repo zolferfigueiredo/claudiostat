@@ -37,14 +37,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     // Without the Claude app or Claude Code there is nothing to wait for.
     var paused: Bool { defaults.bool(forKey: "onlyWhileClaude") && claudeInstalled && !claudeRunning && !codeRunning }
     lazy var claudeInstalled = NSWorkspace.shared.urlForApplication(withBundleIdentifier: claudeID) != nil || claudePath() != nil
-    /// The checked Claude Code folder, else the first. "" is ~/.claude.
-    var profile: String {
-        let checked = defaults.string(forKey: "profile") ?? ""
-        return allProfiles.contains(checked) ? checked : allProfiles.first ?? ""
-    }
+    /// The first Claude Code folder in the bar, whose status the menu shows. "" is ~/.claude.
+    var profile: String { shown.first ?? "" }
     var allProfiles: [String] { defaults.stringArray(forKey: "profileList") ?? [] }
-    /// The profiles in the bar: every one with Multiple users, else the checked one.
-    var shown: [String] { defaults.string(forKey: "users") == "multiple" ? allProfiles : allProfiles.filter { $0 == profile } }
+    /// The profiles in the bar: the ones switched on in Settings, else the first.
+    var shown: [String] { shownProfiles(allProfiles, on: defaults.stringArray(forKey: "shownProfiles") ?? []) }
     // The menu shows the checked profile's readings.
     var usage: Usage? { accounts[profile]?.usage }
     var updated: Date? { accounts[profile]?.updated }
@@ -55,7 +52,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     static let settings: [String: Any] = ["interval": 180, "showPace": false, "showBudget": false, "showResets": false, "onlyWhileClaude": false,
                                           "menuBar": "both", "icon": "app", "speedColors": "day", "workHours": 8, "updateEvery": 604800,
                                           "notifyReached": true, "notifyReset": true, "notifyWeek": true,
-                                          "loadingIcon": true, "loadingText": false, "showDetails": true, "showProfile": false, "users": "single",
+                                          "loadingIcon": true, "loadingText": false, "showDetails": true, "showProfile": false,
                                           "detailsLayout": "blocks", "compactText": true]
 
     func applicationDidFinishLaunching(_ notification: Notification) {
@@ -67,6 +64,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         if defaults.object(forKey: "profileList") == nil {
             defaults.set((defaults.object(forKey: "history") == nil ? [] : [""]) + (defaults.stringArray(forKey: "profiles") ?? []),
                          forKey: "profileList")
+        }
+        // Before 0.10.0 the bar showed every profile with Multiple users, else the checked one.
+        if defaults.object(forKey: "shownProfiles") == nil {
+            let checked = defaults.string(forKey: "profile")
+            defaults.set(defaults.string(forKey: "users") == "multiple" ? allProfiles : allProfiles.filter { $0 == checked },
+                         forKey: "shownProfiles")
+            defaults.removeObject(forKey: "users")
+            defaults.removeObject(forKey: "profile")
         }
         allProfiles.forEach(load)
         let menu = NSMenu()
@@ -133,7 +138,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         accounts[profile] = Account(samples: (try? JSONDecoder().decode([Sample].self, from: defaults.data(forKey: historyKey(profile)) ?? Data())) ?? [])
     }
 
-    /// After the checked profile, Multiple users or the list changed.
+    /// After a profile was switched on or off, added or removed.
     func profilesChanged() {
         log.notice("shown: \(self.shown.map(folderName), privacy: .public)")
         watchSessions()
@@ -240,7 +245,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         func last(_ profile: String, _ text: NSAttributedString) -> NSAttributedString {
             accounts[profile]?.blockedUntil == nil ? text : faded(text, 0.5)
         }
-        // Multiple users: each profile's numbers in turn.
+        // Several profiles on: each one's numbers in turn.
         let bar = joined(zip(counted, rates).map { profile, rate in
             last(profile, barText(accounts[profile]?.usage, rates: rate, showPace: speed, showBudget: budget,
                                   resetsFrom: resets, profile: names ? profileName(profile) : nil))

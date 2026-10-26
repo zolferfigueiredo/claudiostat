@@ -114,6 +114,12 @@ nonisolated func nextProfile(after list: [String], home: String = FileManager.de
     return "\(home)/.claude-\(number)"
 }
 
+/// The profiles switched on, in the list's order. With none on, the first: the bar always shows one.
+nonisolated func shownProfiles(_ list: [String], on: [String]) -> [String] {
+    let shown = list.filter(Set(on).contains)
+    return shown.isEmpty ? Array(list.prefix(1)) : shown
+}
+
 /// The folder's name without its leading dot: ~/.claude-work is "claude-work".
 nonisolated func folderName(_ path: String) -> String {
     path.isEmpty ? "claude" : String(URL(fileURLWithPath: path).lastPathComponent.drop { $0 == "." })

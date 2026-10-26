@@ -30,7 +30,8 @@ extension AppDelegate {
 
     func connected(_ path: String, _ result: UsageResult) {
         if !allProfiles.contains(path) { defaults.set(allProfiles + [path], forKey: "profileList") }
-        defaults.set(path, forKey: "profile")
+        let on = defaults.stringArray(forKey: "shownProfiles") ?? []
+        if !on.contains(path) { defaults.set(on + [path], forKey: "shownProfiles") }
         log.notice("connected \(folderName(path), privacy: .public)")
         // Not profilesChanged(): it would ask Claude Code again right away.
         apply(result, to: path)

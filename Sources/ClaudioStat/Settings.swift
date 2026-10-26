@@ -90,27 +90,25 @@ struct GeneralSettings: View {
                         ForEach([24, 16, 12, 8, 6, 4], id: \.self) { Text(plural("hours", $0)).tag($0) }
                     }
                 }
-                // Each profile is a Claude Code folder with its own login. The checked one fills the bar and the menu.
+                // Each profile is a Claude Code folder with its own login. The ones switched on fill the bar, one after another.
                 Section(tr("profile")) {
-                    if !delegate.allProfiles.isEmpty {
-                        Picker(tr("profile"), selection: Binding(get: { delegate.profile }, set: { delegate.pick(["profile": $0]) })) {
-                            ForEach(delegate.allProfiles, id: \.self) { Text(profileName($0)).tag($0) }
-                        }
-                        .pickerStyle(.radioGroup)
-                        .labelsHidden()
+                    let all = delegate.allProfiles, on = delegate.shown
+                    // The bar always shows one, so the last one on stays on.
+                    ForEach(all, id: \.self) { path in
+                        Toggle(profileName(path), isOn: Binding(get: { on.contains(path) }, set: { isOn in
+                            delegate.pick(["shownProfiles": all.filter { $0 == path ? isOn : on.contains($0) }])
+                        }))
+                        .disabled(on == [path])
                     }
                     HStack {
                         Button(tr("add_profile")) { delegate.addProfile() }
-                        Button(tr("remove_profile")) { delegate.removeProfile() }.disabled(delegate.allProfiles.isEmpty)
+                        Menu(tr("remove_profile")) {
+                            ForEach(all, id: \.self) { path in Button(profileName(path)) { delegate.removeProfile(path) } }
+                        }
+                        .fixedSize()
+                        .disabled(all.isEmpty)
                     }
                 }
-                Picker(tr("profile"), selection: setting("users") as Binding<String>) {
-                    Text(tr("single_user")).tag("single")
-                    Text(tr("multiple_users")).tag("multiple")
-                }
-                .pickerStyle(.radioGroup)
-                .horizontalRadioGroupLayout()
-                .labelsHidden()
                 Section(tr("notify")) {
                     Toggle(tr("notify_reached"), isOn: setting(NoticeKind.reached.setting))
                     Toggle(tr("notify_reset"), isOn: setting(NoticeKind.reset.setting))
