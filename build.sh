@@ -59,6 +59,12 @@ ln -sfn /Applications dist/dmg/Applications
 hdiutil create -quiet -volname ClaudioStat -srcfolder dist/dmg -format UDRW "$WORK/rw.dmg"
 hdiutil attach -quiet -readwrite -noverify -noautoopen "$WORK/rw.dmg"
 MNT=/Volumes/ClaudioStat
+# Finder sees a new volume a moment after it mounts; asked too soon, it can't get disk "ClaudioStat" (0.10.4's release).
+for i in $(seq 31); do
+    [ "$(osascript -e 'tell application "Finder" to exists disk "ClaudioStat"')" != true ] || break
+    [ "$i" -le 30 ] || { echo "Finder didn't see the DMG's disk within 30 seconds." >&2; exit 1; }
+    sleep 1
+done
 osascript <<'EOF'
 tell application "Finder" to tell disk "ClaudioStat"
     open
