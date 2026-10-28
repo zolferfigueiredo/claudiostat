@@ -61,6 +61,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         // `defaults write` from elsewhere (Hammerspoon, a script) changes these too: the bar follows at once, not at its
         // next redraw. The app's own picks redraw twice, which is harmless.
         for key in Self.barLook { defaults.addObserver(self, forKeyPath: key, context: nil) }
+        // A widget process from before an update keeps running, and macOS throws away all it draws as its version no
+        // longer matches; the widgets froze. macOS starts the new one at their next redraw.
+        _ = try? Process.run(URL(fileURLWithPath: "/usr/bin/pkill"), arguments: ["-x", "ClaudioStatWidget"])
+        // The widget's refresh button (RefreshIntent): read the numbers now; shareWithWidget then redraws the widgets.
+        CFNotificationCenterAddObserver(CFNotificationCenterGetDarwinNotifyCenter(), nil, { _, _, _, _, _ in
+            Task { @MainActor in delegate.tick() }
+        }, "497V6MCDS8.com.zolfer.claudiostat.refresh" as CFString, nil, .deliverImmediately)
         // 30 and 150 seconds and pace warnings off are no longer options.
         if [30, 150].contains(defaults.integer(forKey: "interval")) { defaults.removeObject(forKey: "interval") }
         if defaults.string(forKey: "speedColors") == "off" { defaults.removeObject(forKey: "speedColors") }

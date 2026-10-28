@@ -143,7 +143,9 @@ struct UsageView: View {
     private var stale: Bool { entry.reply.map { now - $0.checkedAt > staleAfter } ?? false }
 
     var body: some View {
-        content
+        // A click anywhere refreshes.
+        Button(intent: RefreshIntent()) { content }
+            .buttonStyle(.plain)
             .opacity(stale ? 0.8 : 1)
             .themed(entry.config.theme)
             .containerBackground(for: .widget) {
@@ -370,7 +372,7 @@ struct UsageView: View {
     private func footer(_ reply: Reply) -> some View {
         VStack(alignment: .leading, spacing: 1) {
             if reply.loginNeeded == true { loginAgain }
-            Text(updated(reply))
+            Label(updated(reply), systemImage: "arrow.clockwise")
                 .font(.caption2)
                 .foregroundStyle(.secondary)
                 .lineLimit(1)

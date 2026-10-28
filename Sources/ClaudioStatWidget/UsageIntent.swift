@@ -104,3 +104,15 @@ struct UsageConfig: WidgetConfigurationIntent {
         account.flatMap { chosen in storedAccounts().first { $0.id == chosen.id } } ?? currentAccount()
     }
 }
+
+/// The widget's refresh button. The widget can't run Claude Code, so it asks the app (main.swift), which reads the
+/// numbers now and redraws the widgets once it has them.
+struct RefreshIntent: AppIntent {
+    static let title: LocalizedStringResource = "Refresh"
+
+    func perform() async throws -> some IntentResult {
+        CFNotificationCenterPostNotification(CFNotificationCenterGetDarwinNotifyCenter(),
+                                             CFNotificationName("497V6MCDS8.com.zolfer.claudiostat.refresh" as CFString), nil, nil, true)
+        return .result()
+    }
+}
