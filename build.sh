@@ -5,14 +5,11 @@
 set -euo pipefail
 cd "$(dirname "$0")"
 MODE=${1:-all}
-# Finder finds the volume to lay out by name, so every mounted ClaudioStat volume ("ClaudioStat 1"...) is ejected first.
-mount | { grep -i " on /Volumes/ClaudioStat" || true; } | sed 's|^.* on \(/Volumes/[^(]*\) (.*|\1|' |
-    while IFS= read -r volume; do hdiutil detach -quiet -force "$volume"; done
 
 VERSION=$(/usr/libexec/PlistBuddy -c 'Print CFBundleShortVersionString' Info.plist)
 DMG="dist/ClaudioStat-$VERSION.dmg"
 WORK=$(mktemp -d /tmp/claudiostat.XXXXXX)
-trap 'if [ -n "${MNT:-}" ]; then hdiutil detach -quiet -force "$MNT"; fi; rm -rf "$WORK"' EXIT
+trap 'rm -rf "$WORK"' EXIT
 trap 'exit 130' INT TERM
 export TMPDIR="$WORK/tmp" SWIFTPM_MODULECACHE_OVERRIDE="$WORK/modules" CLANG_MODULE_CACHE_PATH="$WORK/modules"
 mkdir -p "$TMPDIR"
@@ -54,45 +51,8 @@ codesign --force --options runtime ${SIGN_ID:+--timestamp} --entitlements Claudi
 codesign --verify --strict "$APP"
 ln -sfn /Applications dist/dmg/Applications
 
-# Finder lays out the window (background, icon spots) and saves it in the volume's .DS_Store.
-# Icon positions must match the arrow in Icon/make-dmg-background.swift.
-hdiutil create -quiet -volname ClaudioStat -srcfolder dist/dmg -format UDRW "$WORK/rw.dmg"
-hdiutil attach -quiet -readwrite -noverify -noautoopen "$WORK/rw.dmg"
-MNT=/Volumes/ClaudioStat
-# Finder sees a new volume a moment after it mounts; asked too soon, it can't get disk "ClaudioStat" (0.10.4's release).
-for i in $(seq 31); do
-    [ "$(osascript -e 'tell application "Finder" to exists disk "ClaudioStat"')" != true ] || break
-    [ "$i" -le 30 ] || { echo "Finder didn't see the DMG's disk within 30 seconds." >&2; exit 1; }
-    sleep 1
-done
-osascript <<'EOF'
-tell application "Finder" to tell disk "ClaudioStat"
-    open
-    set current view of container window to icon view
-    set toolbar visible of container window to false
-    set statusbar visible of container window to false
-    set bounds of container window to {200, 120, 840, 520}
-    set opts to icon view options of container window
-    set arrangement of opts to not arranged
-    set icon size of opts to 128
-    set text size of opts to 13
-    set background picture of opts to file "ClaudioStat.app:Contents:Resources:dmg-background.tiff"
-    set position of item "ClaudioStat.app" to {160, 190}
-    set position of item "Applications" to {480, 190}
-    update without registering applications
-    close
-end tell
-EOF
-# A Finder that can't be scripted would leave this waiting for ever.
-for i in $(seq 61); do
-    [ ! -f "$MNT/.DS_Store" ] || break
-    [ "$i" -le 60 ] || { echo "Finder didn't lay out the DMG within a minute." >&2; exit 1; }
-    sleep 1
-done
-rm -rf "$MNT/.fseventsd" "$MNT/.Trashes"
-sync
-hdiutil detach -quiet "$MNT"
-MNT=
-
-hdiutil convert -quiet "$WORK/rw.dmg" -format UDZO -ov -o "$DMG"
+# The window's layout (background, icon spots) as Finder saved it, so no Finder window opens while a release builds.
+# Icon/dmg-layout.sh makes it again when the background or the icon spots change.
+cp Icon/dmg-layout.DS_Store dist/dmg/.DS_Store
+hdiutil create -quiet -volname ClaudioStat -srcfolder dist/dmg -format UDZO -ov "$DMG"
 echo "Built $(pwd)/$DMG"
