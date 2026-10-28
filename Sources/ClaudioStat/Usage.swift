@@ -315,7 +315,7 @@ nonisolated func compactText(_ usage: Usage?, rates: (session: Rate, week: Rate)
 /// compactText's groups drawn on the menu bar's two lines, as a title has only one. Text in labelColor follows a light
 /// or dark menu bar as it is drawn, like `star`.
 func twoLines(_ groups: [[[NSAttributedString]]]) -> NSImage {
-    let font = NSFont.monospacedDigitSystemFont(ofSize: 10, weight: .medium), columnGap: CGFloat = 4, groupGap: CGFloat = 9
+    let font = NSFont.monospacedDigitSystemFont(ofSize: 12, weight: .medium), columnGap: CGFloat = 4, groupGap: CGFloat = 9
     let cells = groups.map { $0.map { $0.map { joined([$0], font: font) } } }
     let widths = cells.map { $0.map { ceil($0.map { $0.size().width }.max() ?? 0) } }
     let columns = widths.joined()
