@@ -306,8 +306,13 @@ private func sample(_ time: String, s: Int, sReset: Date = reset, w: Int = 60) -
     #expect(usage?.session?.locked == false)
     #expect(usage?.week?.locked == true)
     #expect(usage?.fable?.severity == "normal")
-    #expect(warning(usage) == "Session limit: warning")
+    // An hour before the session resets, 80% of it has gone by: 97% is ahead of that.
+    let hourBefore = ISO8601DateFormatter().date(from: "2026-09-28T22:00:00Z")!
+    #expect(warning(usage, now: hourBefore) == "Session limit: warning")
     #expect(warning(Usage(session: Limit(percent: 10, severity: "normal"))) == nil)
+    // Claude flags the week at 82% with 15 hours left, but 91% of it has gone by.
+    let week = Limit(percent: 82, resetsAt: hourBefore.addingTimeInterval(15 * 3600), severity: "warning")
+    #expect(warning(Usage(week: week), now: hourBefore) == nil)
     #expect(warning(Usage(week: Limit(percent: 100, locked: true))) == "Week limit reached")
 }
 

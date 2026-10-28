@@ -166,12 +166,13 @@ func rates(_ reply: Reply, _ settings: Settings, now: Int) -> Rates {
                  w: overBudget(p, b), p: p, b: b)
 }
 
-/// The app's warning(): locked out first, then a severity other than normal.
-func warning(_ snap: Snap) -> String? {
-    for (id, limit) in [("session", snap.s), ("week", snap.w), ("fable", snap.f)] {
+/// The app's warning(): locked out first, then a severity other than normal while the limit is past its hand.
+func warning(_ snap: Snap, now: Int) -> String? {
+    for (id, limit, window) in [("session", snap.s, 5 * 3600), ("week", snap.w, 7 * 86400), ("fable", snap.f, 7 * 86400)] {
         guard let limit else { continue }
         if limit.locked == true { return tr("reached.\(id)") }
-        if let severity = limit.severity, severity != "normal" {
+        if let severity = limit.severity, severity != "normal",
+           Double(usedNow(limit, now: now)) > (elapsed(limit, window: window, now: now) ?? 0) * 100 {
             return tr("flagged_as", ["limit": tr("limit.\(id)"), "severity": severity.replacingOccurrences(of: "_", with: " ")])
         }
     }

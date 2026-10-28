@@ -65,12 +65,16 @@ nonisolated func keepSeverity(_ new: Usage, from old: Usage?) -> Usage {
     return Usage(session: keep(new.session, old?.session), week: keep(new.week, old?.week), fable: keep(new.fable, old?.fable))
 }
 
-/// The first limit Claude flags: locked out, or any severity other than normal.
-nonisolated func warning(_ usage: Usage?) -> String? {
-    for (id, limit) in [("session", usage?.session), ("week", usage?.week), ("fable", usage?.fable)] {
+/// The first limit Claude flags: locked out, or any severity other than normal while it's used faster than its time
+/// goes by. Claude flags the week from about 80% even when it's on course to last until the reset.
+nonisolated func warning(_ usage: Usage?, now: Date = .now) -> String? {
+    let hour: TimeInterval = 3600
+    for (id, limit, window) in [("session", usage?.session, 5 * hour), ("week", usage?.week, 168 * hour), ("fable", usage?.fable, 168 * hour)] {
         guard let limit else { continue }
         if limit.locked { return tr("reached.\(id)") }
-        if let severity = limit.severity, severity != "normal" {
+        // The part of the window gone by: the hand on the widget's rings.
+        let gone = limit.resetsAt.map { min(1, max(0, 1 - $0.timeIntervalSince(now) / window)) } ?? 0
+        if let severity = limit.severity, severity != "normal", Double(limit.percent) > gone * 100 {
             // Claude's own word for it, which only comes in English.
             return tr("flagged_as", ["limit": tr("limit.\(id)"), "severity": severity.replacingOccurrences(of: "_", with: " ")])
         }

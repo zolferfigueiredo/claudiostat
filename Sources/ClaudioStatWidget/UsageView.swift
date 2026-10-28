@@ -216,7 +216,7 @@ struct UsageView: View {
             HStack(spacing: 14) {
                 dial(items, main, r).aspectRatio(1, contentMode: .fit)
                 VStack(alignment: .leading, spacing: 6) {
-                    if let warning = warning(reply.snap) {
+                    if let warning = warning(reply.snap, now: now) {
                         Label(warning, systemImage: "exclamationmark.triangle.fill")
                             .font(.caption.weight(.semibold))
                             .foregroundStyle(Pace.tooFast.color!)
