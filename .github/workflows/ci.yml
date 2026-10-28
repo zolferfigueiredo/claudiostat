@@ -22,7 +22,7 @@ jobs:
       - name: Shellcheck the scripts
         run: |
           command -v shellcheck >/dev/null || HOMEBREW_NO_AUTO_UPDATE=1 brew install shellcheck
-          shellcheck build.sh release.sh run.sh screenshots.sh widget.sh Icon/dmg-layout.sh .githooks/pre-commit
+          shellcheck build.sh release.sh run.sh screenshots.sh widget.sh dmg/layout.sh .githooks/pre-commit
       # Any compiler warning fails the run.
       - run: swift test -Xswiftc -warnings-as-errors
       - run: swift build -c release -Xswiftc -warnings-as-errors

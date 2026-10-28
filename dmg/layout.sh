@@ -1,5 +1,5 @@
 #!/bin/bash
-# Makes Icon/dmg-layout.DS_Store, the DMG window's layout that build.sh copies into every DMG: Finder lays out a test
+# Makes dmg/layout.DS_Store, the DMG window's layout that build.sh copies into every DMG: Finder lays out a test
 # DMG of dist/dmg and saves it. Run it after ./build.sh app when the background or the icon spots change; it opens a
 # Finder window for a moment. Icon positions must match the arrow in Icon/make-dmg-background.swift.
 set -euo pipefail
@@ -46,5 +46,5 @@ for i in $(seq 61); do
     sleep 1
 done
 sync
-cp "$MNT/.DS_Store" Icon/dmg-layout.DS_Store
-echo "Wrote Icon/dmg-layout.DS_Store"
+cp "$MNT/.DS_Store" dmg/layout.DS_Store
+echo "Wrote dmg/layout.DS_Store"

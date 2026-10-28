@@ -52,7 +52,7 @@ codesign --verify --strict "$APP"
 ln -sfn /Applications dist/dmg/Applications
 
 # The window's layout (background, icon spots) as Finder saved it, so no Finder window opens while a release builds.
-# Icon/dmg-layout.sh makes it again when the background or the icon spots change.
-cp Icon/dmg-layout.DS_Store dist/dmg/.DS_Store
+# dmg/layout.sh makes it again when the background or the icon spots change.
+cp dmg/layout.DS_Store dist/dmg/.DS_Store
 hdiutil create -quiet -volname ClaudioStat -srcfolder dist/dmg -format UDZO -ov "$DMG"
 echo "Built $(pwd)/$DMG"
