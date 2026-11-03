@@ -56,10 +56,9 @@ extension AppDelegate {
                     target.addItem(line)
                 }
                 func limit(_ name: String, _ value: Limit?, _ rate: Rate? = nil) {
-                    let color = rate?.pace.color
                     let used = "\(name) \(percent(value?.percent))"
-                    info(value?.resetsAt.map { tr("resets", ["limit": used, "time": span($0.timeIntervalSince(now))]) } ?? used, color)
-                    if let reason = rate?.reason { info(reason, color) }
+                    info(value?.resetsAt.map { tr("resets", ["limit": used, "time": span($0.timeIntervalSince(now))]) } ?? used,
+                         rate?.mark.color)
                 }
                 let usage = accounts[path]?.usage
                 if let alert = warning(usage) { info("⚠ \(alert)") }

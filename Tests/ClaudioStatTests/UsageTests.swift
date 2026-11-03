@@ -76,13 +76,13 @@ func dailyBudgetTable(now: String, week: Int, reset: String, hours: Double, expe
     // Several profiles on: each in turn, one without numbers left out whole.
     #expect(joined([barText(usage, showBudget: false, profile: "claude"),
                     barText(nil, showBudget: false, profile: "claude-work")]).string == "claude  S 42%")
-    let rates = (Rate(unit: 3600, margin: 5), Rate(speed: 1, needed: 0.8, unit: 3600, margin: 10))
+    let rates = (Rate(unit: 3600), Rate(speed: 1, needed: 0.8, unit: 3600))
     // P comes from the saved history: never on its own, before a reading or without W.
     #expect(barText(nil, rates: rates, showPace: true, showBudget: true).string == "")
     #expect(barText(usage, rates: rates, showPace: true, showBudget: false).string == "S 42%")
     let week = Usage(week: Limit(percent: 18))
     #expect(barText(week, rates: rates, showPace: true, showBudget: true).string == local("W 18%  P 1%  B 0.8%"))
-    let daily = (Rate(unit: 86400, margin: 5), Rate(speed: 16, needed: 13, unit: 86400, margin: 10))
+    let daily = (Rate(unit: 86400), Rate(speed: 16, needed: 13, unit: 86400))
     #expect(barText(week, rates: daily, showBudget: true).string == "W 18%  B 13%")
 }
 
@@ -106,7 +106,7 @@ func dailyBudgetTable(now: String, week: Int, reset: String, hours: Double, expe
     let now = date("2026-09-28T12:00:00Z")
     let usage = Usage(session: Limit(percent: 5, resetsAt: now.addingTimeInterval(15660)),
                       week: Limit(percent: 9, resetsAt: now.addingTimeInterval(561600)), fable: Limit(percent: 0))
-    let rates = (Rate(unit: 3600, margin: 5), Rate(speed: 1, needed: 1.7, unit: 86400, margin: 10))
+    let rates = (Rate(unit: 3600), Rate(speed: 1, needed: 1.7, unit: 86400))
     func cells(_ groups: [[[NSAttributedString]]]) -> [[[String]]] { groups.map { $0.map { $0.map(\.string) } } }
     // The grid lines up by column, P over B.
     var used = usage
@@ -117,36 +117,48 @@ func dailyBudgetTable(now: String, week: Int, reset: String, hours: Double, expe
     #expect(cells(compactText(usage, rates: rates, showBudget: true, resetsFrom: now, profile: "work"))
             == [[["work"]], [["S 5%", "W 9%"], ["4h21", "6d12h"]], [[local("B 1.7%")]]])
     #expect(cells(compactText(usage, showBudget: false)) == [[["S 5%", "W 9%"]]])
-    // P past B is orange like W, B stays plain.
-    let fast = (rates.0, Rate(speed: 2, needed: 1.7, unit: 86400, margin: 10))
-    #expect(barStats(usage, rates: fast, showPace: true, showBudget: true).map(\.pace) == [.ok, .fast, .fast, .ok])
+    // P past B is orange, W keeps its own color, B stays plain.
+    let fast = (rates.0, Rate(speed: 2, needed: 1.7, unit: 86400))
+    #expect(barStats(usage, rates: fast, showPace: true, showBudget: true).map(\.pace) == [.ok, .ok, .fast, .ok])
     #expect(compactText(nil, showBudget: true, profile: "work").isEmpty)
 }
 
-// Your examples: needed = what's left ÷ time left. Orange past it, red past it + 5 (S) or + 10 (W).
+// S (5 hours) and W (168) halfway through their windows, so their hands are at 50%. Orange from 45%, red past 50% while
+// rising faster than the hand: 20%/h for S, 0.6%/h for W. A high pace alone colors neither.
 @Test(arguments: [
-    (0, 5.0, 20.0, Pace.ok), (0, 5, 21, .fast), (0, 5, 25, .fast), (0, 5, 26, .tooFast),
-    (50, 2, 25, .ok), (50, 2, 26, .fast), (50, 2, 30, .fast), (50, 2, 31, .tooFast),
-    (50, 1, 50, .ok), (50, 1, 51, .fast), (50, 1, 55, .fast), (50, 1, 56, .tooFast),
-])
-func sessionPace(used: Int, hoursLeft: Double, speed: Double, expected: Pace) {
-    let now = date("2026-09-28T12:00:00Z"), limit = Limit(percent: used, resetsAt: now.addingTimeInterval(hoursLeft * 3600))
-    #expect(Rate(speed: speed, needed: evenPace(limit, unit: 3600, now: now), unit: 3600, margin: 5).pace == expected)
+    (5.0, 0, 30.0, Pace.ok), (5, 44, 30, .ok), (5, 45, nil, .fast), (5, 50, 30, .fast),
+    (5, 51, 21, .tooFast), (5, 51, 20, .fast), (5, 51, nil, .fast),
+    (168, 0, 5, .ok), (168, 44, 5, .ok), (168, 45, nil, .fast), (168, 50, 5, .fast),
+    (168, 51, 0.6, .tooFast), (168, 51, 0.59, .fast), (168, 51, nil, .fast),
+] as [(Double, Int, Double?, Pace)])
+func colorByTheTimeMark(hours: Double, used: Int, speed: Double?, expected: Pace) {
+    let now = date("2026-09-28T12:00:00Z"), limit = Limit(percent: used, resetsAt: now.addingTimeInterval(hours / 2 * 3600))
+    #expect(markPace(limit, speed: speed, length: hours * 3600, now: now) == expected)
 }
 
-@Test func weekPace() {
-    let now = date("2026-09-28T18:00:00Z"), week = Limit(percent: 56, resetsAt: date("2026-10-01T18:00:00Z"))  // 44% over 3 days
-    let daily = budget(week: 56, resetsAt: week.resetsAt, unit: 86400, now: now)!  // 14 %/day
-    func day(_ speed: Double?) -> Pace { Rate(speed: speed, needed: daily, unit: 86400, margin: 10).pace }
-    func hour(_ speed: Double) -> Pace { Rate(speed: speed, needed: evenPace(week, unit: 3600, now: now), unit: 3600, margin: 10).pace }
+@Test func noColorWithoutAComingReset() {
+    let now = date("2026-09-28T12:00:00Z")
+    #expect(markPace(Limit(percent: 90), speed: 50, length: 5 * 3600, now: now) == .ok)
+    #expect(markPace(Limit(percent: 90, resetsAt: now.addingTimeInterval(-60)), speed: 50, length: 5 * 3600, now: now) == .ok)
+}
+
+@Test func sessionAndWeekColorByTheirHands() {
+    // At noon S is 2 of its 5 hours in and W 97 of its 168: hands at 40% and 57.7%, both passed. S rose 22.5%/h, faster
+    // than its hand's 20. W rose 0.5%/h, slower than its hand's 0.6, though that's 4% a working day.
+    let samples = [sample("2026-09-28T10:00:00Z", s: 0, w: 59), sample("2026-09-28T12:00:00Z", s: 45, w: 60)]
+    let rates = paces(samples.last!.usage, samples: samples, colors: "day", workHours: 8, now: date("2026-09-28T12:00:00Z"))
+    #expect(rates.session.mark == .tooFast && rates.week.mark == .fast)
+}
+
+// P against B: orange past it, red 10 points past it.
+@Test func paceAgainstTheBudget() {
+    let now = date("2026-09-28T18:00:00Z")
+    let daily = budget(week: 56, resetsAt: date("2026-10-01T18:00:00Z"), unit: 86400, now: now)!  // 44% over 3 days: 14 %/day
+    func day(_ speed: Double?) -> Pace { Rate(speed: speed, needed: daily, unit: 86400).pace }
     #expect(day(14) == .ok)
     #expect(day(15) == .fast)
     #expect(day(25) == .tooFast)
-    #expect(hour(0.6) == .ok)       // needs 0.61 %/h
-    #expect(hour(0.7) == .fast)
-    #expect(hour(11) == .tooFast)
     #expect(day(nil) == .ok)
-    #expect(evenPace(Limit(percent: 50, resetsAt: nil), unit: 3600, now: now) == nil)
 }
 
 private let reset = date("2026-09-28T15:00:00Z")  // session window 10:00 to 15:00
@@ -194,16 +206,13 @@ private func sample(_ time: String, s: Int, sReset: Date = reset, w: Int = 60) -
 }
 
 @Test func weekPaceAgainstTheBudget() {
-    _ = english
     // The last reading at least an hour old is 10:30, so the 1 point spreads over 1.5 hours.
     let samples = [sample("2026-09-28T10:30:00Z", s: 0, w: 59), sample("2026-09-28T12:00:00Z", s: 0, w: 60)]
     let usage = samples.last!.usage, now = date("2026-09-28T12:00:00Z")  // 40% left over 71h
     let day = paces(usage, samples: samples, colors: "day", now: now).week
     #expect(day.speed == 16 && day.needed == 13 && day.pace == .fast)  // 40 over 3 days
-    #expect(day.reason == "Using 16% a day, 13% a day lasts until reset")
     let hour = paces(usage, samples: samples, colors: "hour", now: now).week
     #expect(hour.needed == 0.5 && hour.pace == .fast)  // 40 over 71 hours, 0.56 rounded down
-    #expect(hour.reason == local("Using 0.7% an hour, 0.5% an hour lasts until reset"))
 }
 
 @Test func workingTimeScalesTheWeek() {
@@ -214,7 +223,6 @@ private func sample(_ time: String, s: Int, sReset: Date = reset, w: Int = 60) -
     #expect(abs(day.week.speed! - 16.0 / 3) < 1e-9 && day.week.needed == 13 && day.week.pace == .ok)  // days stay days
     let hour = paces(usage, samples: samples, colors: "hour", workHours: 8, now: now).week
     #expect(hour.needed == 1.6 && hour.pace == .ok)  // 40 over the 24 working hours in 71h (23.7 rounded up)
-    #expect(day.session.needed == paces(usage, samples: samples, colors: "day", now: now).session.needed)  // S ignores it
 }
 
 @Test func paceIsTheLastHour() {
@@ -278,7 +286,7 @@ private func sample(_ time: String, s: Int, sReset: Date = reset, w: Int = 60) -
 }
 
 @Test func barColorsSessionAndWeekOnly() {
-    let rates = (Rate(speed: 22, needed: 20, unit: 3600, margin: 5), Rate(speed: 30, needed: 13, unit: 86400, margin: 10))
+    let rates = (Rate(unit: 3600, mark: .fast), Rate(speed: 30, needed: 13, unit: 86400, mark: .tooFast))
     let bar = barText(Usage(session: Limit(percent: 30), week: Limit(percent: 60), fable: Limit(percent: 7)), rates: rates, showBudget: false)
     func color(_ text: String) -> NSColor? {
         bar.attribute(.foregroundColor, at: (bar.string as NSString).range(of: text).location, effectiveRange: nil) as? NSColor

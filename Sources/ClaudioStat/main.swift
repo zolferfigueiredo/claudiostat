@@ -274,7 +274,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         // Until Reopen, the icon alone: numbers already there would make Reopen look pointless.
         let counted = awaitingReopen ? [] : shown, rates = counted.map { pacing(now, $0) }
         let alert = counted.lazy.compactMap { warning(self.accounts[$0]?.usage) }.first
-        let pace = (session: rates.map(\.session.pace).max() ?? .ok, week: rates.map(\.week.pace).max() ?? .ok)
+        let pace = (session: rates.map(\.session.mark).max() ?? .ok, week: rates.map(\.week.mark).max() ?? .ok)
         let speed = defaults.bool(forKey: "showPace"), budget = defaults.bool(forKey: "showBudget")
         let resets = defaults.bool(forKey: "showResets") ? now : nil, names = defaults.bool(forKey: "showProfile")
         // Turned away by Claude: the last numbers, faded like a pause.
