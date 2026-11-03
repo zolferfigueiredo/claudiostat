@@ -26,14 +26,15 @@ private let now: Date = {
 }()
 private let work = "/tmp/claudiostat-screenshots/.claude-work"
 
-/// One profile's readings: S resets in 4h21, W and F in 6d8h. S rose `sessionRise` in the last half hour,
-/// W `weekRise` in the last hour, which make the pace: the defaults are calm, S 8 is orange and 11 red, W 2 orange and 3 red.
+/// One profile's readings: S resets in 1h13, W and F in 3d18h, so the hands on S's and W's rings are at 76% and 46%.
+/// S rose `sessionRise` in the last half hour, W `weekRise` in the last hour, and P is 8 times that a day against B 21.
+/// The defaults are calm.
 @MainActor private func account(session: Int = 32, week: Int = 13, fable: Int = 7, sessionRise: Int = 2, weekRise: Int = 1,
                                 _ edit: (inout Usage) -> Void = { _ in }) -> Account {
     func usage(_ session: Int, _ week: Int) -> Usage {
-        Usage(session: Limit(percent: session, resetsAt: now.addingTimeInterval(15660)),
-              week: Limit(percent: week, resetsAt: now.addingTimeInterval(547200)),
-              fable: Limit(percent: fable, resetsAt: now.addingTimeInterval(547200)))
+        Usage(session: Limit(percent: session, resetsAt: now.addingTimeInterval(4380)),
+              week: Limit(percent: week, resetsAt: now.addingTimeInterval(324000)),
+              fable: Limit(percent: fable, resetsAt: now.addingTimeInterval(324000)))
     }
     var latest = usage(session, week)
     edit(&latest)
@@ -103,10 +104,13 @@ private let work = "/tmp/claudiostat-screenshots/.claude-work"
 
     let thinking = { (app: AppDelegate) in app.midReply = ["transcript": now] }
     let states: [(name: String, personal: Account, settings: [String: Any], state: (AppDelegate) -> Void)] = [
-        ("S orange", account(sessionRise: 8), [:], { _ in }),
-        ("S red", account(sessionRise: 11), [:], { _ in }),
-        ("W and P orange", account(weekRise: 2), [:], { _ in }),
-        ("W and P red", account(weekRise: 3), [:], { _ in }),
+        // Past the hand: orange while S rises 4%/h or W stands still, red at S 22%/h or W 1%/h.
+        ("S orange", account(session: 80), [:], { _ in }),
+        ("S red", account(session: 80, sessionRise: 11), [:], { _ in }),
+        ("W orange", account(week: 50, weekRise: 0), [:], { _ in }),
+        ("W red", account(week: 50), [:], { _ in }),
+        ("P orange", account(weekRise: 3), [:], { _ in }),
+        ("P red", account(weekRise: 4), [:], { _ in }),
         ("session reached", account { $0.session?.percent = 100; $0.session?.locked = true }, [:], { _ in }),
         ("week flagged", account { $0.week?.severity = "approaching_limit" }, [:], { _ in }),
         ("Fable reached", account { $0.fable?.percent = 100; $0.fable?.locked = true }, [:], { _ in }),

@@ -62,7 +62,7 @@ You need:
 
 Turn on **Resets in …** in Settings, Menu Bar, to add the time to each reset on the line: `S 54% 1h13  W 6% 1d2h  F 3% 1d2h`. The letters and times are dimmed, so the values stand out.
 
-S and W turn orange when you're using them faster than they last until the reset, and red when it's well past that. A warning triangle takes the icon's place when Claude flags a limit.
+S and W turn orange when they come within 5 points of how much of their window has gone by, and red when they're past it and still rising faster than time goes by. A warning triangle takes the icon's place when Claude flags a limit.
 
 ## Features
 
@@ -127,13 +127,14 @@ Every refresh, ClaudioStat runs your installed Claude Code once, headless, and s
 
 **B** is what's left of the week split over the days (or working hours) until the weekly reset, a partial last one counting in full, rounded down: 35% left with 1d 17h to go is 17% a day, or 0.8% an hour with a 24-hour working time. Per hour, the menu says how many working hours it is spread over.
 
-S and W change color when you're using them too fast:
+S and W change color against their time mark, how much of their window has gone by: 2 hours into the 5-hour session, the mark is at 40%.
 
-- **S**: its rise over the last 30 minutes (from 10 minutes of readings, like P) against what's left spread evenly until the reset: S 50% with 2 hours left needs 25% per hour.
-- **W**: P against B, so it turns orange once P is over B.
-- **Orange**: faster than needed. **Red**: 5 points per hour past it for S, 10 points past it for W.
+- **Orange**: within 5 points under the mark, at it, or past it.
+- **Red**: past the mark and still rising faster than the mark moves, 20% an hour for S and 0.6% an hour for W. S's rise is measured over the last 30 minutes (from 10 minutes of readings, like P), W's over the last hour.
 
-The menu says why under a colored S or W: "Using 24% a day, 17% a day lasts until reset". A warning triangle replaces the icon when Claude itself flags a limit: locked out, or its severity is anything but normal.
+**P** turns orange once it's over B, and red 10 points past it.
+
+A warning triangle replaces the icon when Claude itself flags a limit: locked out, or its severity is anything but normal.
 
 </details>
 

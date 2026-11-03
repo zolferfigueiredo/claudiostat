@@ -117,40 +117,37 @@ nonisolated struct Rate {
     var speed: Double?
     var needed: Double?
     var unit: TimeInterval
-    var margin: Double
+    /// S's or W's color: the limit against its ring's hand (markPace).
+    var mark = Pace.ok
 
-    /// Orange once faster than needed, red once `margin` points past it.
+    /// P's color: orange once faster than needed, red once 10 points past it.
     var pace: Pace {
         guard let speed, let needed else { return .ok }
-        return speed > needed + margin ? .tooFast : speed > needed ? .fast : .ok
-    }
-
-    /// Why it's colored: "Using 24% a day, 17% a day lasts until reset".
-    var reason: String? {
-        guard pace != .ok else { return nil }
-        let rate = unit == 3600 ? "rate_hour" : "rate_day"
-        return tr("reason", ["speed": tr(rate, ["n": percent(speed)]), "needed": tr(rate, ["n": percent(needed)])])
+        return speed > needed + 10 ? .tooFast : speed > needed ? .fast : .ok
     }
 }
 
-/// What's left spread evenly until the reset, in percent per `unit`.
-nonisolated func evenPace(_ limit: Limit?, unit: TimeInterval, now: Date) -> Double? {
-    guard let limit, let reset = limit.resetsAt, reset > now else { return nil }
-    return Double(max(0, 100 - limit.percent)) * unit / reset.timeIntervalSince(now)
+/// A limit against its ring's hand, the part of its `length` gone by: orange from 5 points under it, red once past it
+/// while still rising faster than the hand moves. `speed` is in percent per hour.
+nonisolated func markPace(_ limit: Limit?, speed: Double?, length: TimeInterval, now: Date) -> Pace {
+    guard let limit, let reset = limit.resetsAt, reset > now, limit.percent > 0 else { return .ok }
+    let mark = max(0, 1 - reset.timeIntervalSince(now) / length) * 100, used = Double(limit.percent)
+    return used > mark && (speed ?? 0) > 100 * 3600 / length ? .tooFast : used >= mark - 5 ? .fast : .ok
 }
 
-/// S per hour over the last 30 minutes against what's left spread evenly.
-/// W over the last hour against the budget, per day, or per hour when `colors` is "hour": these are P and B.
+/// S per hour over the last 30 minutes and W over the last hour, each against its ring's hand.
+/// W's rise per day, or per hour when `colors` is "hour", against the budget: these are P and B.
 /// Only `workHours` of each day are spent using Claude: P per day is the hourly rise times that,
 /// and the budget per hour splits what's left over the working hours until the reset.
 nonisolated func paces(_ usage: Usage?, samples: [Sample], colors: String, workHours: Double = 24,
                        now: Date) -> (session: Rate, week: Rate) {
     let hour: TimeInterval = 3600, unit = colors == "hour" ? hour : 24 * hour
     let session = speed(samples, \.session, length: 5 * hour, window: hour / 2, unit: hour)
+    let hourly = speed(samples, \.week, length: 7 * 24 * hour, window: hour, unit: hour)
     let week = speed(samples, \.week, length: 7 * 24 * hour, window: hour, unit: colors == "hour" ? hour : workHours * hour)
     let allowed = usage?.week.flatMap { budget(week: $0.percent, resetsAt: $0.resetsAt, unit: unit, workHours: workHours, now: now) }
-    return (Rate(speed: session, needed: evenPace(usage?.session, unit: hour, now: now), unit: hour, margin: 5),
-            Rate(speed: week, needed: allowed, unit: unit, margin: 10))
+    return (Rate(speed: session, unit: hour, mark: markPace(usage?.session, speed: session, length: 5 * hour, now: now)),
+            Rate(speed: week, needed: allowed, unit: unit, mark: markPace(usage?.week, speed: hourly, length: 7 * 24 * hour, now: now)))
 }
 
 /// What a notification is about. Each kind has its own setting, all on by default.
@@ -247,10 +244,10 @@ nonisolated func barStats(_ usage: Usage?, rates: (session: Rate, week: Rate)?, 
     func stat(_ letter: String, _ limit: Limit?, _ pace: Pace = .ok) -> [Stat] {
         limit.map { [Stat(letter: letter, value: percent($0.percent), pace: pace, resetsAt: $0.resetsAt)] } ?? []
     }
-    var found = stat("S", usage.session, rates?.session.pace ?? .ok) + stat("W", usage.week, rates?.week.pace ?? .ok)
+    var found = stat("S", usage.session, rates?.session.mark ?? .ok) + stat("W", usage.week, rates?.week.mark ?? .ok)
     // F only once Fable is used this week.
     if let fable = usage.fable, fable.percent > 0 { found += stat("F", fable) }
-    // P takes W's color: orange past B, red well past it.
+    // P is orange past B, red well past it.
     if showPace, usage.week != nil, let speed = rates?.week.speed {
         found.append(Stat(letter: "P", value: percent(speed), pace: rates?.week.pace ?? .ok))
     }
@@ -275,7 +272,7 @@ extension NSColor {
     }
 }
 
-/// "S 54%": the letter dimmed, the value in its pace's color.
+/// "S 54%": the letter dimmed, the value in its color.
 nonisolated func lettered(_ stat: Stat) -> NSMutableAttributedString {
     let text = NSMutableAttributedString(attributedString: colored("\(stat.letter) ", .barDim))
     text.append(colored(stat.value, stat.pace.color))

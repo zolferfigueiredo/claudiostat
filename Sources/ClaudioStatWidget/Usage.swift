@@ -93,7 +93,7 @@ func rateUnit(_ settings: Settings) -> String {
 /// "Under budget" or "Over budget", once P and B are both known and shown.
 func verdict(_ r: Rates, _ settings: Settings) -> String? {
     guard settings.showPace, settings.showBudget, r.p != nil, r.b != nil else { return nil }
-    return tr(r.w == .ok ? "under_budget" : "over_budget")
+    return tr(r.pace == .ok ? "under_budget" : "over_budget")
 }
 
 /// "Pace 15.6%/day, Budget 13%/day, Over budget", for VoiceOver.
@@ -117,12 +117,6 @@ func rateText(_ value: Double?) -> String {
     "\((value ?? 0).formatted(.number.precision(.fractionLength(0...1))))%"
 }
 
-/// What's left spread evenly until the reset, in percent per `unit`.
-func evenPace(_ limit: Limit?, unit: Double, now: Int) -> Double? {
-    guard let limit, let reset = limit.reset, reset > now else { return nil }
-    return Double(max(0, 100 - limit.pct)) * unit / Double(reset - now)
-}
-
 /// B: what's left of the week over the whole days (or working hours) until the reset, rounded down.
 func budget(week: Int, reset: Int?, unit: Double, workHours: Double, now: Int) -> Double? {
     let remaining = max(0, 100 - week)
@@ -136,10 +130,12 @@ func budget(week: Int, reset: Int?, unit: Double, workHours: Double, now: Int) -
     return (Double(remaining) * steps / units).rounded(.down) / steps
 }
 
-/// Orange once faster than needed, red once `margin` points past it.
-func pace(_ speed: Double?, _ needed: Double?, margin: Double) -> Pace {
-    guard let speed, let needed else { return .ok }
-    return speed > needed + margin ? .tooFast : speed > needed ? .fast : .ok
+/// The app's markPace(): a limit against its ring's hand, orange from 5 points under it, red once past it while still
+/// rising faster than the hand moves. `speed` is in percent per hour.
+func markPace(_ limit: Limit?, speed: Double?, window: Int, now: Int) -> Pace {
+    guard let limit, let hand = elapsed(limit, window: window, now: now), limit.pct > 0 else { return .ok }
+    let mark = hand * 100, used = Double(limit.pct)
+    return used > mark && (speed ?? 0) > 100 * 3600 / Double(window) ? .tooFast : used >= mark - 5 ? .fast : .ok
 }
 
 /// P against B: orange past the budget, red from twice it, where the pace ring is full.
@@ -151,19 +147,22 @@ func overBudget(_ p: Double?, _ b: Double?) -> Pace {
 struct Rates {
     let s: Pace
     let w: Pace
+    /// P's color, against B.
+    let pace: Pace
     let p: Double?
     let b: Double?
 }
 
-/// S against an even spread per hour; W (P) against the budget (B), per day or per hour.
+/// S and W against their rings' hands; P against the budget (B), per day or per hour.
 func rates(_ reply: Reply, _ settings: Settings, now: Int) -> Rates {
     let perHour = settings.colors == "hour"
     let p = reply.speed?.w.map { $0 * (perHour ? 1 : settings.workHours) }
     let b = reply.snap.w.flatMap {
         budget(week: $0.pct, reset: $0.reset, unit: perHour ? 3600 : 86400, workHours: settings.workHours, now: now)
     }
-    return Rates(s: pace(reply.speed?.s, evenPace(reply.snap.s, unit: 3600, now: now), margin: 5),
-                 w: overBudget(p, b), p: p, b: b)
+    return Rates(s: markPace(reply.snap.s, speed: reply.speed?.s, window: 5 * 3600, now: now),
+                 w: markPace(reply.snap.w, speed: reply.speed?.w, window: 7 * 86400, now: now),
+                 pace: overBudget(p, b), p: p, b: b)
 }
 
 /// The app's warning(): locked out first, then a severity other than normal while the limit is past its hand.

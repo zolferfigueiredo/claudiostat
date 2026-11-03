@@ -91,10 +91,10 @@ struct Shown: Identifiable {
     }
 }
 
-/// P against B as one meter: P fills it in the week's pace color, B is the mark in the middle.
+/// P against B as one meter: P fills it in its color against B, B is the mark in the middle.
 func paceMeter(_ r: Rates, _ settings: Settings) -> Meter {
     let scale = paceScale(settings.showPace ? r.p : nil, settings.showBudget ? r.b : nil)
-    return Meter(fraction: scale.fraction, hand: scale.mark, colors: [r.w.color ?? Brand.peach])
+    return Meter(fraction: scale.fraction, hand: scale.mark, colors: [r.pace.color ?? Brand.peach])
 }
 
 /// Session and week, then Fable once it's used (1% or more); limits the reply doesn't have are left out.
@@ -187,7 +187,7 @@ struct UsageView: View {
                     // P and B in the middle too: numbers, not rings.
                     if entry.kind.rates {
                         HStack(spacing: size * 0.04) {
-                            Text(verbatim: "P \(rateText(r.p))").foregroundStyle(r.w.color ?? .primary)
+                            Text(verbatim: "P \(rateText(r.p))").foregroundStyle(r.pace.color ?? .primary)
                             Text(verbatim: "B \(rateText(r.b))")
                         }
                         .font(.system(size: size * (crowded ? 0.05 : 0.06), weight: .bold, design: .rounded))
@@ -251,11 +251,11 @@ struct UsageView: View {
     private func paceRow(_ r: Rates, tight: Bool) -> some View {
         let settings = entry.settings
         let unit = rateUnit(settings)
-        return listRow(r.w.color ?? Brand.peach, Text(tr("pace")).font(.subheadline.weight(.semibold)),
+        return listRow(r.pace.color ?? Brand.peach, Text(tr("pace")).font(.subheadline.weight(.semibold)),
                        // Four lines leave room for B's letter only, as in the bar widgets.
                        detail: tight ? "B \(rateText(r.b))" : "\(tr("budget")) \(rateText(r.b))\(unit)",
                        value: rateText(r.p) + unit,
-                       tint: r.w.color ?? .primary, tight: tight)
+                       tint: r.pace.color ?? .primary, tight: tight)
             .accessibilityElement(children: .ignore)
             .accessibilityLabel(spokenRates(r, settings))
     }
@@ -328,7 +328,7 @@ struct UsageView: View {
         let settings = entry.settings
         let unit = rateUnit(settings)
         return barRow(caps(tr("pace"), size: 11), detail: "B \(rateText(r.b))\(unit)", value: rateText(r.p) + unit,
-                      tint: r.w.color ?? .primary, meter: paceMeter(r, settings))
+                      tint: r.pace.color ?? .primary, meter: paceMeter(r, settings))
             .accessibilityElement(children: .ignore)
             .accessibilityLabel(spokenRates(r, settings))
     }
