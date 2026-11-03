@@ -338,30 +338,54 @@ Every look of the menu bar, dark on the left and light on the right. Made by `sc
 | S red · text only · one line · two profiles | ![S red · text only · one line · two profiles](s-red-text-only-one-line-two-profiles.png) |
 | S red · icon only · app icon | ![S red · icon only · app icon](s-red-icon-only-app-icon.png) |
 | S red · icon only · star | ![S red · icon only · star](s-red-icon-only-star.png) |
-| W and P orange · icon and text · app icon · compact · one profile | ![W and P orange · icon and text · app icon · compact · one profile](w-and-p-orange-icon-and-text-app-icon-compact-one-profile.png) |
-| W and P orange · icon and text · app icon · compact · two profiles | ![W and P orange · icon and text · app icon · compact · two profiles](w-and-p-orange-icon-and-text-app-icon-compact-two-profiles.png) |
-| W and P orange · icon and text · app icon · one line · one profile | ![W and P orange · icon and text · app icon · one line · one profile](w-and-p-orange-icon-and-text-app-icon-one-line-one-profile.png) |
-| W and P orange · icon and text · app icon · one line · two profiles | ![W and P orange · icon and text · app icon · one line · two profiles](w-and-p-orange-icon-and-text-app-icon-one-line-two-profiles.png) |
-| W and P orange · icon and text · star · compact · one profile | ![W and P orange · icon and text · star · compact · one profile](w-and-p-orange-icon-and-text-star-compact-one-profile.png) |
-| W and P orange · icon and text · star · compact · two profiles | ![W and P orange · icon and text · star · compact · two profiles](w-and-p-orange-icon-and-text-star-compact-two-profiles.png) |
-| W and P orange · text only · compact · one profile | ![W and P orange · text only · compact · one profile](w-and-p-orange-text-only-compact-one-profile.png) |
-| W and P orange · text only · compact · two profiles | ![W and P orange · text only · compact · two profiles](w-and-p-orange-text-only-compact-two-profiles.png) |
-| W and P orange · text only · one line · one profile | ![W and P orange · text only · one line · one profile](w-and-p-orange-text-only-one-line-one-profile.png) |
-| W and P orange · text only · one line · two profiles | ![W and P orange · text only · one line · two profiles](w-and-p-orange-text-only-one-line-two-profiles.png) |
-| W and P orange · icon only · app icon | ![W and P orange · icon only · app icon](w-and-p-orange-icon-only-app-icon.png) |
-| W and P orange · icon only · star | ![W and P orange · icon only · star](w-and-p-orange-icon-only-star.png) |
-| W and P red · icon and text · app icon · compact · one profile | ![W and P red · icon and text · app icon · compact · one profile](w-and-p-red-icon-and-text-app-icon-compact-one-profile.png) |
-| W and P red · icon and text · app icon · compact · two profiles | ![W and P red · icon and text · app icon · compact · two profiles](w-and-p-red-icon-and-text-app-icon-compact-two-profiles.png) |
-| W and P red · icon and text · app icon · one line · one profile | ![W and P red · icon and text · app icon · one line · one profile](w-and-p-red-icon-and-text-app-icon-one-line-one-profile.png) |
-| W and P red · icon and text · app icon · one line · two profiles | ![W and P red · icon and text · app icon · one line · two profiles](w-and-p-red-icon-and-text-app-icon-one-line-two-profiles.png) |
-| W and P red · icon and text · star · compact · one profile | ![W and P red · icon and text · star · compact · one profile](w-and-p-red-icon-and-text-star-compact-one-profile.png) |
-| W and P red · icon and text · star · compact · two profiles | ![W and P red · icon and text · star · compact · two profiles](w-and-p-red-icon-and-text-star-compact-two-profiles.png) |
-| W and P red · text only · compact · one profile | ![W and P red · text only · compact · one profile](w-and-p-red-text-only-compact-one-profile.png) |
-| W and P red · text only · compact · two profiles | ![W and P red · text only · compact · two profiles](w-and-p-red-text-only-compact-two-profiles.png) |
-| W and P red · text only · one line · one profile | ![W and P red · text only · one line · one profile](w-and-p-red-text-only-one-line-one-profile.png) |
-| W and P red · text only · one line · two profiles | ![W and P red · text only · one line · two profiles](w-and-p-red-text-only-one-line-two-profiles.png) |
-| W and P red · icon only · app icon | ![W and P red · icon only · app icon](w-and-p-red-icon-only-app-icon.png) |
-| W and P red · icon only · star | ![W and P red · icon only · star](w-and-p-red-icon-only-star.png) |
+| W orange · icon and text · app icon · compact · one profile | ![W orange · icon and text · app icon · compact · one profile](w-orange-icon-and-text-app-icon-compact-one-profile.png) |
+| W orange · icon and text · app icon · compact · two profiles | ![W orange · icon and text · app icon · compact · two profiles](w-orange-icon-and-text-app-icon-compact-two-profiles.png) |
+| W orange · icon and text · app icon · one line · one profile | ![W orange · icon and text · app icon · one line · one profile](w-orange-icon-and-text-app-icon-one-line-one-profile.png) |
+| W orange · icon and text · app icon · one line · two profiles | ![W orange · icon and text · app icon · one line · two profiles](w-orange-icon-and-text-app-icon-one-line-two-profiles.png) |
+| W orange · icon and text · star · compact · one profile | ![W orange · icon and text · star · compact · one profile](w-orange-icon-and-text-star-compact-one-profile.png) |
+| W orange · icon and text · star · compact · two profiles | ![W orange · icon and text · star · compact · two profiles](w-orange-icon-and-text-star-compact-two-profiles.png) |
+| W orange · text only · compact · one profile | ![W orange · text only · compact · one profile](w-orange-text-only-compact-one-profile.png) |
+| W orange · text only · compact · two profiles | ![W orange · text only · compact · two profiles](w-orange-text-only-compact-two-profiles.png) |
+| W orange · text only · one line · one profile | ![W orange · text only · one line · one profile](w-orange-text-only-one-line-one-profile.png) |
+| W orange · text only · one line · two profiles | ![W orange · text only · one line · two profiles](w-orange-text-only-one-line-two-profiles.png) |
+| W orange · icon only · app icon | ![W orange · icon only · app icon](w-orange-icon-only-app-icon.png) |
+| W orange · icon only · star | ![W orange · icon only · star](w-orange-icon-only-star.png) |
+| W red · icon and text · app icon · compact · one profile | ![W red · icon and text · app icon · compact · one profile](w-red-icon-and-text-app-icon-compact-one-profile.png) |
+| W red · icon and text · app icon · compact · two profiles | ![W red · icon and text · app icon · compact · two profiles](w-red-icon-and-text-app-icon-compact-two-profiles.png) |
+| W red · icon and text · app icon · one line · one profile | ![W red · icon and text · app icon · one line · one profile](w-red-icon-and-text-app-icon-one-line-one-profile.png) |
+| W red · icon and text · app icon · one line · two profiles | ![W red · icon and text · app icon · one line · two profiles](w-red-icon-and-text-app-icon-one-line-two-profiles.png) |
+| W red · icon and text · star · compact · one profile | ![W red · icon and text · star · compact · one profile](w-red-icon-and-text-star-compact-one-profile.png) |
+| W red · icon and text · star · compact · two profiles | ![W red · icon and text · star · compact · two profiles](w-red-icon-and-text-star-compact-two-profiles.png) |
+| W red · text only · compact · one profile | ![W red · text only · compact · one profile](w-red-text-only-compact-one-profile.png) |
+| W red · text only · compact · two profiles | ![W red · text only · compact · two profiles](w-red-text-only-compact-two-profiles.png) |
+| W red · text only · one line · one profile | ![W red · text only · one line · one profile](w-red-text-only-one-line-one-profile.png) |
+| W red · text only · one line · two profiles | ![W red · text only · one line · two profiles](w-red-text-only-one-line-two-profiles.png) |
+| W red · icon only · app icon | ![W red · icon only · app icon](w-red-icon-only-app-icon.png) |
+| W red · icon only · star | ![W red · icon only · star](w-red-icon-only-star.png) |
+| P orange · icon and text · app icon · compact · one profile | ![P orange · icon and text · app icon · compact · one profile](p-orange-icon-and-text-app-icon-compact-one-profile.png) |
+| P orange · icon and text · app icon · compact · two profiles | ![P orange · icon and text · app icon · compact · two profiles](p-orange-icon-and-text-app-icon-compact-two-profiles.png) |
+| P orange · icon and text · app icon · one line · one profile | ![P orange · icon and text · app icon · one line · one profile](p-orange-icon-and-text-app-icon-one-line-one-profile.png) |
+| P orange · icon and text · app icon · one line · two profiles | ![P orange · icon and text · app icon · one line · two profiles](p-orange-icon-and-text-app-icon-one-line-two-profiles.png) |
+| P orange · icon and text · star · compact · one profile | ![P orange · icon and text · star · compact · one profile](p-orange-icon-and-text-star-compact-one-profile.png) |
+| P orange · icon and text · star · compact · two profiles | ![P orange · icon and text · star · compact · two profiles](p-orange-icon-and-text-star-compact-two-profiles.png) |
+| P orange · text only · compact · one profile | ![P orange · text only · compact · one profile](p-orange-text-only-compact-one-profile.png) |
+| P orange · text only · compact · two profiles | ![P orange · text only · compact · two profiles](p-orange-text-only-compact-two-profiles.png) |
+| P orange · text only · one line · one profile | ![P orange · text only · one line · one profile](p-orange-text-only-one-line-one-profile.png) |
+| P orange · text only · one line · two profiles | ![P orange · text only · one line · two profiles](p-orange-text-only-one-line-two-profiles.png) |
+| P orange · icon only · app icon | ![P orange · icon only · app icon](p-orange-icon-only-app-icon.png) |
+| P orange · icon only · star | ![P orange · icon only · star](p-orange-icon-only-star.png) |
+| P red · icon and text · app icon · compact · one profile | ![P red · icon and text · app icon · compact · one profile](p-red-icon-and-text-app-icon-compact-one-profile.png) |
+| P red · icon and text · app icon · compact · two profiles | ![P red · icon and text · app icon · compact · two profiles](p-red-icon-and-text-app-icon-compact-two-profiles.png) |
+| P red · icon and text · app icon · one line · one profile | ![P red · icon and text · app icon · one line · one profile](p-red-icon-and-text-app-icon-one-line-one-profile.png) |
+| P red · icon and text · app icon · one line · two profiles | ![P red · icon and text · app icon · one line · two profiles](p-red-icon-and-text-app-icon-one-line-two-profiles.png) |
+| P red · icon and text · star · compact · one profile | ![P red · icon and text · star · compact · one profile](p-red-icon-and-text-star-compact-one-profile.png) |
+| P red · icon and text · star · compact · two profiles | ![P red · icon and text · star · compact · two profiles](p-red-icon-and-text-star-compact-two-profiles.png) |
+| P red · text only · compact · one profile | ![P red · text only · compact · one profile](p-red-text-only-compact-one-profile.png) |
+| P red · text only · compact · two profiles | ![P red · text only · compact · two profiles](p-red-text-only-compact-two-profiles.png) |
+| P red · text only · one line · one profile | ![P red · text only · one line · one profile](p-red-text-only-one-line-one-profile.png) |
+| P red · text only · one line · two profiles | ![P red · text only · one line · two profiles](p-red-text-only-one-line-two-profiles.png) |
+| P red · icon only · app icon | ![P red · icon only · app icon](p-red-icon-only-app-icon.png) |
+| P red · icon only · star | ![P red · icon only · star](p-red-icon-only-star.png) |
 | session reached · icon and text · app icon · compact · one profile | ![session reached · icon and text · app icon · compact · one profile](session-reached-icon-and-text-app-icon-compact-one-profile.png) |
 | session reached · icon and text · app icon · compact · two profiles | ![session reached · icon and text · app icon · compact · two profiles](session-reached-icon-and-text-app-icon-compact-two-profiles.png) |
 | session reached · icon and text · app icon · one line · one profile | ![session reached · icon and text · app icon · one line · one profile](session-reached-icon-and-text-app-icon-one-line-one-profile.png) |
