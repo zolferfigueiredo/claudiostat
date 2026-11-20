@@ -3,6 +3,9 @@ import ClaudioStatStrings
 import SwiftUI
 
 struct AboutView: View {
+    var version = appVersion
+    @AppStorage("checkBetas") private var checkBetas = true
+
     var body: some View {
         VStack(spacing: 4) {
             Image(nsImage: NSApp.applicationIconImage)
@@ -16,7 +19,15 @@ struct AboutView: View {
             }
             .font(.subheadline)
             .padding(.vertical, 6)
-            Text(tr("version", ["version": appVersion]))
+            Text(tr("version", ["version": version]))
+            if isBeta(version) {
+                Toggle(tr("check_betas"), isOn: $checkBetas)
+                    .toggleStyle(.switch)
+                    .controlSize(.mini)
+                    .padding(.top, 10)
+                    // A beta found while the switch was on isn't offered once it is off.
+                    .onChange(of: checkBetas) { UserDefaults.standard.removeObject(forKey: "availableVersion") }
+            }
             Button(tr("check")) { delegate.checkNow() }
                 .padding(.vertical, 12)
             Divider()

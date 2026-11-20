@@ -114,6 +114,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         let updates = Timer(timeInterval: 3600, target: self, selector: #selector(autoCheck), userInfo: nil, repeats: true)
         updates.tolerance = 600
         RunLoop.main.add(updates, forMode: .common)
+        // Back on a release, About's beta switch is forgotten, so the next beta starts with it on.
+        if !isBeta(appVersion) { defaults.removeObject(forKey: "checkBetas") }
         autoCheck()
         Task { showUpdateComplete() }  // after launch finishes, not in the middle of it
         if defaults.bool(forKey: "testNotifications") { testNotifications() }

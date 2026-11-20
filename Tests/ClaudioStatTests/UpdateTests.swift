@@ -15,9 +15,22 @@ import Testing
     ("1.0.0", "0.9.9", true),
     ("0.1.2", "0.1.2", false),
     ("0.1.1", "0.1.2", false),
+    ("0.12.0", "0.12.0-widgets-beta.1", true),  // the release after its betas
+    ("0.12.0-widgets-beta.1", "0.12.0", false),
+    ("0.12.0-widgets-beta.2", "0.12.0-widgets-beta.1", true),
+    ("0.12.0-widgets-beta.10", "0.12.0-widgets-beta.2", true),
+    ("0.11.2", "0.12.0-widgets-beta.1", false),  // a fix on main isn't offered to the beta
 ])
 func newerVersion(remote: String, local: String, expected: Bool) {
     #expect(isNewer(remote, than: local) == expected)
+}
+
+@Test func betaFindsTheNewestRelease() {
+    let list = #"[{"tag_name": "v0.11.5"}, {"tag_name": "v0.12.0-widgets-beta.10"}, {"tag_name": "v0.12.0-widgets-beta.9"}]"#
+    #expect(newestVersion(inReleases: Data(list.utf8)) == "0.12.0-widgets-beta.10")
+    #expect(newestVersion(inReleases: Data(#"[{"tag_name": "v0.12.0-widgets-beta.3"}, {"tag_name": "v0.12.0"}]"#.utf8)) == "0.12.0")
+    #expect(newestVersion(inReleases: Data(#"{"message": "API rate limit exceeded"}"#.utf8)) == nil)
+    #expect(isBeta("0.12.0-widgets-beta.1") && !isBeta("0.12.0"))
 }
 
 @Test func updateCheckSchedule() {
