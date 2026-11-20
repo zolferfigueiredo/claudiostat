@@ -33,15 +33,23 @@ jobs:
           if git diff --quiet "$base"...HEAD -- Sources Package.swift Info.plist Icon; then echo "The app is unchanged."; exit 0; fi
           version() { git show "$1:Info.plist" | sed -n '/CFBundleShortVersionString/{n;s/.*<string>\(.*\)<\/string>.*/\1/p;}'; }
           old=$(version "$base") new=$(version HEAD)
-          if [ "$new" = "$old" ] || [ "$(printf '%s\n%s\n' "$old" "$new" | sort -V | tail -n 1)" != "$new" ]; then
+          # A beta's "-" sorts as "~", which sort -V puts before the release: 0.12.0-widgets-beta.2 < 0.12.0.
+          top=$(printf '%s\n%s\n' "$old" "$new" | sed 's/-/~/' | sort -V | tail -n 1 | sed 's/~/-/')
+          if [ "$new" = "$old" ] || [ "$top" != "$new" ]; then
             echo "::error file=Info.plist::The app changed, so CFBundleShortVersionString has to go above $old (it is $new)."
             exit 1
           fi
           echo "$old -> $new"
+      # A beta (a version with a "-") leaves the cask on the last release, so brew never installs a beta.
       - name: The cask installs this version
         run: |
           app=$(sed -n '/CFBundleShortVersionString/{n;s/.*<string>\(.*\)<\/string>.*/\1/p;}' Info.plist)
           cask=$(sed -n 's/^  version "\(.*\)"$/\1/p' Casks/claudiostat.rb)
+          case $cask in *-*)
+            echo "::error file=Casks/claudiostat.rb::The cask never installs a beta, and $cask is one."
+            exit 1 ;;
+          esac
+          case $app in *-*) echo "$app is a beta, so the cask stays on $cask."; exit 0 ;; esac
           if [ "$cask" != "$app" ]; then
             echo "::error file=Casks/claudiostat.rb::version has to be the app's, $app (it is $cask)."
             exit 1

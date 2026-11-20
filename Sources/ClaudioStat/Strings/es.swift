@@ -22,6 +22,7 @@ extension Strings {
         "by": "Hecho por",
         "cancel": "Cancelar",
         "check": "Buscar actualizaciones…",
+        "check_betas": "Buscar versiones beta",
         "check_connection": "Comprueba tu conexión e inténtalo de nuevo.",
         "check_failed": "No se pudieron buscar actualizaciones",
         "checking_signature": "Comprobando la firma…",

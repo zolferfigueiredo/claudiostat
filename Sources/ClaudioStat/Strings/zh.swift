@@ -22,6 +22,7 @@ extension Strings {
         "by": "作者:",
         "cancel": "取消",
         "check": "检查更新…",
+        "check_betas": "检查测试版",
         "check_connection": "请检查网络连接后重试。",
         "check_failed": "无法检查更新",
         "checking_signature": "正在检查签名…",
